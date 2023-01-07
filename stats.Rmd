@@ -1,0 +1,1332 @@
+---
+title: "Milton Stats"
+subtitle: "Season 2022"
+author: "Niall Taylor"
+date: "`r Sys.Date()`"
+toc: true
+toc_depth: 1
+classoption: a4paper
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+#source("get-data.R")
+#source("format-data.R", local = knitr::knit_global())
+load("./data/matches")
+load("./data/innings")
+load("./data/batting")
+load("./data/battingAvg")
+load("./data/battingAvgTY")
+load("./data/bowlingAvg")
+load("./data/bowlingAvgTY")
+load("./data/bowling")
+load("./data/club")
+
+## load the config
+library(yaml)
+conf <- yaml.load_file("./config/config.yaml")
+#conf$club_of_interest_name <- D.club$name[D.club$id== conf$club_of_interest] # this isn't neat, so just set it by hand in the yaml
+# load other packages
+library(tidyr)
+library(dplyr)
+library(kableExtra)
+library(ggplot2)
+#library(dplR) # provides latexify, need this for club names containing \&
+
+# filter out for the club of interest
+F.batting.us <- filter(B.batting, is_us==TRUE)
+F.batting.circle <- filter(B.batting,is_circle==TRUE) 
+F.batting.sphere <- filter(B.batting,is_sphere==TRUE) 
+
+F.bowling.us <- filter(B.bowling, is_us==TRUE)
+F.bowling.circle <- filter(B.bowling,is_circle==TRUE) 
+F.bowling.sphere <- filter(B.bowling,is_sphere==TRUE) 
+
+F.inningses.us <- filter(B.inningses,is_us==TRUE) 
+F.inningses.circle <- filter(B.inningses,is_circle==TRUE) 
+F.inningses.sphere <- filter(B.inningses,is_sphere==TRUE) 
+
+# get players for the club of interest
+#MPbatters<- unique(MbattingBat$batsman_id) # FIXME
+
+## Configure some heading sets for nice display
+H.freesia   <- c("Home", "Away", "Date", "Ground", "Aggregate", "Overs in match")
+H.dianthus  <- c("Team", "Score", "Ovs",            "Date", "Oppos","Ground", "Res")
+H.rudbeckia <- c("Team", "Score", "Ovs", "Extras", "Date", "Oppos","Ground", "Res")
+H.wolfsbane <- c("Team", "Score", "Ovs", "Byes",   "Date", "Oppos","Ground", "Res")
+
+H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
+H.buckthorn <- c("Name", "Runs", "Inns", "NO", "Avg", "HS",                                      "6s", "4s")
+
+H.aspidistra <-  c("Name", "Runs",           "Balls", "SR",           "Date",         "Oppos", "Ground", "Ven")
+H.lily <-        c("Name", "Runs",           "Balls", "SR",           "Date", "Team", "Oppos", "Ground",       "Res")
+H.hibiscus <-    c("Name", "Runs", "4", "6" ,"Balls", "SR",           "Date",         "Oppos", "Ground")
+H.safflower <-   c("Name", "Runs",           "Balls", "SR", "How Out","Date", "Club", "Oppos", "Ground") 
+H.thistle <-     c("Name", "Runs",           "Balls", "SR",           "Date",         "Oppos", "Ground",       "Res", "Contrib")
+
+H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date",         "Oppos", "Ground", "Ven")
+H.marigold <-  c("Name", "O", "M", "R", "W",  "Date", "Team", "Oppos", "Ground", "Res")
+H.sunflower <-  c("Name", "O", "M", "R", "W",  "Date", "Club", "Oppos", "Ground", "Res")
+
+H.clematis <- c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+# alyssum, plum, crocosmia, hyacinth, iris, hydrangea, peony, mugwort, gladiolus, carnation
+
+```
+
+Season `r conf$year_of_interest`
+
+# Batting
+## Averages, all-time
+Strike rates calculated using only innings in which balls faced are recorded. `All time' means all of the dataset which 
+is available, which may start after a player did.
+
+Showing most runs first
+
+```{r bat-avgs-alltime}
+this_caption <- "Batting averages, all time"
+
+B.battingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(Runs)) %>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) #%>%
+
+
+```
+
+## Averages, this year
+```{r bat-avgs-thisyear}
+this_caption <- "Batting averages, this year"
+
+B.battingAveragesTY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(Runs)) %>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) #%>%
+
+
+```
+
+
+## Approaching milestones
+```{r approaching-milestones-bat}
+this_caption <- "Approaching career total run milestones"
+
+B.battingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% 
+    filter((Runs >= 400 & Runs < 500) | (Runs >= 900 & Runs < 1000)) %>%
+    arrange(desc(Runs)) %>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) #%>%
+```
+
+## Highest career strike rates
+
+Minimum qualification: `r conf$qualify_balls_faced` balls faced
+```{r bat-avgs-alltime-highSR}
+this_caption <- "Highest strike-rates, all time"
+
+B.battingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name) & BF >= conf$qualify_balls_faced) %>% slice_max(SR, n=conf$default_list_length)%>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Top career averages
+
+Minimum qualification: `r conf$qualify_balls_faced` balls faced
+```{r bat-avgs-alltime-highAvg}
+this_caption <- "Highest averages, all time"
+
+B.battingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name) & BF >= conf$qualify_balls_faced) %>% slice_max(Avg, n=conf$default_list_length)%>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+
+
+
+## Fifties this year
+```{r fifties-this-year}
+this_caption <- "Fifties this season"
+a.numfifties <- nrow(F.batting.us %>% filter(Runs>=50 & year==conf$year_of_interest))
+```
+There have been `r a.numfifties` fifties so far this season.
+```{r fifties-this-year-2}
+F.batting.us %>% filter(Runs>=50 & year==conf$year_of_interest) %>% arrange(desc(Runs)) %>%
+    select(all_of(H.aspidistra)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+     column_spec(6, width = "10em") %>%
+   column_spec(7, width = "10em")
+```
+
+
+## Fifties without a team win
+Showing most recent `r conf$default_list_length`:
+```{r fifties-no-win}
+this_caption <- "Fifties without team win"
+
+F.batting.us %>% filter(Runs >=50 & Res!="W" ) %>% slice_max(actuallyDate, n=conf$default_list_length) %>%
+select(all_of(H.lily)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+   column_spec(7, width = "10em") %>%
+   column_spec(8, width = "10em")
+
+```
+
+## Recent fifties, for each team
+Showing most recent `r conf$default_list_length`:
+
+```{r fifties-byteam, results='asis'}
+#a.fiftiesRecent <- subset(MbattingBat, runs>=50 & team_batting_id==9865)
+# 
+# a.fifties.Byteam <- lapply(conf$teams_of_interest, 
+#        function(x){
+#          subset(batting, runs>=50 & team_batting_id==x & is_us)
+#        })
+# 
+# a.fifties.ByteamSorted <- lapply(a.fifties.Byteam, 
+#               function(x){
+#                 x[order(x$actuallyDate, decreasing = TRUE), hilowBatterheads]
+#               })
+# 
+# for (i in 1:length(a.fifties.ByteamSorted)){
+#  cat( paste("### ", names(a.fifties.ByteamSorted)[i], " \n"))
+#   
+# names(a.fifties.ByteamSorted[[i]]) <- niceBatterPefHeads
+# 
+# print(kbl( head(a.fifties.ByteamSorted[[i]],conf$default_list_length), longtable = T, booktabs = T, row.names = F, 
+#            caption=paste("Recent fifties for ",names(a.fifties.ByteamSorted)[i])) %>%
+#     kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+#         column_spec(6, width = "10em") %>%
+#     column_spec(7, width = "10em"))
+# cat('\n\n')
+# }
+
+#conf$teams_of_interest[[i]]
+this_caption="Recent fifties for "
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(Runs >=50 & team_batting_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(actuallyDate, n=conf$default_list_length) %>%
+select(all_of(H.lily)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption=paste(this_caption,names(conf$teams_of_interest)[[i]])) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+   column_spec(7, width = "10em") %>%
+   column_spec(8, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+
+```
+
+## Most centuries
+```{r centuries}
+this_caption <- "Most centuries"
+B.battingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
+  slice_max(`100`, n=conf$default_list_length) %>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+
+## Top individual scores
+```{r top-bat-performances}
+this_caption <- "All-time top scores"
+F.batting.us %>% slice_max(Runs, n=conf$default_list_length) %>%
+select(all_of(H.aspidistra)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(6, width = "10em") %>%
+  column_spec(7, width = "10em")
+
+```
+
+## Top performances for each team
+```{r topbat-byteam, results='asis'}
+
+# a.fifties.ByteamRSort <- lapply(a.fifties.Byteam, 
+#               function(x){
+#                 x[order(x$runs, decreasing = TRUE), hilowBatterheads]
+#               })
+# 
+# for (i in 1:length(a.fifties.ByteamRSort)){
+#  cat( paste("### ", names(a.fifties.ByteamRSort)[i], " \n"))
+#   
+# names(a.fifties.ByteamRSort[[i]]) <- niceBatterPefHeads
+# 
+# print(kbl( head(a.fifties.ByteamRSort[[i]],conf$default_list_length), longtable = T, booktabs = T, row.names = F, 
+#            caption=paste("Highest scores for ",names(a.fifties.ByteamRSort)[i])) %>%
+#     kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+#         column_spec(6, width = "10em") %>%
+#     column_spec(7, width = "10em"))
+# cat('\n\n')
+# }
+
+this_caption="Highest scores for "
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(Runs >=50 & team_batting_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(Runs, n=conf$default_list_length) %>%
+select(all_of(H.aspidistra)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption=paste(this_caption,names(conf$teams_of_interest)[[i]])) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+   column_spec(7, width = "10em") %>%
+  # column_spec(8, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+```
+
+
+## Highest strike rate
+```{r top-strike-rates}
+this_caption <- "All-time top strike rates"
+F.batting.us %>% slice_max(SR, n=conf$default_list_length) %>%
+select(all_of(H.aspidistra)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(6, width = "10em") %>%
+  column_spec(7, width = "10em")
+```
+
+## Highest strike rate, for each team
+```{r topSR-byteam, results='asis'}
+# 
+# a.SR.Byteam <- lapply(conf$teams_of_interest, 
+#        function(x){
+#          subset(MbattingBat, team_batting_id==x)
+#        })
+# 
+# a.SR.ByteamSort <- lapply(a.SR.Byteam, 
+#               function(x){
+#                 x[order(x$SR, decreasing = TRUE), hilowBatterheads]
+#               })
+# 
+# 
+# for (i in 1:length(a.SR.ByteamSort)){
+#  cat( paste("### ", names(a.SR.ByteamSort)[i], " \n"))
+#   
+# names(a.SR.ByteamSort[[i]]) <- niceBatterPefHeads
+# 
+# print(kbl( head(a.SR.ByteamSort[[i]],conf$default_list_length), longtable = T, booktabs = T, row.names = F, 
+#            caption=paste("Highest strike rates for ",names(a.SR.ByteamSort)[i])) %>%
+#     kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+#         column_spec(6, width = "10em") %>%
+#     column_spec(7, width = "10em"))
+# cat('\n\n')
+# }
+
+
+
+this_caption="Highest strike rate for "
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(team_batting_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(SR, n=conf$default_list_length) %>%
+select(all_of(H.aspidistra)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption=paste(this_caption,names(conf$teams_of_interest)[[i]])) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+   column_spec(7, width = "10em") %>%
+   #column_spec(8, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+```
+
+## Most balls faced in an innings
+```{r most-balls}
+this_caption <- "Most balls faced"
+F.batting.us %>% slice_max(Balls, n=conf$default_list_length) %>%
+select(all_of(H.aspidistra)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(6, width = "10em") %>%
+  column_spec(7, width = "10em")
+```
+
+## Most balls faced for a score 10 or less
+```{r most-balls-lowscore}
+this_caption <- "Most balls faced for score 10 or less"
+F.batting.us %>% filter(Runs <= 10) %>% slice_max(Balls, n=conf$default_list_length) %>%
+select(all_of(H.aspidistra)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(6, width = "10em") %>%
+  column_spec(7, width = "10em")
+```
+
+## Most sixes in an innings
+```{r most-sixes}
+this_caption <- "Most sixes in an innings"
+F.batting.us %>% slice_max(`6`, n=conf$default_list_length) %>%
+select(all_of(H.hibiscus)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(8, width = "10em") %>%
+  column_spec(9, width = "10em")
+```
+
+### Sixes so far this season
+```{r sixes-thisyear}
+this_caption <- "Sixes, this year"
+
+B.battingAveragesTY %>% filter(club_id == conf$club_of_interest & !is.na(Name) & !is.na(`4s`) & !is.na(`6s`)) %>%
+  arrange(desc(`6s`), desc(`4s`)) %>%
+  slice_max(`6s`, n=conf$default_list_length) %>%
+    select(all_of(H.buckthorn)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) 
+```
+
+## Most fours in an innings, for each team
+```{r top4s-byteam, results='asis'}
+# 
+# a.4s.Byteam <- lapply(conf$teams_of_interest, 
+#        function(x){
+#          subset(MbattingBat, team_batting_id==x)
+#        })
+# 
+# a.4s.ByteamSort <- lapply(a.4s.Byteam, 
+#               function(x){
+#                 x[order(x$fours, decreasing = TRUE), hilowBatterheadsBound]
+#               })
+# 
+# 
+# for (i in 1:length(a.4s.ByteamSort)){
+#  cat( paste("### ", names(a.4s.ByteamSort)[i], " \n"))
+#   
+# names(a.4s.ByteamSort[[i]]) <- niceBatterPefHeadsBound
+# 
+# print(kbl( head(a.4s.ByteamSort[[i]],conf$default_list_length), longtable = T, booktabs = T, row.names = F, 
+#            caption=paste("Most fours in an innings for ",names(a.4s.ByteamSort)[i])) %>%
+#     kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+#         column_spec(8, width = "10em") %>%
+#     column_spec(9, width = "10em"))
+# cat('\n\n')
+# }
+
+this_caption="Most fours in an innings for "
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(team_batting_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(`4`, n=conf$default_list_length) %>%
+select(all_of(H.hibiscus)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption=paste(this_caption,names(conf$teams_of_interest)[[i]])) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   #column_spec(6, width = "5em") %>%
+   column_spec(8, width = "10em") %>%
+   column_spec(9, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+```
+
+<!-- ## Unusual dismissals -->
+<!-- Batters in matches in competitions of interest out  -->
+<!-- handled the ball, hit the ball twice, obstructing the field, timed out or hit wicket. -->
+
+<!-- ```{r unusual-dismissals} -->
+<!-- unusual_dismissals <- c("handled ball", "hit ball twice", "obstructing the field", "timed out", "hit wicket") -->
+
+<!-- this_caption <- "Unusual dismissals" -->
+<!-- F.batting.sphere %>% filter(`How Out` %in% unusual_dismissals) %>% arrange(desc(actuallyDate)) %>% -->
+<!-- select(all_of(H.safflower)) %>%  -->
+<!-- kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>% -->
+<!--   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>% -->
+<!--     column_spec(7, width = "8em") %>% -->
+<!--   column_spec(8, width = "8em") %>% -->
+<!--   column_spec(9, width= "7em" ) -->
+
+
+<!-- ``` -->
+
+## Carried bat
+Position 1 or 2 and not out. Care! May not be accurate if retirements involved.
+Showing the most recent `r conf$default_list_length`
+
+```{r carried-bat}
+this_caption <- "Carried bat"
+F.batting.us %>% filter(Pos %in% c("1","2") & `How Out`=="not out") %>% arrange(desc(Runs)) %>%
+    slice_max(actuallyDate, n=conf$default_list_length) %>%
+select(all_of(H.lily)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(7, width = "10em") %>%
+  column_spec(8, width = "10em")
+```
+
+## Monopolised batting
+More than 60\% of the team's runs. Excludes scores of less than 10.
+
+```{r batting-monopoly}
+this_caption <- "Monopolised runs"
+
+F.batting.us %>% filter(contributionpc >= 0.6 & Runs >= 10) %>% arrange(desc(contributionpc)) %>%
+select(all_of(H.thistle)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "8em") %>%
+   column_spec(6, width = "5em") %>%
+   column_spec(7, width = "9em")
+```
+
+## Primaries this year
+```{r primaries}
+this_caption <- "Primaries"
+F.batting.us %>% filter(Runs == 0  & Balls<= 1 & `How Out`!="not out" & year==conf$year_of_interest) %>%
+arrange(desc(actuallyDate)) %>%
+select(all_of(H.aspidistra)) %>%
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    column_spec(6, width = "10em") %>%
+  column_spec(7, width = "10em")
+```
+
+\newpage 
+# Bowling
+## Averages, all-time
+
+Showing most wickets first
+
+```{r bowl-avgs-alltime}
+this_caption <- "Bowling averages, all time"
+
+B.bowlingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(W), R) %>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Averages, this year
+```{r bowl-avgs-thisyear}
+this_caption <- "Bowling averages, this year"
+
+B.bowlingAveragesTY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(W), R) %>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Approaching milestones
+```{r approaching-milestones-bowl}
+this_caption <- "Approaching career total wicket milestones"
+
+B.bowlingAverages %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% 
+    filter((W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
+    arrange(desc(W), Avg) %>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) #%>%
+```
+
+## Best career economy
+
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
+```{r bowl-avgs-alltime-lowecon}
+this_caption <- "Lowest economy, all time"
+
+B.bowlingAverages %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
+  slice_min(Econ, n=conf$default_list_length)%>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Best career average
+
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
+```{r bowl-avgs-alltime-lowavg}
+this_caption <- "Lowest average, all time"
+
+B.bowlingAverages %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
+  slice_min(Avg, n=conf$default_list_length)%>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Most career five-fors
+
+```{r bowl-avgs-alltime-most5}
+this_caption <- "Most five-fors, all time"
+
+B.bowlingAverages %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
+  arrange(Avg) %>%
+  slice_max(`5wi`, n=conf$default_list_length)%>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Highest average with a five-for
+
+### Our club
+```{r bowl-avgs-with-5for}
+this_caption <- "Highest averages including a five-for, this season"
+
+B.bowlingAveragesTY %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & `5wi` >= 1) %>%
+  
+  slice_max(Avg, n=conf$default_list_length)%>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+### All clubs in dataset
+```{r bowl-avgs-with-5for-sphere}
+this_caption <- "Highest averages including a five-for, this season"
+
+B.bowlingAveragesTY %>% 
+  filter(!is.na(Name) & `5wi` >= 1) %>%
+  
+  slice_max(Avg, n=conf$default_list_length)%>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+## Four-fors this year
+```{r fourfor-this-year}
+this_caption <- "Four-fors this season"
+a.numfourfors <- nrow(F.bowling.us %>% filter(W>=4 & year==conf$year_of_interest))
+```
+There have been `r a.numfourfors` four-fors so far this season.
+```{r fourfor-this-year-2}
+F.bowling.us %>% filter(W>=4 & year==conf$year_of_interest) %>% arrange(desc(W), R) %>%
+    select(all_of(H.cyclamen)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+
+## Four-fors without a team win
+Showing most recent `r conf$default_list_length`:
+```{r fourfor-no-win}
+this_caption <- "Four-fors without team win"
+
+F.bowling.us %>% filter(W >=4 & Res!="W" ) %>% slice_max(actuallyDate, n=conf$default_list_length) %>%
+select(all_of(H.marigold)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+  column_spec(7, width = "8em") %>%
+  column_spec(8, width = "8em") %>%
+  column_spec(9, width = "8em")
+```
+
+## Recent four-fors, for each team
+Showing most recent `r conf$default_list_length`:
+
+```{r fourfors-byteam, results='asis'}
+#conf$teams_of_interest[[i]]
+this_caption="Recent four-fors for "
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.bowling.us %>% filter(W >=4 & team_fielding_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(actuallyDate, n=conf$default_list_length) %>%
+select(all_of(H.marigold)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption=paste(this_caption,names(conf$teams_of_interest)[[i]])) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+   column_spec(8, width = "7em") %>%
+   column_spec(9, width = "7em") %>%
+
+    print()
+  
+  cat ('\n\n')
+}
+
+
+```
+
+
+## Dry spells
+In current season:
+
+```{r no-wickets}
+this_caption <- "No wickets, highest runs conceded"
+
+F.bowling.us %>% filter(W ==0 & year==conf$year_of_interest ) %>%
+  slice_max(R, n=conf$default_list_length) %>%
+select(all_of(H.marigold)) %>%
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%
+   column_spec(6, width = "5em") %>%
+   column_spec(8, width = "7em") %>%
+   column_spec(9, width = "7em")
+
+```
+
+## Outstanding analysis
+
+### All years in dataset, our club
+```{r strong-analysis-us}
+this_caption <- "Outstanding analysis, our club, all years"
+F.bowling.us  %>% arrange(desc(W), R) %>%
+  slice_max(W, n=conf$default_list_length, with_ties = F) %>%
+    select(all_of(H.cyclamen)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+### This year, in our competitions
+```{r strong-analysis-sph}
+this_caption <- "Outstanding analysis, our competitions, this year"
+F.bowling.sphere %>% filter(year == conf$year_of_interest)  %>% arrange(desc(W), R) %>%
+  slice_max(W, n=conf$default_list_length, with_ties = F) %>%
+    select(all_of(H.sunflower)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(6, width = "5em") %>%
+     column_spec(7, width = "6em") %>%
+   column_spec(8, width = "7em") %>%
+   column_spec(9, width = "7em")
+```
+
+## Bowling through
+This includes all innings, with no minimum length.
+
+```{r bowl-through}
+this_caption <- "Bowling all innings, our club, this year"
+F.bowling.us  %>% 
+  filter(O >= (inns_ovs_whole %/% 2) & year == conf$year_of_interest) %>%
+  arrange(desc(W), R) %>%
+    select(all_of(H.cyclamen)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+       column_spec(7, width = "8em") %>%
+   column_spec(8, width = "8em")
+```
+
+\newpage
+
+# Team records -- `r conf$club_name`
+
+## Our recent innings
+```{r recent-inns}
+this_caption <- "Recent club innings"
+
+F.inningses.us %>% slice_max(actuallyDate, n=conf$default_list_length) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+
+##FIXME this should be matches presented in a nice format
+```
+
+
+## Highest innings totals
+
+### Our competitions
+```{r high-inns-sphere}
+this_caption <- "Highest innings in our competitions"
+
+F.inningses.sphere %>% slice_max(Runs, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+```
+
+### Our matches at home grounds
+```{r high-inns-home}
+this_caption <- "Highest innings scored at home grounds"
+
+F.inningses.circle %>% filter(ground_id %in% conf$home_grounds) %>% slice_max(Runs, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+
+```
+
+### Our matches at away grounds
+```{r high-inns-away}
+this_caption <- "Highest innings scored at away grounds"
+
+F.inningses.circle %>% filter(!ground_id %in% conf$home_grounds) %>% slice_max(Runs, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+
+```
+
+## Highest innings totals losing one or no wickets
+### Our competition
+```{r high-inns-sphere-for1}
+this_caption <- "Highest innings in our competitions for one or no wicket"
+
+F.inningses.sphere %>% filter(W <= 1) %>% slice_max(Runs, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+```
+
+### Our matches
+```{r high-inns-circle-for1}
+this_caption <- "Highest innings in our matches for one or no wicket"
+
+F.inningses.circle %>% filter(W <= 1) %>% slice_max(Runs, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+```
+
+
+## Lowest innings totals
+
+Matches recorded as abandoned are excluded. Note that this also includes winning totals which reached 
+an opponent's low total.
+
+### Our competitions
+```{r low-inns-sphere}
+this_caption <- "Lowest innings in our competitions"
+
+F.inningses.sphere %>% filter(Res !="A"  & Res !="C" & Runs != 0) %>% slice_min(Runs, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+```
+
+### Our matches at home grounds
+```{r low-inns-home}
+this_caption <- "Lowest innings scored at home grounds"
+
+F.inningses.circle %>% 
+  filter(ground_id %in% conf$home_grounds & Res !="A" & Res !="C" & Runs != 0) %>% slice_min(Runs, n=conf$default_list_length ) %>%
+  select(all_of(H.dianthus)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+
+```
+
+### Our matches at away grounds
+```{r low-inns-away}
+this_caption <- "Lowest innings scored at away grounds"
+
+F.inningses.circle %>% 
+  filter(!ground_id %in% conf$home_grounds  & Res !="A" & Res !="C" & Runs != 0) %>%
+  slice_min(Runs, n=conf$default_list_length ) %>%
+  select(all_of(H.dianthus)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+
+```
+
+## Ties
+```{r ties}
+this_caption <- "Tied innings"
+
+F.inningses.sphere %>% filter(Res =="T") %>% arrange(desc(actuallyDate)) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+```
+
+## Most extras
+
+This section appears to contain spurious results.
+
+### Our competition
+```{r extras-sphere}
+this_caption <- "Most extras in our competition"
+
+F.inningses.sphere %>% slice_max(Extras, n=conf$default_list_length ) %>% 
+  select(all_of(H.rudbeckia)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+  column_spec(5, width = "8em") %>%
+   column_spec(6, width = "10em") %>%
+   column_spec(7, width = "10em")
+
+```
+
+### Our matches
+```{r extras-circle}
+this_caption <- "Most extras in our matches"
+
+F.inningses.circle %>% slice_max(Extras, n=conf$default_list_length ) %>% 
+  select(all_of(H.rudbeckia)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+  column_spec(5, width = "8em") %>%
+   column_spec(6, width = "10em") %>%
+   column_spec(7, width = "10em")
+
+```
+
+## No byes conceded for total of 100 or more
+```{r no-byes-100-total}
+this_caption <- "No byes conceded for total of 150 runs or more, this season"
+
+F.inningses.circle %>% filter(Runs >= 150 & Byes == 0 & year == conf$year_of_interest) %>% arrange(desc(Runs))%>% 
+  select(all_of(H.wolfsbane)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+  column_spec(5, width = "8em") %>%
+   column_spec(6, width = "10em") %>%
+   column_spec(7, width = "10em")
+
+```
+
+## High successful chases
+```{r high-chase}
+this_caption <- "Highest successful run chases"
+
+F.inningses.sphere %>% filter(match_innings == 2 & Res == "W") %>% slice_max(Runs, n=conf$default_list_length) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em")
+```
+
+## Highest match aggregate
+This section appears to contain spurious results.
+
+In all of our competitions
+```{r high-match-agg}
+this_caption <- "Highest match aggregate"
+
+B.matches %>% filter(is_sphere) %>% slice_max(Aggregate, n=conf$default_list_length) %>% 
+  select(all_of(H.freesia)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "10em") %>%
+   column_spec(2, width = "10em") %>%
+   column_spec(4, width = "10em")
+
+```
+
+## Most runs for a club in a day
+```{r daily-agg}
+this_caption <- "Highest daily aggregate for this club"
+zxc <- aggregate(B.inningses$Runs, by=list(date = B.inningses$actuallyDate, club = B.inningses$club_id_bat), FUN="sum")
+zxclen <- aggregate(B.inningses$Team, by=list(date = B.inningses$actuallyDate, club = B.inningses$club_id_bat), FUN="length")
+zxc$clubChr <- as.character(zxc$club)
+xcv <- left_join(zxc, D.club[,c("id", "name")], by = c("clubChr" ="id" ))
+cvb <- left_join(xcv, zxclen, by = c("date" = "date", "club" = "club"))
+
+a.runsinday <- cvb[cvb$club == as.character(conf$club_of_interest),c("date", "name", "x.x", "x.y")]
+#slice_max(a.runsinday, x.x, n=25)
+rm(zxc); rm(zxclen); rm(xcv); rm(cvb)
+
+a.runsinday %>%
+  rename(Club = name,
+         Date = date,
+         Aggregate = x.x,
+         `No. of innings` = x.y,
+         ) %>%
+
+  slice_max(Aggregate, n=conf$default_list_length) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+  
+
+```
+
+### All clubs in dataset
+```{r daily-agg-all}
+this_caption <- "Highest daily club aggregate"
+zxc <- aggregate(B.inningses$Runs, by=list(date = B.inningses$actuallyDate, club = B.inningses$club_id_bat), FUN="sum")
+zxclen <- aggregate(B.inningses$Team, by=list(date = B.inningses$actuallyDate, club = B.inningses$club_id_bat), FUN="length")
+zxc$clubChr <- as.character(zxc$club)
+xcv <- left_join(zxc, D.club[,c("id", "name")], by = c("clubChr" ="id" ))
+cvb <- left_join(xcv, zxclen, by = c("date" = "date", "club" = "club"))
+
+a.runsinday <- cvb[,c("date", "name", "x.x", "x.y")]
+#slice_max(a.runsinday, x.x, n=25)
+rm(zxc); rm(zxclen); rm(xcv); rm(cvb)
+
+a.runsinday %>%
+  rename(Club = name,
+         Date = date,
+         Aggregate = x.x,
+         `No. of innings` = x.y,
+         ) %>%
+
+  slice_max(Aggregate, n=conf$default_list_length) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+  
+
+```
+
+## Longest run of wins
+This section may give unexpected results if more than one match played in a day.
+
+It also appears to unhelpfully skip over missing data. 
+
+```{r long-run-win, results='asis'}
+# Although I wrote this I have no idea what I did to make it work, but it seems to.
+this_caption <- "Long runs of consecutive wins"
+for (i in 1:length(conf$teams_of_interest)) {
+  cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+  zxc <- F.inningses.us %>% filter(team_batting_id == conf$teams_of_interest[[i]]) %>% arrange(desc(actuallyDate))
+  zz <- zxc %>% pull(Res) %>% as.vector %>% rle()
+  xcv <- tibble(l=zz$lengths, v= zz$values)
+  # zz %>% filter(values == "W") %>% max()
+  #yy %>% filter(v == "W") %>% slice_max(l)
+  xcv$cse <- cumsum(xcv$l)
+  xcv$cs <- xcv$cse - xcv$l + 1
+  xx <- xcv %>% filter(v == "W") %>% slice_max(l)
+  xx$Length <- xx$l
+  xx$FromDate <- zxc[xx$cse,c(6)]
+  xx$FromOppos <- zxc[xx$cse,c(42)]
+  xx$ToDate <- zxc[xx$cs,c(6)]
+  xx$ToOppos <- zxc[xx$cs,c(42)]
+  xx %>% 
+    
+    select(c(Length, FromDate, FromOppos, ToDate, ToOppos)) %>% 
+    kbl(longtable = T, booktabs = T, row.names = F, caption = paste(this_caption, names(conf$teams_of_interest)[i] )) %>%
+    #latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"]) )) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat ('\n\n')
+  rm(zxc); rm(zz); rm(xcv); rm(xx)
+}
+
+```
+
+
+## Longest run of losses
+
+```{r long-run-loss, results='asis'}
+this_caption <- "Long runs of consecutive losses"
+for (i in 1:length(conf$teams_of_interest)) {
+  cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+  zxc <- F.inningses.us %>% filter(team_batting_id == conf$teams_of_interest[[i]]) %>% arrange(desc(actuallyDate))
+  zz <- zxc %>% pull(Res) %>% as.vector %>% rle()
+  xcv <- tibble(l=zz$lengths, v= zz$values)
+  # zz %>% filter(values == "W") %>% max()
+  #yy %>% filter(v == "W") %>% slice_max(l)
+  xcv$cse <- cumsum(xcv$l)
+  xcv$cs <- xcv$cse - xcv$l + 1
+  xx <- xcv %>% filter(v == "L") %>% slice_max(l)
+  xx$Length <- xx$l
+  xx$FromDate <- zxc[xx$cse,c(6)]
+  xx$FromOppos <- zxc[xx$cse,c(42)]
+  xx$ToDate <- zxc[xx$cs,c(6)]
+  xx$ToOppos <- zxc[xx$cs,c(42)]
+  xx %>% 
+    
+    select(c(Length, FromDate, FromOppos, ToDate, ToOppos)) %>% 
+    kbl(longtable = T, booktabs = T, row.names = F, caption = paste(this_caption, names(conf$teams_of_interest)[i] )) %>%
+    #latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"]) )) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat ('\n\n')
+  rm(zxc); rm(zz); rm(xcv); rm(xx)
+}
+
+```
+
+## Shortest completed matches
+In all of our competitions. 
+
+This section appears to contain spurious results, and does not account for eight-ball 
+overs in evening games.
+
+```{r short-complete}
+this_caption <- "Shortest completed matches"
+
+B.matches %>% filter(is_sphere & toss !="" & result_applied_to != "") %>% slice_min(`decimal_overs`, n=conf$default_list_length) %>% 
+  select(all_of(H.freesia)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(2, width = "12em") %>%
+   column_spec(4, width = "10em")
+
+```
+## Proportions of extras
+In matches with a result only, in our competitions of interest
+
+```{r extras-prop, warning=FALSE, fig.height=4}
+F.inningses.sphere %>% filter(Res %in% c("L", "W")) %>%
+
+ggplot(aes(extras_proportion, Res)) +
+geom_boxplot() +
+  xlab("Proportion of extras in innings") +
+  ylab("Result") +
+  scale_x_continuous(labels = scales::percent)
+
+```
+
+```{r extras-prop-crit, results='asis'}
+foo <- glm(Res ~ extras_proportion, F.inningses.sphere[F.inningses.sphere$Res %in% c("W", "L"),], family = binomial)
+## todo  - read about logistic regression
+a.extraspropwincrit <-  paste(format(( (0-foo$coefficients[[1]]) / foo$coefficients[[2]]) * 100, digits = 3),"%")
+#exp(confint(foo))
+cat("The critical point between likely win and likely loss is ", a.extraspropwincrit)
+#summary(foo)
+rm(foo)
+```
+
+
+<!-- ## Temperature -->
+<!-- Do teams score more first innings runs when it is warm? Warning -- this is just for -->
+<!-- fun, and uses unvalidated data for the maximum temperature in Cambridge on each day. -->
+
+<!-- ```{r runs-and-temp,  warning=FALSE, fig.height=4, message=FALSE} -->
+
+<!-- ggplot(F.inningses.sphere[F.inningses.sphere$match_innings==1,], aes(Runs, maxtemp)) + -->
+<!--     geom_point() + -->
+<!--     geom_smooth() + -->
+<!--   ylab("Max temp in Cambridge, degrees C") + -->
+<!--   xlab("First innings total") -->
+
+<!-- ``` -->
+
+
+<!-- ```{r runs-and-temp-coeffs, results='asis'} -->
+
+<!-- zxc <- lm(F.inningses.sphere$Runs[F.inningses.sphere$match_innings==1] ~ F.inningses.sphere$maxtemp[F.inningses.sphere$match_innings==1]) -->
+
+<!-- xcv <- confint(zxc) -->
+<!-- #summary(zxc) -->
+
+<!-- cat("Each degree rise in temperature increases first innings total by", -->
+<!--       round(zxc[[1]][[2]], digits=2), "runs (95% CI:", -->
+<!--       round(xcv[[2]][[1]], digits=2),",", round(xcv[[4]][[1]], digits=2), ").") -->
+<!-- ``` -->
+
+
+
+\newpage
+
+# Opponents Report
+
+## Batting averages, this year
+```{r oppo-avgs, results='asis'}
+
+this_caption="Opponent batting averages -- "
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+B.battingAveragesTY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% arrange(desc(Runs)) %>%
+    select(all_of(H.aster)) %>% 
+    kbl(longtable = T, booktabs = T, row.names = F, caption = paste(this_caption, "opp" )) %>%
+      #latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"]) )) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat ('\n\n')
+}
+```
+
+## Bowling averages, this year
+```{r oppo-bowl-avgs, results='asis'}
+
+this_caption="Opponent bowling averages -- "
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+B.bowlingAveragesTY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% arrange(desc(W)) %>%
+    select(all_of(H.clematis)) %>% 
+    kbl(longtable = T, booktabs = T, row.names = F, caption = paste(this_caption, "opp" )) %>%
+      #latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"]) )) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat ('\n\n')
+}
+```
+
+
+## Approaching batting milestones
+```{r opp-approaching-milestones-bat, results='asis'}
+this_caption <- "Career total run milestones -- "
+
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+B.battingAverages %>% filter(club_id == conf$opponents_of_interest[[i]] & !is.na(Name)) %>% 
+    filter((Runs >= 400 & Runs < 500) | (Runs >= 900 & Runs < 1000)) %>%
+    arrange(desc(Runs)) %>%
+    select(all_of(H.aster)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+
+
+```
+
+## Approaching bowling milestones
+```{r opp-approaching-milestones-bowl, results='asis'}
+this_caption <- "Career total wicket milestones -- "
+
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+B.bowlingAverages %>% filter(club_id == conf$opponents_of_interest[[i]] & !is.na(Name)) %>% 
+    filter((W >= 45 & W < 50) |(W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
+    arrange(desc(W)) %>%
+    select(all_of(H.clematis)) %>% 
+kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat ('\n\n')
+}
+```
+
+## Opponent's recent innings
+```{r recent-inns-opp, results='asis'}
+##FIXME this should be matches presented in a nice format
+this_caption <- "Recent opponent innings -- "
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+B.inningses %>% filter(club_id_bat == conf$opponents_of_interest[[i]]) %>% slice_max(actuallyDate, n=conf$default_list_length) %>% 
+  select(all_of(H.dianthus)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = paste(this_caption, "opp" )) %>% 
+  # latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"]) )) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(5, width = "12em") %>%
+   column_spec(6, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+```
+
+## Top batting in matches between us and opposition
+```{r bestbat-opp, results='asis'}
+this_caption <- "Batting against "
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+F.batting.circle %>% filter(club_id_bat == conf$opponents_of_interest[[i]] | club_id_field == conf$opponents_of_interest[[i]] ) %>% 
+  
+  slice_max(Runs, n=conf$default_list_length) %>% 
+  select(all_of(H.aspidistra)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = paste(this_caption, "opp" )) %>%
+  #latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"] ))) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(6, width = "10em") %>%
+   column_spec(7, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+```
+
+
+## Top bowling in matches between us and opposition
+```{r bestbowl-opp, results='asis'}
+this_caption <- "Bowling against "
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("### ",  D.club[D.club$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+F.bowling.circle %>% filter(club_id_bat == conf$opponents_of_interest[[i]] | club_id_field == conf$opponents_of_interest[[i]] ) %>% 
+ arrange(desc(W), R) %>%
+  slice_max(W, n=conf$default_list_length, with_ties = F) %>%
+  select(all_of(H.cyclamen)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = paste(this_caption, "opp" )) %>%
+  #latexify(D.club[D.club$id==conf$opponents_of_interest[i],"name"] ))) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(7, width = "10em") %>%
+   column_spec(8, width = "10em") %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+```
+
+\newpage
+
+# R session information
+Data collected from Play-Cricket in late August 2022.
+
+```{r session-info}
+
+sessionInfo()
+```
+
+# Notes
+
+The underlying dataset is collected from play-cricket and then processed and analysed. This 
+report will therefore not include data which is missing from play-cricket, and will replicate
+errors from there. 
+
+Missing data is interpreted as nicely as feels sensible, but in general is simply ignored,
+ie as if it were not present at all.
+This may extend to the exclusion of part-complete data, possibly giving incorrect 
+aggregate or average figures.
+
+The author would appreciate being made aware of possible errors so they can be explored.
+
+No responsibility is taken for any purpose to which this report may be put. It should be 
+viewed as mere entertainment, or for scholarly statistical purposes^[which are,
+of course, inherently entertaining], and not relied upon as the sole judge of performance.
