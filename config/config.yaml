@@ -1,21 +1,27 @@
 ---
 document_title: Milton Stats
-year_of_interest: "2022"
+year_of_interest: "2023"
 default_list_length: 12
 club_of_interest: "4363"
 club_name: "Milton CC"
 
 teams_of_interest:
- Firsts: "9865"
- Seconds: "9866"
- Thirds: "9867"
- Midweek: "161677"
- Friendly: "9868"
+    Firsts: "9865"
+    Seconds: "9866"
+    Thirds: "9867"
+    Midweek: "161677"
+    Friendly: "9868"
  
 opponents_of_interest: 
- - "14848"
- - "12697"
-
+# - "14848"
+# - "12697"
+ - "8183"
+ 
+leagues_of_interest:
+ - 7387 # national village cup
+ - 269 # Cambridgeshire & Huntingdonshire Premier League
+ - 10270 # Business House League
+ 
 competitions_of_interest:
  - 101141
  - 101150
@@ -42,11 +48,15 @@ competitions_of_interest:
  - 92007
  - 97940
 #- 109169 #CCA Sen 1
-#- 109170 #CCA Sen 2
+ - 109170 #CCA Sen 2
 #- 109171 #CCA Sen 3
-#- 109183 #CCA J5 S
+ - 109178 #CCA J3 W
+ - 109181 #CCA J4 W
+ - 60209 # 2023 Lower Junior Cup
+ - 60210 # 2023 T20 Walker Cup
+ - 114420 # 2023 CBHL Div 2
 
-competitions_of_interest_last_curated: "2022-11-27"
+competitions_of_interest_last_curated: "2023-08-25"
 
 home_grounds:
  - 51122

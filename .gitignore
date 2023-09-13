@@ -38,3 +38,8 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
+# the archive of old files
+old/*
+
+# the database key
+config/db-key.yaml

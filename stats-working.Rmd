@@ -1,0 +1,223 @@
+---
+title: "Milton Stats"
+#subtitle: "Season 2023"
+author: "Niall Taylor"
+date: "`r Sys.Date()`"
+toc: true
+toc_depth: 1
+classoption: a4paper
+#documentclass: cricalm
+documentclass: article
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+#source("get-data.R")
+#source("../parse-raw-data.R", local = knitr::knit_global())
+#load("./data/*")
+load("./data/EbatAvgTY")
+load("./data/BbatAvg")
+load("./data/Bbatting")
+load("./data/EbowlAvgTY")
+load("./data/BbowlAvg")
+load("./data/Bbowling")
+load("./data/Edates")
+load("./data/Bfielding")
+load("./data/Binningses")
+load("./data/Ematches")
+load("./data/Eplayers")
+load("./data/EplayersNC")
+
+## load the config
+library(yaml)
+conf <- yaml.load_file("./config/config.yaml")
+#conf$club_of_interest_name <- D.club$name[D.club$id== conf$club_of_interest] # this isn't neat, so just set it by hand in the yaml
+# load other packages
+library(tidyr)
+library(dplyr)
+library(kableExtra)
+library(ggplot2)
+#library(dplR) # provides latexify, need this for club names containing \&
+
+# filter out for the club of interest
+F.batting.us <- filter(B.batting, us_batting==TRUE)
+F.batting.circle <- filter(B.batting,is_circle==TRUE) 
+F.batting.sphere <- filter(B.batting,is_sphere==TRUE) 
+
+F.bowling.us <- filter(B.bowling, us_fielding==TRUE)
+F.bowling.circle <- filter(B.bowling,is_circle==TRUE) 
+F.bowling.sphere <- filter(B.bowling,is_sphere==TRUE) 
+
+F.inningses.us <- filter(B.inningses,us_batting==TRUE) 
+F.inningses.circle <- filter(B.inningses,is_circle==TRUE) 
+F.inningses.sphere <- filter(B.inningses,is_sphere==TRUE) 
+
+F.fielding.us <- filter(B.fielding, us_fielding==TRUE) 
+F.fielding.circle <- filter(B.fielding,is_circle==TRUE) 
+F.fielding.sphere <- filter(B.fielding,is_sphere==TRUE) 
+
+# get players for the club of interest
+#MPbatters<- unique(MbattingBat$batsman_id) # FIXME
+
+## Configure some heading sets for nice display
+H.freesia   <- c("Home", "Away", "Date", "Ground", "Aggregate", "Overs in match")
+H.dianthus  <- c("Team", "Score", "Ovs",           "Date", "Oppos","Ground", "Res")
+H.rudbeckia <- c("Team", "Score", "Ovs", "Extras", "Date", "Oppos","Ground", "Res")
+H.wolfsbane <- c("Team", "Score", "Ovs", "Byes",   "Date", "Oppos","Ground", "Res")
+
+H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
+    
+H.buckthorn <- c("Name", "Runs", "Inns", "NO", "Avg", "HS",                                      "6s", "4s")
+
+H.aspidistra <-  c("Name", "Runs",           "Balls", "SR",           "Date",         "Fielding Club", "Ground", "Ven")
+
+H.F.aspidistra <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+     column_spec(6, width = "8em") %>%
+   column_spec(7, width = "8em")
+
+H.lily <-        c("Name", "Runs",           "Balls", "SR",           "Date", "Team", "Oppos", "Ground",       "Res")
+H.hibiscus <-    c("Name", "Runs", "4", "6" ,"Balls", "SR",           "Date",         "Oppos", "Ground")
+H.safflower <-   c("Name", "Runs",           "Balls", "SR", "How Out","Date", "Club", "Oppos", "Ground") 
+H.thistle <-     c("Name", "Runs",           "Balls", "SR",           "Date",         "Oppos", "Ground",       "Res", "Contrib")
+
+H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date",         "Oppos", "Ground", "Ven")
+H.marigold <-  c("Name", "O", "M", "R", "W",  "Date", "Team", "Oppos", "Ground",       "Res")
+H.sunflower <- c("Name", "O", "M", "R", "W",  "Date", "Club", "Oppos", "Ground",       "Res")
+
+H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+
+H.plum <-   c("Name", "Ct", "Std","Date", "Club", "Oppos", "Ground") 
+
+# alyssum, crocosmia, hyacinth, iris, hydrangea, peony, mugwort, gladiolus, carnation, buddleia
+
+H.F.plain <- function(x, this_caption, flower) x %>%  
+  select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = 7) 
+
+```
+
+Season `r conf$year_of_interest`
+
+# This season
+
+## Batting averages
+Strike rates calculated using only innings in which balls faced are recorded. 
+
+Showing most runs first
+
+```{r bat-avgs-thisyear}
+
+E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(Runs)) %>% H.F.plain("Batting averages, this year", H.aster)
+
+```
+
+
+## Fifties this year
+```{r fifties-this-year}
+a.numfifties <- nrow(F.batting.us %>%
+            filter(Runs>=50 & Yr==conf$year_of_interest))
+```
+There have been `r a.numfifties` fifties so far this season.
+```{r fifties-this-year-2}
+F.batting.us %>% filter(Runs>=50 & Yr==conf$year_of_interest) %>%
+  arrange(desc(Runs)) %>%
+   H.F.aspidistra("Fifties this season", H.aspidistra)
+```
+
+## Sixes so far this season
+```{r sixes-thisyear}
+this_caption <- "Sixes, this year"
+
+E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name) & !is.na(`4s`) & !is.na(`6s`)) %>%
+  arrange(desc(`6s`), desc(`4s`)) %>%
+  slice_max(`6s`, n=conf$default_list_length) %>%
+   H.F.plain("Sixes this year", H.buckthorn)
+```
+
+# All-time records
+ `All time' means all of the dataset which is available, which may start
+ after a player did.
+
+## Batting averages
+Strike rates calculated using only innings in which balls faced are recorded.
+
+Showing most runs first
+
+```{r bat-avgs-alltime}
+
+B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
+  arrange(desc(Runs)) %>% H.F.plain("Batting averages, all time", H.aster)
+
+```
+
+## Approaching batting milestones
+```{r approaching-milestones-bat}
+
+B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% 
+    filter((Runs >= 400 & Runs < 500) | (Runs >= 900 & Runs < 1000)) %>%
+    arrange(desc(Runs)) %>% H.F.plain("Approaching career total run milestones", H.aster)
+```
+
+
+## Highest career strike rates
+
+Minimum qualification: `r conf$qualify_balls_faced` balls faced
+```{r bat-avgs-alltime-highSR}
+
+B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name) & BF >= conf$qualify_balls_faced) %>% slice_max(SR, n=conf$default_list_length)%>%
+  H.F.plain("Highest strike-rates, all time", H.aster)
+```
+
+## Top career averages
+
+Minimum qualification: `r conf$qualify_balls_faced` balls faced
+```{r bat-avgs-alltime-highAvg}
+
+B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name) & BF >= conf$qualify_balls_faced) %>% slice_max(Avg, n=conf$default_list_length)%>%
+    H.F.plain("Highest averages, all time", H.aster)
+```
+
+## Most centuries
+```{r centuries}
+this_caption <- "Most centuries"
+B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
+  slice_max(`100`, n=conf$default_list_length) %>%
+   H.F.plain("Most centuries", H.aster)
+```
+
+
+
+\newpage
+
+# R session information
+Data collected from Play-Cricket in August 2023.
+
+```{r session-info}
+
+sessionInfo()
+```
+
+# Notes
+
+The underlying dataset is collected from play-cricket, then processed and analysed. This 
+report will therefore not include data which are missing from play-cricket, and will replicate
+errors from there. It is not, and cannot be, a complete record.
+
+Records with missing data are interpreted as nicely as feels sensible, but in general are 
+simply ignored. This may extend to the exclusion of part-complete data, probably giving
+incorrect aggregate or average figures.
+
+The author would appreciate being made aware of possible errors, so they can be explored.
+
+No responsibility is taken for any purpose to which this report may be put. It should be 
+viewed as mere entertainment, or for scholarly statistical purposes^[which are,
+of course, inherently entertaining], and not relied upon as the sole judge of performance.
+No assessment of an individual's performance is made or implied. 
+
+_Comment is free, but stats are sacred._
