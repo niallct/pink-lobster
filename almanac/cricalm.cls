@@ -6,15 +6,16 @@
 %\RequirePackage{xcolor}
 %\definecolor{slcolor}{HTML}{882B21}
 
+\renewcommand{\footnotesize}{\fontsize{4}{5}\selectfont}
 \renewcommand{\normalsize}{\fontsize{6}{7}\selectfont}
 \renewcommand{\large}{\fontsize{8}{10}\selectfont}
 \renewcommand{\Large}{\fontsize{10}{12}\selectfont}
 
-\setlength{\textwidth}{8cm}
+\setlength{\textwidth}{7.4cm}
 \setlength{\textheight}{14cm}
 \setcounter{secnumdepth}{0}
 
-\usepackage[paperheight=15.8cm,paperwidth=10.2cm,textwidth=9.8cm]{geometry}
+\usepackage[paperheight=15.8cm,paperwidth=10.2cm,textwidth=7.4cm]{geometry}
 %\usepackage[paperheight=16cm,paperwidth=12cm,textwidth=10cm]{geometry}
 %
 

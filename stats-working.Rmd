@@ -67,7 +67,7 @@ H.dianthus  <- c("Team", "Score", "Ovs",           "Date", "Oppos","Ground", "Re
 H.rudbeckia <- c("Team", "Score", "Ovs", "Extras", "Date", "Oppos","Ground", "Res")
 H.wolfsbane <- c("Team", "Score", "Ovs", "Byes",   "Date", "Oppos","Ground", "Res")
 
-H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
+
     
 H.buckthorn <- c("Name", "Runs", "Inns", "NO", "Avg", "HS",                                      "6s", "4s")
 
@@ -79,10 +79,18 @@ H.F.aspidistra <- function(x, this_caption, flower) x %>% select(all_of(flower))
      column_spec(6, width = "8em") %>%
    column_spec(7, width = "8em")
 
-H.lily <-        c("Name", "Runs",           "Balls", "SR",           "Date", "Team", "Oppos", "Ground",       "Res")
-H.hibiscus <-    c("Name", "Runs", "4", "6" ,"Balls", "SR",           "Date",         "Oppos", "Ground")
-H.safflower <-   c("Name", "Runs",           "Balls", "SR", "How Out","Date", "Club", "Oppos", "Ground") 
-H.thistle <-     c("Name", "Runs",           "Balls", "SR",           "Date",         "Oppos", "Ground",       "Res", "Contrib")
+H.lily <-        c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground",       "Res")
+H.hibiscus <-    c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground", "4", "6")
+H.safflower <-   c("Name", "Runs", "Balls", "SR", "Date", "Batting Club", "Fielding Club", "Ground", "How Out") 
+H.thistle <-     c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground",       "Res", "Contrib")
+
+H.F.lilyfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)  %>%  
+   column_spec(6, width = "5em") %>%
+   column_spec(7, width = "8em") %>%
+   column_spec(8, width = "8em")
+
 
 H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date",         "Oppos", "Ground", "Ven")
 H.marigold <-  c("Name", "O", "M", "R", "W",  "Date", "Team", "Oppos", "Ground",       "Res")
@@ -92,7 +100,9 @@ H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
 
 H.plum <-   c("Name", "Ct", "Std","Date", "Club", "Oppos", "Ground") 
 
-# alyssum, crocosmia, hyacinth, iris, hydrangea, peony, mugwort, gladiolus, carnation, buddleia
+
+
+H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
 
 H.F.plain <- function(x, this_caption, flower) x %>%  
   select(all_of(flower)) %>% 
@@ -100,6 +110,10 @@ H.F.plain <- function(x, this_caption, flower) x %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
                 font_size = 7) 
 
+
+
+
+# alyssum, crocosmia, hyacinth, iris, hydrangea, peony, mugwort, gladiolus, carnation, buddleia
 ```
 
 Season `r conf$year_of_interest`
@@ -138,6 +152,39 @@ E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name) & !is.na(
   arrange(desc(`6s`), desc(`4s`)) %>%
   slice_max(`6s`, n=conf$default_list_length) %>%
    H.F.plain("Sixes this year", H.buckthorn)
+```
+
+## Fifties without a team win
+Showing most recent `r conf$default_list_length`:
+```{r fifties-no-win}
+F.batting.us %>% filter(Runs >=50 & Res!="W" & Yr==conf$year_of_interest) %>% 
+  slice_max(actuallyDate, n=conf$default_list_length) %>%
+ H.F.lilyfam("Fifties without team win", H.lily)
+```
+
+
+## Recent fifties, for each team
+Showing most recent `r conf$default_list_length`:
+
+```{r fifties-byteam, results='asis'}
+
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(Runs >=50 & batting_team_id == conf$teams_of_interest[[i]] & Yr==conf$year_of_interest) %>% 
+  slice_max(actuallyDate, n=conf$default_list_length) %>%
+   H.F.lilyfam(paste("Recent fifties for ",names(conf$teams_of_interest)[[i]]), H.lily) %>% 
+  print()
+  cat ('\n\n')
+}
+
+```
+
+## Primaries this year
+```{r primaries}
+F.batting.us %>% filter(Runs == 0  & Balls<= 1 & `How Out`!="not out" & Yr==conf$year_of_interest) %>%
+arrange(desc(actuallyDate)) %>%
+ H.F.aspidistra("Primaries", H.aspidistra)
 ```
 
 # All-time records
@@ -191,7 +238,114 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
    H.F.plain("Most centuries", H.aster)
 ```
 
+## Top individual scores
+```{r top-bat-performances}
+F.batting.us %>% slice_max(Runs, n=conf$default_list_length) %>%
+   H.F.aspidistra("All-time top scores", H.aspidistra)
+```
 
+## Highest strike rates
+```{r top-strike-rates}
+F.batting.us %>% slice_max(SR, n=conf$default_list_length) %>%
+  H.F.aspidistra("All-time top strike rates", H.aspidistra)
+```
+
+
+## Top performances for each team
+```{r topbat-byteam, results='asis'}
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(Runs, n=conf$default_list_length) %>%
+H.F.aspidistra(paste("Highest scores for ",names(conf$teams_of_interest)[[i]]), H.aspidistra) %>%
+    print()
+  
+  cat ('\n\n')
+}
+```
+
+## Highest strike rate, for each team
+```{r topSR-byteam, results='asis'}
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(SR, n=conf$default_list_length) %>%
+H.F.aspidistra(paste("Highest strike rate for ",names(conf$teams_of_interest)[[i]]), H.aspidistra) %>%
+    print()
+  
+  cat ('\n\n')
+}
+
+```
+
+
+## Monopolised batting
+More than 60\% of the team's runs. Excludes scores of less than 10.
+
+```{r batting-monopoly}
+F.batting.us %>% filter(contribpc >= 0.6 & Runs >= 10) %>% arrange(desc(contribpc)) %>%
+H.F.lilyfam( "Monopolised runs", H.thistle)
+```
+
+
+## Most balls faced in an innings
+```{r most-balls}
+this_caption <- "Most balls faced"
+F.batting.us %>% slice_max(Balls, n=conf$default_list_length) %>%
+  H.F.aspidistra("Most balls faced", H.aspidistra)
+```
+
+## Most balls faced for a score 10 or less
+```{r most-balls-lowscore}
+this_caption <- "Most balls faced for score 10 or less"
+F.batting.us %>% filter(Runs <= 10) %>% slice_max(Balls, n=conf$default_list_length) %>%
+  H.F.aspidistra("Most balls faced", H.aspidistra)
+```
+
+## Most sixes in an innings
+```{r most-sixes}
+this_caption <- "Most sixes in an innings"
+F.batting.us %>% slice_max(`6`, n=conf$default_list_length) %>%
+H.F.lilyfam("Most sixes in an innings", H.hibiscus)
+```
+
+
+## Most fours in an innings, for each team
+```{r top4s-byteam, results='asis'}
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(`4`, n=conf$default_list_length) %>%
+  H.F.lilyfam(paste("Most fours in an innings for " , names(conf$teams_of_interest)[[i]]), H.hibiscus) %>%
+    print()
+  cat ('\n\n')
+}
+
+```
+
+## Carried bat
+Position 1 or 2 and not out. Care! May not be accurate if retirements involved.
+Showing the most recent `r conf$default_list_length`
+
+```{r carried-bat}
+F.batting.us %>% filter(Pos %in% c("1","2") & `How Out`=="not out") %>% arrange(desc(Runs)) %>%
+    slice_max(actuallyDate, n=conf$default_list_length) %>%
+H.F.lilyfam("Carried bat", H.lily)
+```
+
+## Unusual dismissals
+Batters in matches in competitions of interest out
+handled the ball, hit the ball twice, obstructing the field, timed out or hit wicket.
+
+```{r unusual-dismissals}
+unusual_dismissals <- c("handled ball", "hit ball twice", "obstructing the field", "timed out", "hit wicket")
+
+F.batting.sphere %>% filter(`How Out` %in% unusual_dismissals) %>% arrange(desc(actuallyDate)) %>%
+H.F.lilyfam("Unusual dismissals", H.safflower)
+```
 
 \newpage
 

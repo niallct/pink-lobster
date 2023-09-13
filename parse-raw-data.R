@@ -177,7 +177,7 @@ E.inningses <- E.inningses %>%
 
 E.inningses <- E.inningses %>%
   mutate(
-    batting_team_name = case_when(
+    `Team` = case_when(
       batting_team_id == home_team_id ~ home_team_name,
       batting_team_id == away_team_id ~ away_team_name,
       TRUE ~ NA

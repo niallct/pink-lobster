@@ -6,11 +6,11 @@ club_of_interest: "4363"
 club_name: "Milton CC"
 
 teams_of_interest:
-    Firsts: "9865"
-    Seconds: "9866"
-    Thirds: "9867"
-    Midweek: "161677"
-    Friendly: "9868"
+    Firsts: 9865
+    Seconds: 9866
+    Thirds: 9867
+    Midweek: 161677
+    Friendly: 9868
  
 opponents_of_interest: 
 # - "14848"
