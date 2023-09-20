@@ -19,6 +19,8 @@
 # something about a short result statement HW, AW, D, A, etc?
 
 ## features to file/do
+- better performance by ground
+- tossing performance
 - a lookup, all matches between CoI and an arbitrary club
 -  a pretty way to show arbitrary filtered ds - bat, etc - eg with ids stripped
 - our and opponents recent innings should be matches presented in a nicer format
@@ -35,6 +37,8 @@
 -   ten bowlers used
 -   bowlers with same analysis in a match
 -   add to outstanding analysis: O = M, B.bowling %>% filter( is_us == TRUE, R < 10, W >=5)
+- fix the longest run stuff to show all tied records rather than the nth
+- consecutively losing the toss (but data are poor)
 
 -   Batting first win %age per ground, weather
 -   first inns total analysis by ground

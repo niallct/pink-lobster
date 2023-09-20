@@ -76,7 +76,7 @@ json_files <- list.files(directory, pattern = "*.json", full.names = TRUE)
 matchMainHdrs <- c("match_id", "match_date", "ground_name", "ground_id", "competition_id","league_id",
                    "home_team_name", "home_team_id", "home_club_name", "home_club_id",
                    "away_team_name", "away_team_id", "away_club_name", "away_club_id", 
-                   "toss", "result_description", "result_applied_to"
+                   "toss", "result_description", "result_applied_to", "toss_won_by_team_id"
                    #,"innings"
 )
 
@@ -98,9 +98,10 @@ load_json_file <- function(file, type) {
   if (type=="i") jds$inns <- as.data.frame(json_data[["innings"]], optional = FALSE)
   #print(json_data_sel)
   
-  jds$matchAggRuns <- sum(json_data$innings$runs)
+  jds$`Match Aggregate` <- sum(json_data$innings$runs)
   zxc <- sum(json_data$innings$decimal_overs)
-  jds$matchAggOvs <- paste(floor(zxc), round((zxc %% 1 ) * 6), sep=".")
+  jds$matchAggDecOvs <- zxc
+  jds$`Match Overs` <- paste(floor(zxc), round((zxc %% 1 ) * 6), sep=".")
   
   jds$actuallyDate <- as.Date(jds$match_date, "%Y-%m-%dT%H:%M:%S")
   jds$Date <- format(jds$actuallyDate, format = "%d %b %Y")

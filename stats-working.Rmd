@@ -64,13 +64,13 @@ F.fielding.sphere <- filter(B.fielding,is_sphere==TRUE)
 #MPbatters<- unique(MbattingBat$batsman_id) # FIXME
 
 ## Configure some heading sets for nice display
-H.freesia   <- c("Home", "Away", "Date", "Ground", "Aggregate", "Overs in match")
+H.freesia   <- c("Home Club", "Away Club", "Date", "Ground", "Match Aggregate", "Match Overs")
 H.F.freesia <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
   kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
-   column_spec(1, width = "12em") %>%
-   column_spec(2, width = "12em") %>%
-   column_spec(4, width = "10em")
+   column_spec(1, width = "8em") %>%
+   column_spec(2, width = "8em") %>%
+   column_spec(4, width = "6em")
   
 
 
@@ -763,17 +763,121 @@ It also appears to unhelpfully skip over missing data.
 
 ### Wins
 
-
 ```{r long-run-win, results='asis'}
+
+this_caption <- "Long runs of consecutive wins"
+
+for (i in 1:length(conf$teams_of_interest)) {
+  
+  # Print team name as a header
+  cat(paste("#### ", names(conf$teams_of_interest)[i], " \n"))
+  
+  # Filter, arrange and create run-length encoding
+  zxc <- F.inningses.us %>%
+    filter(batting_team_id == conf$teams_of_interest[[i]]) %>%
+    arrange(desc(actuallyDate))
+  
+  zz <- rle(as.vector(zxc$Res))
+  xcv <- tibble(l = zz$lengths, v = zz$values)
+  xcv$cse <- cumsum(xcv$l)
+  xcv$cs <- xcv$cse - xcv$l + 1
+
+    xx <- xcv %>%
+    filter(v == "W") %>%
+    slice_max(l)
+  
+  # Extract relevant columns using column names
+  xx$Length <- xx$l
+  xx$`From Date` <- zxc[[xx$cse[[nrow(xx)]], "Date"]]
+  xx$`From Opposition` <- zxc[[xx$cse[[nrow(xx)]], "Fielding Club"]]
+  xx$`To Date` <- zxc[[xx$cs[[nrow(xx)]], "Date"]]
+  xx$`To Opposition` <- zxc[[xx$cs[[nrow(xx)]], "Fielding Club"]]
+  
+  # Create and print table
+  xx %>%
+    select(Length, `From Date`, `From Opposition`, `To Date`, `To Opposition`) %>%
+    kbl(longtable = TRUE, booktabs = TRUE, row.names = FALSE, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat('\n\n')
+  
+  # Remove unnecessary objects
+  rm(zxc, zz, xcv, xx)
+}
+
+
   cat ('\n\n')
 ```
 
 ### Losses
 
 ```{r long-run-loss, results='asis'}
+
+this_caption <- "Long runs of consecutive losses"
+
+for (i in 1:length(conf$teams_of_interest)) {
+  
+  # Print team name as a header
+  cat(paste("#### ", names(conf$teams_of_interest)[i], " \n"))
+  
+  # Filter, arrange and create run-length encoding
+  zxc <- F.inningses.us %>%
+    filter(batting_team_id == conf$teams_of_interest[[i]]) %>%
+    arrange(desc(actuallyDate))
+  
+  zz <- rle(as.vector(zxc$Res))
+  xcv <- tibble(l = zz$lengths, v = zz$values)
+  xcv$cse <- cumsum(xcv$l)
+  xcv$cs <- xcv$cse - xcv$l + 1
+
+    xx <- xcv %>%
+    filter(v == "L") %>%
+    slice_max(l)
+  
+  # Extract relevant columns using column names
+  xx$Length <- xx$l
+  xx$`From Date` <- zxc[[xx$cse[[nrow(xx)]], "Date"]]
+  xx$`From Opposition` <- zxc[[xx$cse[[nrow(xx)]], "Fielding Club"]]
+  xx$`To Date` <- zxc[[xx$cs[[nrow(xx)]], "Date"]]
+  xx$`To Opposition` <- zxc[[xx$cs[[nrow(xx)]], "Fielding Club"]]
+  
+  # Create and print table
+  xx %>%
+    select(Length, `From Date`, `From Opposition`, `To Date`, `To Opposition`) %>%
+    kbl(longtable = TRUE, booktabs = TRUE, row.names = FALSE, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+    print()
+  
+  cat('\n\n')
+  
+  # Remove unnecessary objects
+  rm(zxc, zz, xcv, xx)
+}
+
+
   cat ('\n\n')
 ```
 
+## Shortest completed matches
+In all of our competitions. 
+
+This section appears to contain spurious results, and does not account for eight-ball 
+overs in evening games.
+
+```{r short-complete}
+E.matches %>% filter(is_sphere & result_applied_to != "" & `Match Aggregate` > 0) %>% slice_min(`matchAggDecOvs`, n=conf$default_list_length) %>% 
+  H.F.freesia("Shortest completed matches", H.freesia)
+```
+
+## Highest match aggregate
+This section appears to contain spurious results.
+
+In all of our competitions:
+```{r high-match-agg}
+E.matches %>% filter(is_sphere) %>% slice_max(`Match Aggregate`, n=conf$default_list_length) %>% 
+  H.F.freesia("Highest match aggregate", H.freesia)
+```
 
 \newpage
 # Opponents Report
