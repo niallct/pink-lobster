@@ -4,10 +4,9 @@
 
 ### Setting up
  * Get the latest R install
-  * Set the year, club and team of interest in `config/config.yaml`. Use ID numbers from the `club` and `team` tables.
  * Get the data, unzip, and put in `current` and `previous` seasons in the `newdata` directory
+ * Set the year, club and team of interest in `config/config.yaml`. Use ID numbers which appear in the data
 
- 
 ### Making interesting data
  * Run parse-raw-data.R
  * Knit stats.Rmd
@@ -21,7 +20,7 @@
 
 * Makes a pdf, by default, with interesting tables.
  
-## In-progress
+## In-progress stuff
 
 * Currently uses only the current year dataset
 * Tables often overrun the page width, this need manual twiddling
