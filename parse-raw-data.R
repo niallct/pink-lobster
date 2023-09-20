@@ -355,7 +355,8 @@ E.fielding <- adamCat %>%
   )) %>%
   mutate(
     Ct = ifelse(is.na(catches), 0, catches),
-    Std = ifelse(is.na(stumpings), 0, stumpings)
+    Std = ifelse(is.na(stumpings), 0, stumpings),
+    Dis = Ct + Std
   ) %>%
   rename(
     Club = `Fielding Club`,
@@ -466,7 +467,7 @@ E.bowlAvg.TY <- A.bowl %>%
     W = sum(W),
     BB = sum(BB),
     `5wi` = sum(W>=5),
-    Avg = format(round(R / W, 2), nsmall = 2),
+    Avg = as.numeric(format(round(R / W, 2), nsmall = 2)),
     Econ = format(round(R * 6 / BB, 2), nsmall = 2),
     SR = format(round(W * 100 / BB, 2), nsmall = 2),
     O = paste(BB %/% 6, BB %% 6, sep="."),

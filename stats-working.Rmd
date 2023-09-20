@@ -17,6 +17,8 @@ knitr::opts_chunk$set(echo = FALSE)
 #source("get-data.R")
 #source("../parse-raw-data.R", local = knitr::knit_global())
 #load("./data/*")
+library(readr)
+Zclub <- read_csv("data/Zclub.csv", col_types = cols(...1 = col_skip()))
 load("./data/EbatAvgTY")
 load("./data/BbatAvg")
 load("./data/Bbatting")
@@ -63,9 +65,26 @@ F.fielding.sphere <- filter(B.fielding,is_sphere==TRUE)
 
 ## Configure some heading sets for nice display
 H.freesia   <- c("Home", "Away", "Date", "Ground", "Aggregate", "Overs in match")
-H.dianthus  <- c("Team", "Score", "Ovs",           "Date", "Oppos","Ground", "Res")
-H.rudbeckia <- c("Team", "Score", "Ovs", "Extras", "Date", "Oppos","Ground", "Res")
-H.wolfsbane <- c("Team", "Score", "Ovs", "Byes",   "Date", "Oppos","Ground", "Res")
+H.F.freesia <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+   column_spec(1, width = "12em") %>%
+   column_spec(2, width = "12em") %>%
+   column_spec(4, width = "10em")
+  
+
+
+H.dianthus  <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res")
+H.rudbeckia <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Extras")
+H.wolfsbane <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Byes")
+H.F.dianthusfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+     column_spec(1, width = "9em") %>%
+      column_spec(5, width = "9em") %>%
+   column_spec(6, width = "7em")
+
+
 
 
     
@@ -92,35 +111,45 @@ H.F.lilyfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>
    column_spec(8, width = "8em")
 
 
-H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date",         "Oppos", "Ground", "Ven")
-H.marigold <-  c("Name", "O", "M", "R", "W",  "Date", "Team", "Oppos", "Ground",       "Res")
-H.sunflower <- c("Name", "O", "M", "R", "W",  "Date", "Club", "Oppos", "Ground",       "Res")
+H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date", "Fielding Side", "Batting Club", "Ground", "Ven")
+H.marigold <-  c("Name", "O", "M", "R", "W",  "Date", "Fielding Side", "Batting Club", "Ground", "Res")
 
-H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+H.F.cyclamen <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+  column_spec(7, width = "8em") %>%
+       column_spec(8, width = "8em")  %>%
+       column_spec(9, width = "8em") 
+
+
 
 H.plum <-   c("Name", "Ct", "Std","Date", "Club", "Oppos", "Ground") 
+H.F.plum <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
+      kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+  column_spec(5, width = "8em") %>%
+       column_spec(6, width = "9em") %>%
+   column_spec(7, width = "9em")
 
-
-
+H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
 H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
-
 H.F.plain <- function(x, this_caption, flower) x %>%  
   select(all_of(flower)) %>% 
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
                 font_size = 7) 
+# alyssum, crocosmia, hyacinth, iris, hydrangea, peony, mugwort, gladiolus, carnation, buddleia, sunflower
 
-
-
-
-# alyssum, crocosmia, hyacinth, iris, hydrangea, peony, mugwort, gladiolus, carnation, buddleia
 ```
 
-Season `r conf$year_of_interest`
+\newpage
 
 # This season
+Season `r conf$year_of_interest`. Latest match in dataset: `r E.dates$all_latest`.
 
-## Batting averages
+## Batting
+
+### Batting averages
 Strike rates calculated using only innings in which balls faced are recorded. 
 
 Showing most runs first
@@ -132,7 +161,7 @@ E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arra
 ```
 
 
-## Fifties this year
+### Fifties this year
 ```{r fifties-this-year}
 a.numfifties <- nrow(F.batting.us %>%
             filter(Runs>=50 & Yr==conf$year_of_interest))
@@ -144,7 +173,7 @@ F.batting.us %>% filter(Runs>=50 & Yr==conf$year_of_interest) %>%
    H.F.aspidistra("Fifties this season", H.aspidistra)
 ```
 
-## Sixes so far this season
+### Sixes so far this season
 ```{r sixes-thisyear}
 this_caption <- "Sixes, this year"
 
@@ -154,7 +183,7 @@ E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name) & !is.na(
    H.F.plain("Sixes this year", H.buckthorn)
 ```
 
-## Fifties without a team win
+### Fifties without a team win
 Showing most recent `r conf$default_list_length`:
 ```{r fifties-no-win}
 F.batting.us %>% filter(Runs >=50 & Res!="W" & Yr==conf$year_of_interest) %>% 
@@ -163,13 +192,13 @@ F.batting.us %>% filter(Runs >=50 & Res!="W" & Yr==conf$year_of_interest) %>%
 ```
 
 
-## Recent fifties, for each team
+### Recent fifties, for each team
 Showing most recent `r conf$default_list_length`:
 
 ```{r fifties-byteam, results='asis'}
 
 for (i in 1:length(conf$teams_of_interest)) {
-cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
   
 F.batting.us %>% filter(Runs >=50 & batting_team_id == conf$teams_of_interest[[i]] & Yr==conf$year_of_interest) %>% 
   slice_max(actuallyDate, n=conf$default_list_length) %>%
@@ -180,18 +209,85 @@ F.batting.us %>% filter(Runs >=50 & batting_team_id == conf$teams_of_interest[[i
 
 ```
 
-## Primaries this year
+### Primaries this year
 ```{r primaries}
 F.batting.us %>% filter(Runs == 0  & Balls<= 1 & `How Out`!="not out" & Yr==conf$year_of_interest) %>%
 arrange(desc(actuallyDate)) %>%
  H.F.aspidistra("Primaries", H.aspidistra)
 ```
 
+## Bowling
+
+### Bowling averages
+Showing most wickets first
+```{r bowl-avgs-thisyear}
+E.bowlAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(W), R) %>%
+    H.F.plain("Bowling averages", H.clematis)
+```
+
+### Four-fors this year
+```{r fourfor-this-year}
+a.numfourfors <- nrow(F.bowling.us %>% filter(W>=4 & Yr==conf$year_of_interest))
+```
+There have been `r a.numfourfors` four-fors so far this season.
+```{r fourfor-this-year-2}
+F.bowling.us %>% filter(W>=4 & Yr==conf$year_of_interest) %>% arrange(desc(W), R) %>%
+    H.F.cyclamen( "Four-fors this season", H.cyclamen)
+```
+
+
+### Recent four-fors, for each team
+Showing most recent `r conf$default_list_length`:
+
+```{r fourfors-byteam, results='asis'}
+#conf$teams_of_interest[[i]]
+for (i in 1:length(conf$teams_of_interest)) {
+cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
+  
+F.bowling.us %>% filter(W >=4 & fielding_team_id == conf$teams_of_interest[[i]]) %>% 
+  slice_max(actuallyDate, n=conf$default_list_length) %>%
+ H.F.cyclamen(paste("Recent four-fors, ",names(conf$teams_of_interest)[[i]]), H.cyclamen) %>%
+    print()
+
+  cat ('\n\n')
+}
+```
+
+
+### Bowling through
+This includes all innings, with no minimum length.
+
+```{r bowl-through}
+F.bowling.us  %>% 
+  filter(O >= (decimal_overs %/% 2) & Yr == conf$year_of_interest) %>%
+  arrange(desc(W), R) %>%
+    H.F.cyclamen("Bowling all innings, our club, this year", H.cyclamen)
+```
+
+### Dry spells
+
+```{r no-wickets}
+F.bowling.us %>% filter(W ==0 & Yr==conf$year_of_interest ) %>%
+  slice_max(R, n=conf$default_list_length) %>%
+H.F.cyclamen("No wickets, highest runs conceded", H.marigold)
+
+```
+
+### Outstanding analysis, in our competitions
+```{r strong-analysis-sph}
+F.bowling.sphere %>% filter(Yr == conf$year_of_interest)  %>% arrange(desc(W), R) %>%
+  slice_max(W, n=conf$default_list_length, with_ties = F) %>%
+   H.F.cyclamen("Outstanding analysis, our competitions, this year", H.marigold)
+```
+
+\newpage
 # All-time records
  `All time' means all of the dataset which is available, which may start
  after a player did.
 
-## Batting averages
+## Batting
+
+### Batting averages
 Strike rates calculated using only innings in which balls faced are recorded.
 
 Showing most runs first
@@ -203,7 +299,7 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
 
 ```
 
-## Approaching batting milestones
+### Approaching batting milestones
 ```{r approaching-milestones-bat}
 
 B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% 
@@ -212,7 +308,7 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
 ```
 
 
-## Highest career strike rates
+### Highest career strike rates
 
 Minimum qualification: `r conf$qualify_balls_faced` balls faced
 ```{r bat-avgs-alltime-highSR}
@@ -221,7 +317,7 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name) & BF >= conf
   H.F.plain("Highest strike-rates, all time", H.aster)
 ```
 
-## Top career averages
+### Top career batting averages
 
 Minimum qualification: `r conf$qualify_balls_faced` balls faced
 ```{r bat-avgs-alltime-highAvg}
@@ -230,7 +326,7 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name) & BF >= conf
     H.F.plain("Highest averages, all time", H.aster)
 ```
 
-## Most centuries
+### Most centuries
 ```{r centuries}
 this_caption <- "Most centuries"
 B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
@@ -238,23 +334,23 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
    H.F.plain("Most centuries", H.aster)
 ```
 
-## Top individual scores
+### Top individual scores
 ```{r top-bat-performances}
 F.batting.us %>% slice_max(Runs, n=conf$default_list_length) %>%
    H.F.aspidistra("All-time top scores", H.aspidistra)
 ```
 
-## Highest strike rates
+### Highest strike rates
 ```{r top-strike-rates}
 F.batting.us %>% slice_max(SR, n=conf$default_list_length) %>%
   H.F.aspidistra("All-time top strike rates", H.aspidistra)
 ```
 
 
-## Top performances for each team
+### Top batting performances for each team
 ```{r topbat-byteam, results='asis'}
 for (i in 1:length(conf$teams_of_interest)) {
-cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
   
 F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% 
   slice_max(Runs, n=conf$default_list_length) %>%
@@ -265,10 +361,10 @@ H.F.aspidistra(paste("Highest scores for ",names(conf$teams_of_interest)[[i]]), 
 }
 ```
 
-## Highest strike rate, for each team
+### Highest strike rate, for each team
 ```{r topSR-byteam, results='asis'}
 for (i in 1:length(conf$teams_of_interest)) {
-cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
   
 F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% 
   slice_max(SR, n=conf$default_list_length) %>%
@@ -281,7 +377,7 @@ H.F.aspidistra(paste("Highest strike rate for ",names(conf$teams_of_interest)[[i
 ```
 
 
-## Monopolised batting
+### Monopolised batting
 More than 60\% of the team's runs. Excludes scores of less than 10.
 
 ```{r batting-monopoly}
@@ -290,21 +386,21 @@ H.F.lilyfam( "Monopolised runs", H.thistle)
 ```
 
 
-## Most balls faced in an innings
+### Most balls faced in an innings
 ```{r most-balls}
 this_caption <- "Most balls faced"
 F.batting.us %>% slice_max(Balls, n=conf$default_list_length) %>%
   H.F.aspidistra("Most balls faced", H.aspidistra)
 ```
 
-## Most balls faced for a score 10 or less
+### Most balls faced for a score 10 or less
 ```{r most-balls-lowscore}
 this_caption <- "Most balls faced for score 10 or less"
 F.batting.us %>% filter(Runs <= 10) %>% slice_max(Balls, n=conf$default_list_length) %>%
   H.F.aspidistra("Most balls faced", H.aspidistra)
 ```
 
-## Most sixes in an innings
+### Most sixes in an innings
 ```{r most-sixes}
 this_caption <- "Most sixes in an innings"
 F.batting.us %>% slice_max(`6`, n=conf$default_list_length) %>%
@@ -312,10 +408,10 @@ H.F.lilyfam("Most sixes in an innings", H.hibiscus)
 ```
 
 
-## Most fours in an innings, for each team
+### Most fours in an innings, for each team
 ```{r top4s-byteam, results='asis'}
 for (i in 1:length(conf$teams_of_interest)) {
-cat( paste("### ", names(conf$teams_of_interest)[i], " \n"))
+cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
   
 F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% 
   slice_max(`4`, n=conf$default_list_length) %>%
@@ -326,7 +422,7 @@ F.batting.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>%
 
 ```
 
-## Carried bat
+### Carried bat
 Position 1 or 2 and not out. Care! May not be accurate if retirements involved.
 Showing the most recent `r conf$default_list_length`
 
@@ -336,7 +432,7 @@ F.batting.us %>% filter(Pos %in% c("1","2") & `How Out`=="not out") %>% arrange(
 H.F.lilyfam("Carried bat", H.lily)
 ```
 
-## Unusual dismissals
+### Unusual dismissals
 Batters in matches in competitions of interest out
 handled the ball, hit the ball twice, obstructing the field, timed out or hit wicket.
 
@@ -347,11 +443,413 @@ F.batting.sphere %>% filter(`How Out` %in% unusual_dismissals) %>% arrange(desc(
 H.F.lilyfam("Unusual dismissals", H.safflower)
 ```
 
+
+## Bowling
+### Bowling averages 
+
+Showing most wickets first
+
+```{r bowl-avgs-alltime}
+B.bowlAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(W), R) %>%
+    H.F.plain("Bowling averages, all time", H.clematis)
+```
+
+### Approaching milestones
+```{r approaching-milestones-bowl}
+B.bowlAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% 
+    filter((W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
+    arrange(desc(W), Avg) %>%
+    H.F.plain("Approaching career total wicket milestones", H.clematis)
+```
+
+### Best career economy
+
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
+```{r bowl-avgs-alltime-lowecon}
+B.bowlAvg %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
+  slice_min(Econ, n=conf$default_list_length)%>%
+    H.F.plain("Lowest economy, all time", H.clematis)
+```
+
+### Best career average
+
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
+```{r bowl-avgs-alltime-lowavg}
+B.bowlAvg %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
+  slice_min(Avg, n=conf$default_list_length)%>%
+ H.F.plain("Lowest average, all time", H.clematis)
+```
+
+### Most career five-fors
+
+```{r bowl-avgs-alltime-most5}
+B.bowlAvg %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
+  arrange(Avg) %>%
+  slice_max(`5wi`, n=conf$default_list_length)%>%
+  H.F.plain("Most five-fors, all time", H.clematis)
+```
+
+
+### Highest average with a five-for
+
+#### Our club
+```{r bowl-avgs-with-5for}
+E.bowlAvg.TY %>% 
+  filter(club_id == conf$club_of_interest & !is.na(Name) & `5wi` >= 1) %>%
+  slice_max(Avg, n=conf$default_list_length)%>%
+   H.F.plain("Highest averages including a five-for, this season", H.clematis)
+```
+
+#### All clubs in dataset
+```{r bowl-avgs-with-5for-sphere}
+E.bowlAvg.TY %>% 
+  filter(!is.na(Name) & `5wi` >= 1) %>%
+  slice_max(Avg, n=conf$default_list_length)%>%
+    select(all_of(H.clematis)) %>% 
+H.F.plain("Highest averages including a five-for, this season, all clubs", H.clematis)
+```
+
+### Four-fors without a team win
+Showing most recent `r conf$default_list_length`:
+```{r fourfor-no-win}
+F.bowling.us %>% filter(W >=4 & Res!="W" ) %>% slice_max(actuallyDate, n=conf$default_list_length) %>%
+H.F.cyclamen("Four-fors without team win",H.marigold)
+```
+
+
+### Outstanding analysis, our club
+```{r strong-analysis-us}
+F.bowling.us  %>% arrange(desc(W), R) %>%
+  slice_max(W, n=conf$default_list_length, with_ties = F) %>%
+H.F.cyclamen("Outstanding analysis, our club, all years" , H.cyclamen)
+```
+
+
+
+## Fielding
+
+### Most catches
+
+Showing most recent, where tied
+
+```{r most-catches}
+F.fielding.us  %>% 
+  arrange(desc(actuallyDate)) %>%
+  #filter( year == conf$year_of_interest) %>%
+  slice_max(Ct, n=conf$default_list_length, with_ties = F) %>%
+  H.F.plum("Most catches in an innings, our club", H.plum)
+
+```
+
+### Most stumpings
+```{r most-stumping}
+F.fielding.us  %>% 
+  arrange(desc(actuallyDate)) %>%
+  #filter( year == conf$year_of_interest) %>%
+  slice_max(Std, n=conf$default_list_length) %>%
+  H.F.plum("Most stumpings in an innings, our club", H.plum)
+
+```
+
+### Most dismissals
+```{r most-dis}
+F.fielding.us  %>% 
+  arrange(desc(actuallyDate)) %>%
+  #filter( year == conf$year_of_interest) %>%
+  slice_max(Dis, n=conf$default_list_length, with_ties = F) %>%
+    H.F.plum("Most fielding dismissals in an innings, our club", H.plum)
+```
+
 \newpage
 
-# R session information
-Data collected from Play-Cricket in August 2023.
+\newpage
+\newpage
+# Team records
 
+
+## Highest innings totals
+## Our recent innings
+```{r recent-inns}
+F.inningses.us %>% slice_max(actuallyDate, n=conf$default_list_length) %>% 
+ H.F.dianthusfam("Recent club innings", H.dianthus)
+```
+
+### Our competitions
+```{r high-inns-sphere}
+F.inningses.sphere %>% slice_max(Total, n=conf$default_list_length ) %>% 
+ H.F.dianthusfam("Highest innings in our competitions", H.dianthus)
+```
+
+### Our matches at home grounds
+```{r high-inns-home}
+F.inningses.circle %>% filter(ground_id %in% conf$home_grounds) %>% slice_max(Total, n=conf$default_list_length ) %>% 
+ H.F.dianthusfam("Highest innings scored at home grounds", H.dianthus)
+
+```
+
+### Our matches at away grounds
+```{r high-inns-away}
+F.inningses.circle %>% filter(!ground_id %in% conf$home_grounds) %>% slice_max(Total, n=conf$default_list_length ) %>% 
+ H.F.dianthusfam("Highest innings scored at away grounds", H.dianthus)
+```
+
+
+## Highest innings totals losing one or no wickets
+### Our competition
+```{r high-inns-sphere-for1}
+F.inningses.sphere %>% filter(W <= 1) %>% slice_max(Total, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+ H.F.dianthusfam("Highest innings in our competitions for one or no wicket", H.dianthus)
+```
+
+### Our matches
+```{r high-inns-circle-for1}
+F.inningses.circle %>% filter(W <= 1) %>% slice_max(Total, n=conf$default_list_length ) %>% 
+  select(all_of(H.dianthus)) %>% 
+ H.F.dianthusfam("Highest innings in our matches for one or no wicket", H.dianthus)
+```
+
+
+
+## Lowest innings totals
+
+Matches recorded as abandoned are excluded. Note that this also includes winning totals which reached 
+an opponent's low total.
+
+### Our competitions
+```{r low-inns-sphere}
+F.inningses.sphere %>% filter(Res !="A"  & Res !="C" & Total != 0) %>% slice_min(Total, n=conf$default_list_length ) %>% 
+ H.F.dianthusfam("Lowest innings in our competitions", H.dianthus)
+```
+
+### Our matches at home grounds
+```{r low-inns-home}
+F.inningses.circle %>% 
+  filter(ground_id %in% conf$home_grounds & Res !="A" & Res !="C" & Total != 0) %>% slice_min(Total, n=conf$default_list_length ) %>%
+  H.F.dianthusfam("Lowest innings scored at home grounds", H.dianthus)
+```
+
+### Our matches at away grounds
+```{r low-inns-away}
+F.inningses.circle %>% 
+  filter(!ground_id %in% conf$home_grounds  & Res !="A" & Res !="C" & Total != 0) %>%
+  slice_min(Total, n=conf$default_list_length ) %>%
+  H.F.dianthusfam("Lowest innings scored at away grounds", H.dianthus)
+```
+
+## Ties
+```{r ties}
+F.inningses.sphere %>% filter(Res =="T") %>% arrange(desc(actuallyDate)) %>% 
+  H.F.dianthusfam("Tied innings", H.dianthus)
+```
+
+## Most extras
+
+This section appears to contain spurious results.
+
+### Our competition
+```{r extras-sphere}
+F.inningses.sphere %>% slice_max(Extras, n=conf$default_list_length ) %>% 
+  H.F.dianthusfam("Most extras in our competition", H.rudbeckia)
+```
+
+### Our matches
+```{r extras-circle}
+F.inningses.circle %>% slice_max(Extras, n=conf$default_list_length ) %>% 
+  H.F.dianthusfam("Most extras in our matches", H.rudbeckia)
+```
+
+
+## No byes conceded for total of 100 or more
+```{r no-byes-100-total}
+F.inningses.circle %>% filter(Total >= 150 & Byes == 0 & Yr == conf$year_of_interest) %>% arrange(desc(Total))%>% 
+  H.F.dianthusfam("No byes conceded for total of 150 runs or more, this season", H.wolfsbane)
+```
+
+## High successful chases
+```{r high-chase}
+F.inningses.sphere %>% filter(match_innings == 2 & Res == "W") %>% slice_max(Total, n=conf$default_list_length) %>% 
+ H.F.dianthusfam("Highest successful run chases", H.dianthus)
+```
+
+## Proportions of extras
+In matches with a result only, in our competitions of interest
+
+```{r extras-prop, warning=FALSE, fig.height=4}
+F.inningses.sphere %>% filter(Res %in% c("L", "W")) %>%
+ggplot(aes(extras_proportion, Res)) +
+geom_boxplot() +
+  xlab("Proportion of extras in innings") +
+  ylab("Result") +
+  scale_x_continuous(labels = scales::percent)
+```
+
+```{r extras-prop-crit, results='asis'}
+foo <- glm(Res ~ extras_proportion, F.inningses.sphere[F.inningses.sphere$Res %in% c("W", "L"),], family = binomial)
+## todo  - read about logistic regression
+a.extraspropwincrit <-  paste(format(( (0-foo$coefficients[[1]]) / foo$coefficients[[2]]) * 100, digits = 3),"%")
+#exp(confint(foo))
+summary_foo <- summary(foo)
+
+# Extract p-values for coefficients
+p_values <- summary_foo$coefficients[, 4]
+a.extraspropwincritpval <-  format(p_values[[2]], digits = 2)
+cat("The critical point between likely win and likely loss is", a.extraspropwincrit, ", p =", a.extraspropwincritpval)
+
+rm(foo); rm(summary_foo); rm(p_values)
+```
+
+
+## Most runs for a club in a day
+```{r daily-agg}
+this_caption <- "Highest daily aggregate for this club"
+zxc <- aggregate(B.inningses$Total, by=list(date = B.inningses$actuallyDate, club = B.inningses$batting_club_id), FUN="sum")
+zxclen <- aggregate(B.inningses$Team, by=list(date = B.inningses$actuallyDate, club = B.inningses$batting_club_id), FUN="length")
+#zxc$clubChr <- as.character(zxc$club)
+xcv <- left_join(zxc, Zclub[,c("id", "name")], by = c("club" ="id" ))
+cvb <- left_join(xcv, zxclen, by = c("date" = "date", "club" = "club"))
+
+a.runsinday <- cvb[cvb$club == as.character(conf$club_of_interest),c("date", "name", "x.x", "x.y")]
+#slice_max(a.runsinday, x.x, n=25)
+rm(zxc); rm(zxclen); rm(xcv); rm(cvb)
+
+a.runsinday %>%
+  rename(Club = name,
+         Date = date,
+         Aggregate = x.x,
+         `No. of innings` = x.y,
+         ) %>%
+
+  slice_max(Aggregate, n=conf$default_list_length) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+```
+
+### All clubs in dataset
+```{r daily-agg-all}
+this_caption <- "Highest daily club aggregate"
+zxc <- aggregate(B.inningses$Total, by=list(date = B.inningses$actuallyDate, club = B.inningses$batting_club_id), FUN="sum")
+zxclen <- aggregate(B.inningses$Team, by=list(date = B.inningses$actuallyDate, club = B.inningses$batting_club_id), FUN="length")
+#zxc$clubChr <- as.character(zxc$club)
+xcv <- left_join(zxc, Zclub[,c("id", "name")], by = c("club" ="id" ))
+cvb <- left_join(xcv, zxclen, by = c("date" = "date", "club" = "club"))
+
+a.runsinday <- cvb[,c("date", "name", "x.x", "x.y")]
+#slice_max(a.runsinday, x.x, n=25)
+rm(zxc); rm(zxclen); rm(xcv); rm(cvb)
+
+a.runsinday %>%
+  rename(Club = name,
+         Date = date,
+         Aggregate = x.x,
+         `No. of innings` = x.y,
+         ) %>%
+
+  slice_max(Aggregate, n=conf$default_list_length) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7)
+  
+
+```
+
+
+## Longest runs
+This section may give unexpected results if more than one match played in a day.
+
+It also appears to unhelpfully skip over missing data. 
+
+### Wins
+
+
+```{r long-run-win, results='asis'}
+  cat ('\n\n')
+```
+
+### Losses
+
+```{r long-run-loss, results='asis'}
+  cat ('\n\n')
+```
+
+
+\newpage
+# Opponents Report
+
+```{r opponents, results='asis'}
+
+for (i in 1:length(conf$opponents_of_interest)) {
+cat( paste("## ",  Zclub[Zclub$id==conf$opponents_of_interest[i],"name"]  , " \n"))
+  
+E.batAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% arrange(desc(Runs))  %>% H.F.plain("Batting averages this year", H.aster) %>%
+  print()
+
+  cat ('\n\n')
+
+E.bowlAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% arrange(desc(W)) %>%
+  H.F.plain("Bowling averages this year", H.clematis) %>%
+  print()
+  
+  
+  cat ('\n\n')
+
+
+B.batAvg %>% filter(club_id == conf$opponents_of_interest[[i]] & !is.na(Name)) %>% 
+    filter((Runs >= 400 & Runs < 500) | (Runs >= 900 & Runs < 1000)) %>%
+    arrange(desc(Runs)) %>%
+H.F.plain("Career total run milestones", H.aster) %>%
+  print()
+
+  cat ('\n\n')
+ 
+B.bowlAvg %>% filter(club_id == conf$opponents_of_interest[[i]] & !is.na(Name)) %>% 
+    filter((W >= 45 & W < 50) |(W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
+    arrange(desc(W)) %>%
+  H.F.plain("Career total wicket milestones", H.clematis) %>%
+  print()
+  
+  cat ('\n\n')
+  
+F.batting.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
+                              fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
+  slice_max(Runs, n=conf$default_list_length) %>% 
+  H.F.aspidistra("Top batting in our matches", H.aspidistra) %>%
+    print()
+  
+  cat ('\n\n')
+  
+F.bowling.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
+                              fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
+ arrange(desc(W), R) %>%
+  slice_max(W, n=conf$default_list_length, with_ties = F) %>%
+  H.F.cyclamen("Top bowling in our matches", H.cyclamen) %>%
+  print()
+
+  cat ('\n\n')
+  
+B.inningses %>% filter(batting_club_id == conf$opponents_of_interest[[i]]) %>% slice_max(actuallyDate, n=conf$default_list_length) %>% 
+  H.F.dianthusfam("Recent opponents innings", H.dianthus) %>%
+  print()
+  
+  cat ('\n\n')
+  
+}
+```
+
+\newpage
+
+
+# Setup
+
+## Date ranges
+Data collected from Play-Cricket. 
+For `r conf$club_name`, from `r E.dates$our_earliest` to `r E.dates$our_latest`, n=`r E.dates$count_us`.
+For all matches, from `r E.dates$all_earliest` to `r E.dates$all_latest`, n=`r E.dates$count_all`.
+
+
+## R session information
 ```{r session-info}
 
 sessionInfo()
@@ -366,6 +864,10 @@ errors from there. It is not, and cannot be, a complete record.
 Records with missing data are interpreted as nicely as feels sensible, but in general are 
 simply ignored. This may extend to the exclusion of part-complete data, probably giving
 incorrect aggregate or average figures.
+
+Many tables presented here are one end of a filtered and sorted dataset. There is more interest 
+in tops than in bottoms, though both are represented. The underlying data are versatile enough to
+output further, if requested, with appropriate preparation.
 
 The author would appreciate being made aware of possible errors, so they can be explored.
 

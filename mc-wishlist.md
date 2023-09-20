@@ -21,7 +21,8 @@
 ## features to file/do
 - a lookup, all matches between CoI and an arbitrary club
 -  a pretty way to show arbitrary filtered ds - bat, etc - eg with ids stripped
-
+- our and opponents recent innings should be matches presented in a nicer format
+-   fastest fifty, hundred
 -   most runs in a year
 -   most wkts in a year
 -   most ct, std in a year
