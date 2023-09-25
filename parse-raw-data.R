@@ -62,15 +62,8 @@ rm(subdirectories)
 rm(load_json_file)
 rm(filtered_json_data)
 
-# ==== current match details =================================================
-# == match details... CURRENT > SEASONS > YYYY > MATCH_DETAILS
-# this is one file per match
 
-# Directory containing JSON files
-directory <- "./newdata/current/seasons/2023/match_details"
-
-# Get list of JSON files in the directory
-json_files <- list.files(directory, pattern = "*.json", full.names = TRUE)
+# ==== the match detail loading function  ===============================================
 
 # define what we want as match headers -- drop umpire names and such
 matchMainHdrs <- c("match_id", "match_date", "ground_name", "ground_id", "competition_id","league_id",
@@ -84,6 +77,7 @@ matchMainHdrs <- c("match_id", "match_date", "ground_name", "ground_id", "compet
 load_json_file <- function(file, type) {
   json_data <- fromJSON(file)
   jds <- json_data[matchMainHdrs]
+  if (is.null(jds$match_date)) {return(NULL)}
   #print(as.data.frame(json_data_sel["innings"]))
   
   foo <- data.frame(rep(0, length(json_data$innings$overs)))
@@ -96,6 +90,7 @@ load_json_file <- function(file, type) {
   
  # if (type=="i") jds[["inns"]] <- as.data.frame(json_data["innings"])
   if (type=="i") jds$inns <- as.data.frame(json_data[["innings"]], optional = FALSE)
+  if (type=="p") jds$players <- as.data.frame(json_data[["players"]], optional = FALSE)
   #print(json_data_sel)
   
   jds$`Match Aggregate` <- sum(json_data$innings$runs)
@@ -135,6 +130,17 @@ load_json_file <- function(file, type) {
   return(jds)
 }
 
+# ==== current year data load  ====
+# == match details... CURRENT > SEASONS > YYYY > MATCH_DETAILS
+# this is one file per match
+
+# Directory containing JSON files
+directory <- "./newdata/current/seasons/2023/match_details"
+
+# Get list of JSON files in the directory
+json_files <- list.files(directory, pattern = "*.json", full.names = TRUE)
+
+
 # apply that on the raw data in match and innings mode
 json_data <- map(json_files, load_json_file, "m")
 E.matches <- json_data %>% bind_rows()
@@ -150,16 +156,85 @@ rm(i)
 
 E.inningses <- json_data2 %>% bind_rows() %>% unnest(inns)
 
+# unstack player data
+json_data3 <- map(json_files, load_json_file, "p")
+E.matchplayers <- json_data3 %>% bind_rows() %>% unnest(players)
+
+
 # cleanup
+rm(directory)
+rm(json_files)
+#rm(load_json_file)
+rm(json_data)
+rm(json_data2)
+rm(json_data3)
+
+
+
+# ===== previous seasons match details =====
+# previous > previous-seasons > seasons
+#this is a load of dirs, named by year each containing a directory called match_details, which containss the jsons
+
+# Parent directory containing subdirectories
+parent_directory <- "newdata/previous/previous-seasons/seasons"
+
+# Get list of subdirectories
+subdirectories <- list.dirs(parent_directory, full.names = TRUE)
+
+# Use the matching indices to extract the matching directory names
+matching_directories <- subdirectories[grep("match_details", subdirectories)]
+
+# Initialize an empty vector to store the file paths
+json_files <- c()
+
+# Loop through each directory in matching_directories
+for (dir in matching_directories) {
+  # Get a list of .json files in the current directory
+  json_files <- c(json_files, list.files(dir, pattern = "*.json", full.names = TRUE))
+}
+
+
+# apply the loading function on the big load of old files
+json_data <- map(json_files, load_json_file, "m")
+G.matches <- json_data %>% bind_rows()
+
+
+json_data2 <- map(json_files, load_json_file, "i")
+#print(json_data2)
+# add in the row number to innings records
+for (i in 1:length(json_data2)){
+  if(!is.null(json_data2[[i]])) {json_data2[[i]]$inns$match_innings <- as.numeric(rownames(json_data2[[i]]$inns))}
+}
+rm(i)
+
+G.inningses <- json_data2 %>% bind_rows() %>% unnest(inns) 
+
+# unstack player data
+json_data3 <- map(json_files, load_json_file, "p")
+G.matchplayers <- json_data3 %>% bind_rows() %>% unnest(players)
+
+
+#cleanup
+rm(parent_directory)
+rm(subdirectories)
+rm(matching_directories)
 rm(directory)
 rm(json_files)
 rm(load_json_file)
 rm(json_data)
 rm(json_data2)
+rm(json_data3)
 
-# make some new and prettier bits of data
+# ==== merge old and new years ==== 
+# this used to be done later, after the prettifying and merging
+B.matches <- rbind(E.matches, G.matches)
+B.inningses <- rbind(E.inningses, G.inningses)
+B.matchplayers <- rbind(E.matchplayers, G.matchplayers)
 
-E.inningses <- E.inningses %>%
+
+# ===== make some new and prettier bits of innings-level data ======
+
+B.inningses <- B.inningses %>%
   rename(
     "Batting Side" = team_batting_name,
     batting_team_id = team_batting_id,
@@ -176,7 +251,7 @@ E.inningses <- E.inningses %>%
     inns_balls = balls
   )
 
-E.inningses <- E.inningses %>%
+B.inningses <- B.inningses %>%
   mutate(
     `Team` = case_when(
       batting_team_id == home_team_id ~ home_team_name,
@@ -217,11 +292,10 @@ E.inningses <- E.inningses %>%
       batting_team_id == home_team_id ~ `Away Side`,
       batting_team_id == away_team_id ~ `Home Side`,
       TRUE ~ NA
-    ),
-    
+    )
   )
 
-E.inningses <- mutate(E.inningses, 
+B.inningses <- mutate(B.inningses, 
                       Score = paste(Total, W, sep="/"),
                       extras_proportion = Extras / Total,
                       `% Extras` = paste(format(Extras * 100 / Total, digits = 1),"%"),
@@ -258,13 +332,13 @@ E.inningses <- mutate(E.inningses,
 # ---- batting --------
 # unstack the individual batting performance data
 
-E.batting <- E.inningses %>%
+B.batting <- B.inningses %>%
                select(-c(bowl,fow)) %>%
                  rowwise() %>% 
                    mutate(bat = list(as.data.frame(bat)) )%>% unnest(bat)
 
 
-E.batting <- E.batting %>%
+B.batting <- B.batting %>%
   rename(Pos = position,
          Name = batsman_name,
          "How Out" = how_out,
@@ -274,7 +348,7 @@ E.batting <- E.batting %>%
          Balls = balls,
   )
 
-E.batting <- E.batting %>%
+B.batting <- B.batting %>%
   mutate(
     SR = ifelse(Balls == 0 & Runs != 0, NA, format(round(Runs * 100 / Balls, 2), nsmall = 2)),
     contribpc = ifelse(Total == 0, NA, Runs / Total),
@@ -286,12 +360,35 @@ E.batting <- E.batting %>%
 # ---- bowling ------ 
 # unstack the individual bowling performance data
 
-E.bowling <- E.inningses %>%
-  select  (-c(bat, fow)) %>% 
-  rowwise() %>% 
-  mutate(bowl = list(as.data.frame(bowl)) )%>% unnest(bowl)
+# B.bowling <- B.inningses %>%
+#   select  (-c(bat, fow)) %>% 
+#   rowwise() %>% 
+#   print(str(B.inningses$bowl)) 
+#   mutate(bowl = list(as.data.frame(bowl) %>%
+#                        mutate(overs = as.numeric(overs)) # this can't find `overs`
+#                      )) %>%
+#          unnest(bowl)
+# 
+#   B.bowling <- B.inningses %>%
+#     select(-c(bat, fow)) %>% 
+#     rowwise() %>% 
+#     mutate(bowl = map(bowl, ~mutate(.x, overs = as.numeric(overs)))) %>%
+#     unnest(bowl)
 
-E.bowling <- E.bowling %>%
+# this is the one that works but we don't know how
+# if it breaks, good luck!
+B.bowling <- B.inningses %>%
+    select(-c(bat, fow)) %>%
+    mutate(
+      bowl = map(bowl, ~ {
+        df <- as.data.frame(.x)  # Convert to data frame if it's a list
+        df$overs <- as.numeric(as.character(df$overs))  # Convert overs to numeric
+        df
+      })
+    ) %>%
+    unnest(bowl)
+  
+B.bowling <- B.bowling %>%
   rename(
     innsWkts = W,
     Name = bowler_name,
@@ -321,7 +418,7 @@ E.bowling <- E.bowling %>%
 # ---- fielding ------------
 # pull our the individual fielding performance data from the batting table
 
-adamCat <- E.batting %>%
+adamCat <- B.batting %>%
   filter(`How Out` == "ct" & !is.na(fielder_id)) %>%
   group_by(
     fielder_id, match_id, fielding_club_id, fielder_name, batting_club_id,
@@ -330,7 +427,7 @@ adamCat <- E.batting %>%
   ) %>%
   summarise(catches = n())
 
-adamStump <- E.batting %>%
+adamStump <- B.batting %>%
   filter(`How Out` == "st" & !is.na(fielder_id)) %>%
   group_by(
     fielder_id, match_id, fielding_club_id, fielder_name, batting_club_id,
@@ -339,7 +436,7 @@ adamStump <- E.batting %>%
   ) %>%
   summarise(stumpings = n())
 
-adamRunOut <- E.batting %>%
+adamRunOut <- B.batting %>%
   filter(`How Out` == "run out" & !is.na(fielder_id)) %>%
   group_by(
     fielder_id, match_id, fielding_club_id, fielder_name, batting_club_id,
@@ -348,7 +445,7 @@ adamRunOut <- E.batting %>%
   ) %>%
   summarise(runouts = n())
 
-E.fielding <- adamCat %>%
+B.fielding <- adamCat %>%
   full_join(adamStump, by = c(
     "fielder_id", "match_id", "fielding_club_id", "fielder_name",
     "batting_club_id", "Batting Club", "Fielding Club", "Ground", 
@@ -386,26 +483,25 @@ rm(adamCat); rm(adamStump); rm(adamRunOut)
 # ---- dataset size --------------------
 # get the size, start and end of the dataset
 
-E.dates <- list(
-  our_latest = E.inningses %>% filter(is_circle == TRUE) %>%
+B.dates <- list(
+  our_latest = B.inningses %>% filter(is_circle == TRUE) %>%
                   slice_max(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  our_earliest = E.inningses %>% filter(is_circle == TRUE) %>% 
+  our_earliest = B.inningses %>% filter(is_circle == TRUE) %>% 
                   slice_min(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  all_latest = E.inningses  %>% 
+  all_latest = B.inningses  %>% 
                  slice_max(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  all_earliest = E.inningses %>%
+  all_earliest = B.inningses %>%
                   slice_min(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  count_all = nrow(E.inningses),
-  count_us = nrow(E.inningses %>% filter(is_circle==TRUE))
+  count_all = nrow(B.inningses),
+  count_us = nrow(B.inningses %>% filter(is_circle==TRUE))
 )
 
-# ---- batting averages ---------------------
-
-A.bat <- E.batting %>%
-  filter(Yr == conf$year_of_interest, !is.na(Runs))
-
+# ---- batting averages, current year ------
+# the function
+makeBatAvgs <- function(batdata) {
+  
 # batting avg table also includes fielding:
-adamField <- A.bat %>%
+adamField <- batdata %>%
   group_by(fielder_id) %>%
   summarise(
     Ct = sum(`How Out` == "ct"),
@@ -414,7 +510,7 @@ adamField <- A.bat %>%
   ) %>%
   ungroup()
 
-E.batAvg.TY <- A.bat %>%
+outputBatAvgs <- batdata %>%
   mutate(RunsO = Runs) %>%
   group_by(batsman_id) %>%
   summarise(
@@ -442,16 +538,28 @@ E.batAvg.TY <- A.bat %>%
     club_id != conf$club_of_interest ~ FALSE
   ))
 
+return(outputBatAvgs)
+}
+
+# subset just this year
+A.bat <- B.batting %>%
+  filter(Yr == conf$year_of_interest, !is.na(Runs))
+
+E.batAvg.TY <- makeBatAvgs(A.bat)
+
+# now all years
+B.batAvg <- makeBatAvgs(B.batting)
+B.batAvg <- B.batAvg[!is.na(B.batAvg$batsman_id),]
+
 # Remove the temporary table
-rm(A.bat); rm(adamField)
+rm(A.bat)
 
 # ---- bowling averages --------------------------------------------
 
-# make a temp table so we can use the same code for this-year and 'all time'
-A.bowl <- E.bowling %>%
-  filter(Yr == conf$year_of_interest)
-
-adamBestBowl <- A.bowl %>% 
+# the function
+makeBowlAvgs <- function(bowldata) {
+  
+adamBestBowl <- bowldata %>% 
   select(c(bowler_id, R, W, Analy)) %>%
   filter(!is.na(bowler_id)) %>% 
   group_by(bowler_id) %>% 
@@ -459,7 +567,7 @@ adamBestBowl <- A.bowl %>%
   slice_min(R, n=1, with_ties = F) %>%
   select(c(bowler_id, Analy))
  
-E.bowlAvg.TY <- A.bowl %>%
+outputbowlAvg <- bowldata %>%
   group_by(bowler_id) %>%
   summarise(
    # Runs = sum(Runs),
@@ -474,7 +582,7 @@ E.bowlAvg.TY <- A.bowl %>%
     O = paste(BB %/% 6, BB %% 6, sep="."),
   ) %>%
   ungroup() %>%
-  left_join(adamBestBowl) %>%
+  left_join(adamBestBowl, by = join_by(bowler_id)) %>%
   rename(Best = Analy) %>%
   left_join(E.players, by = c("bowler_id" = "player_id")) %>%
   mutate( is_us = case_when(
@@ -482,23 +590,27 @@ E.bowlAvg.TY <- A.bowl %>%
     club_id != conf$club_of_interest ~ FALSE
   ))
 
-# Remove the temporary table
-rm(A.bowl); rm(adamBestBowl)
+return(outputbowlAvg)
+}
 
-# ===============================================
+# make a subset of just this year
+A.bowl <- B.bowling %>%
+  filter(Yr == conf$year_of_interest)
+
+E.bowlAvg.TY <- makeBowlAvgs(A.bowl)
+
+# now all years
+B.bowlAvg <- makeBowlAvgs(B.bowling)
+B.bowlAvg <- B.bowlAvg[!is.na(B.bowlAvg$bowler_id),]
+#B.bowlAvg <- B.bowlAvg[!is.na(B.bowlAvg$Name),]
+
+# Remove the temporary table
+rm(A.bowl)
+
+# ==== match details ? teams =================================
 # match details... CURRENT > SEASONS > YYYY > CLUBS
 # this contains team information
 # not quite sure how this is useful yet
-
-# ==== merge old and new years
-# this is just a straight copy until the old data get loaded
-B.batting <- E.batting
-B.bowling <- E.bowling
-B.fielding <- E.fielding
-B.inningses <- E.inningses
-B.batAvg <- E.batAvg.TY
-B.bowlAvg <- E.bowlAvg.TY
-
 
 # ==== Output data ====
 # dump out for use by other scripts
@@ -509,9 +621,10 @@ save(B.batting, file="./data/Bbatting")
 save(E.bowlAvg.TY, file="./data/EbowlAvgTY")
 save(B.bowlAvg, file="./data/BbowlAvg")
 save(B.bowling, file="./data/Bbowling")
-save(E.dates, file="./data/Edates")
+save(B.dates, file="./data/Bdates")
 save(B.fielding, file="./data/Bfielding")
 save(B.inningses, file="./data/Binningses")
 save(E.matches, file="./data/Ematches")
+save(B.matches, file="./data/Bmatches")
 save(E.players, file="./data/Eplayers")
 save(E.playersNC, file="./data/EplayersNC")

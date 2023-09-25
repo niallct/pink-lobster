@@ -25,10 +25,11 @@ load("./data/Bbatting")
 load("./data/EbowlAvgTY")
 load("./data/BbowlAvg")
 load("./data/Bbowling")
-load("./data/Edates")
+load("./data/Bdates")
 load("./data/Bfielding")
 load("./data/Binningses")
 load("./data/Ematches")
+load("./data/Bmatches")
 load("./data/Eplayers")
 load("./data/EplayersNC")
 
@@ -142,10 +143,11 @@ H.F.plain <- function(x, this_caption, flower) x %>%
 
 ```
 
+~
 \newpage
 
 # This season
-Season `r conf$year_of_interest`. Latest match in dataset: `r E.dates$all_latest`.
+Season `r conf$year_of_interest`. Latest match in dataset: `r B.dates$all_latest`.
 
 ## Batting
 
@@ -664,7 +666,16 @@ F.inningses.circle %>% slice_max(Extras, n=conf$default_list_length ) %>%
 
 
 ## No byes conceded for total of 100 or more
-```{r no-byes-100-total}
+### All-time
+```{r no-byes-100-total-all}
+F.inningses.circle %>% filter(Total >= 150 & Byes == 0) %>% arrange(desc(Total))%>% 
+  slice_max(Total, n=3*conf$default_list_length ) %>% 
+  H.F.dianthusfam("No byes conceded for highest totals, all-time", H.wolfsbane)
+```
+
+
+### This year
+```{r no-byes-100-total-cy}
 F.inningses.circle %>% filter(Total >= 150 & Byes == 0 & Yr == conf$year_of_interest) %>% arrange(desc(Total))%>% 
   H.F.dianthusfam("No byes conceded for total of 150 runs or more, this season", H.wolfsbane)
 ```
@@ -873,11 +884,18 @@ E.matches %>% filter(is_sphere & result_applied_to != "" & `Match Aggregate` > 0
 ## Highest match aggregate
 This section appears to contain spurious results.
 
-In all of our competitions:
+In all of our competitions, this year:
 ```{r high-match-agg}
 E.matches %>% filter(is_sphere) %>% slice_max(`Match Aggregate`, n=conf$default_list_length) %>% 
   H.F.freesia("Highest match aggregate", H.freesia)
 ```
+
+In our games, all time
+```{r high-match-agg-allt}
+B.matches %>% filter(is_circle) %>% slice_max(`Match Aggregate`, n=conf$default_list_length) %>% 
+  H.F.freesia("Highest match aggregate", H.freesia)
+```
+
 
 \newpage
 # Opponents Report
@@ -949,8 +967,8 @@ B.inningses %>% filter(batting_club_id == conf$opponents_of_interest[[i]]) %>% s
 
 ## Date ranges
 Data collected from Play-Cricket. 
-For `r conf$club_name`, from `r E.dates$our_earliest` to `r E.dates$our_latest`, n=`r E.dates$count_us`.
-For all matches, from `r E.dates$all_earliest` to `r E.dates$all_latest`, n=`r E.dates$count_all`.
+For `r conf$club_name`, from `r B.dates$our_earliest` to `r B.dates$our_latest`, n=`r B.dates$count_us`.
+For all matches, from `r B.dates$all_earliest` to `r B.dates$all_latest`, n=`r B.dates$count_all`.
 
 
 ## R session information
