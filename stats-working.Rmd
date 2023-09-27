@@ -664,15 +664,13 @@ F.inningses.circle %>% slice_max(Extras, n=conf$default_list_length ) %>%
   H.F.dianthusfam("Most extras in our matches", H.rudbeckia)
 ```
 
-
 ## No byes conceded for total of 100 or more
 ### All-time
 ```{r no-byes-100-total-all}
 F.inningses.circle %>% filter(Total >= 150 & Byes == 0) %>% arrange(desc(Total))%>% 
-  slice_max(Total, n=3*conf$default_list_length ) %>% 
+  slice_max(Total, n=conf$default_list_length ) %>% 
   H.F.dianthusfam("No byes conceded for highest totals, all-time", H.wolfsbane)
 ```
-
 
 ### This year
 ```{r no-byes-100-total-cy}
