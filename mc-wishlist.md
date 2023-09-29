@@ -18,7 +18,9 @@
 ## features to file/do
 -   total runs, wkts, run/wkt for, against; each XI
 -   bowling stats -- % of balls tht are wd/nb, % of maidens
--   batter performance by ground
+-   batter performance by ground, day of week
+-   most runs scored, wickets taken,  invid inns and all season, for league, cup, friendly
+-   most ducks
 -   tossing performance
 -   a lookup, all matches between CoI and an arbitrary club
 -   a pretty way to show arbitrary filtered ds - bat, etc - eg with ids stripped

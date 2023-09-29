@@ -218,7 +218,7 @@ G.matchplayers <- json_data3 %>% bind_rows() %>% unnest(players)
 rm(parent_directory)
 rm(subdirectories)
 rm(matching_directories)
-rm(directory)
+#rm(directory)
 rm(json_files)
 rm(load_json_file)
 rm(json_data)
@@ -548,7 +548,10 @@ A.bat <- B.batting %>%
 E.batAvg.TY <- makeBatAvgs(A.bat)
 
 # now all years
-B.batAvg <- makeBatAvgs(B.batting)
+A.bat <- B.batting %>%
+  filter(!is.na(Runs))
+
+B.batAvg <- makeBatAvgs(A.bat)
 B.batAvg <- B.batAvg[!is.na(B.batAvg$batsman_id),]
 
 # Remove the temporary table
