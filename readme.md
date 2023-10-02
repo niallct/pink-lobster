@@ -9,36 +9,13 @@
  * Set the year, club and team of interest in `config/config.yaml`. Use ID numbers which appear in the data
 
 ### Structure
-Your working directory should look like this:
-
-├── newdata 
-│   ├── current
-│   │   ├── seasons
-│   │   │   ├── 2023
-│   │   │   │   ├── clubs
-│   │   │   │   │   ├── [many directories, one per club]
-│   │   │   │   ├── match_details
-│   │   │   │   │   ├── *.json
-│   │   ├── clubs
-│   │   │   ├── [many directories, one per club]
-│   │   │   │   ├── players.json
-│   ├── previous
-│   │   ├── seasons
-│   │   ├── previous-seasons
-│   │   │   ├── seasons
-│   │   │   │   ├── [many directories, one per year]
-│   │   │   │   │   ├── clubs
-│   │   │   │   │   │   ├── [many directories, one per club]
-│   │   │   │   │   ├── match_details
-│   │   │   │   │   │   ├── *.json
-│   │   │   ├── clubs
-│   │   │   │   ├── [many directories, one per club]
-│   │   │   │   │   ├── players.json
-├── config
-│   ├── config.yaml
-├── stats-working.Rmd
-├── parse-raw-data.R
-└── data
+Your working directory should contain:
+ - a directory `data`
+ - parse-raw-data.R
+ - stats-working.Rmd
+ - a directory `newdata`
+   - `current` containing the contents of current-season.zip
+   - `previous` containing the contents of previous-seasons.zip 
             
             
 ### Making interesting data
