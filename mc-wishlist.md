@@ -9,21 +9,22 @@
 -   automate downloading, unzipping
 -   loading player data: capt, keeper
 -   dump out a list of our players -- also teams?
--   somesort of thing to autosuggest competitions of interest
+-   some sort of thing to autosuggest competitions of interest
 -   generate team, club, ground etc lookup tables from the main match data
--   bring RO to the fielding table
+-   bring run outs to the fielding table
 -   match data: lift out home and away totals, ie to give a lovely match summary
 -   something about a short result statement HW, AW, D, A, etc?
 
 ## features to file/do
 -   total runs, wkts, run/wkt for, against; each XI
--   bowling stats -- % of balls tht are wd/nb, % of maidens
+-   bowling stats -- % of balls that are wd/nb, % of maidens
 -   batter performance by ground, day of week
 -   most runs scored, wickets taken,  invid inns and all season, for league, cup, friendly
--   most ducks
+-   most ducks, longest duck
+-   nebulous best fielder
 -   tossing performance
 -   a lookup, all matches between CoI and an arbitrary club
--   a pretty way to show arbitrary filtered ds - bat, etc - eg with ids stripped
+-   a pretty way to show arbitrary filtered dataset - batting, etc - eg with ids stripped
 -   our and opponents recent innings should be matches presented in a nicer format
 -   fastest fifty, hundred
 -   most runs in a year
