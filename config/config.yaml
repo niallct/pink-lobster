@@ -5,22 +5,54 @@ default_list_length: 12
 club_of_interest: "4363"
 club_name: "Milton CC"
 
+opponents_of_interest: 
+# - "14848"
+ - 12697
+ - 8183
+
+player_to_plot: 1878269
+#1878269
+#5473720
+
 teams_of_interest:
     Firsts: 9865
     Seconds: 9866
     Thirds: 9867
     Midweek: 161677
     Friendly: 9868
+    #Friendly 2: 162507
+    
+home_grounds:
+ - 51122
+ - 12581
  
-opponents_of_interest: 
-# - "14848"
- - "12697"
- - "8183"
+home_ground_names:
+   51122: "NLP"
+   12581: "Sycamores"
+ 
+qualify_balls_faced: 300
+
+qualify_balls_bowled: 300
+    
+#use this to exclude youth sides:
+excluded_teams:
+ - 9872 #colts
+ - 82246 # u10
+ - 9871 # u11
+ - 82254 # u12
+ - 9870 # u13
+ - 134986 # another u13?
+ - 9869 # u14
+ - 24125 # u15
+ 
+excluded_leagues:
+ - 7321 # "Cambridgeshire Youth Cricket Association"
  
 leagues_of_interest:
- - 7387 # national village cup
- - 269 # Cambridgeshire & Huntingdonshire Premier League
- - 10270 # Business House League
+ - 7387 # "National Village Cup"
+ - 269 # "Cambridgeshire & Huntingdonshire Premier League"
+ - 270 # "Cambridgeshire Cricket Association"
+ - 10270 # "Cambridge Business House League"
  
 competitions_of_interest:
  - 101141
@@ -58,11 +90,23 @@ competitions_of_interest:
 
 competitions_of_interest_last_curated: "2023-08-25"
 
-home_grounds:
- - 51122
- - 12581
- 
-qualify_balls_faced: 300
-
-qualify_balls_bowled: 300
+# spurious matches -- found by unusual dismissals, initially
+excluded_matches:
+ - 4735382
+ - 4735364
+ - 4735216
+ - 4735198
+ - 4735186
+ - 4735183
+ - 4735132
+ - 4735129
+ - 4735120
+ - 4735102
+ - 4510987
+ - 4511037
+ - 4512821
+ - 4512829
+ - 4512934
+ - 4512958
+ - 3211535 # this is nearly complete but still four hit ball twice
 ---

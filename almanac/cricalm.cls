@@ -6,8 +6,9 @@
 %\RequirePackage{xcolor}
 %\definecolor{slcolor}{HTML}{882B21}
 
-\renewcommand{\footnotesize}{\fontsize{4}{5}\selectfont}
-\renewcommand{\normalsize}{\fontsize{6}{7}\selectfont}
+\renewcommand{\footnotesize}{\fontsize{4}{4.8}\selectfont}
+\renewcommand{\small}{\fontsize{5}{5.4}\selectfont}
+\renewcommand{\normalsize}{\fontsize{5}{5.4}\selectfont}
 \renewcommand{\large}{\fontsize{8}{10}\selectfont}
 \renewcommand{\Large}{\fontsize{10}{12}\selectfont}
 
