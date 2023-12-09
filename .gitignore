@@ -39,4 +39,6 @@ data/*
 # the main incoming data dump
 newdata/*
 play-.R
-stats-working.log
+# outputty files
+*.log
+*.pdf
