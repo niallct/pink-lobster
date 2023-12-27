@@ -110,12 +110,20 @@ H.mallow <- c("Match Summary", "Date", "Result",
 H.phlox <- c("Match Summary", "Date", "Result",
               "Type", "Ground")
 
-# H.hyacinth <- c("Match Summary", "Date", "Result") defined under Plain lower down
+
+H.hyacinth <- c("Match Summary", "Date", "Result")
+H.F.hyacinthfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
+  column_spec(1, width = "10em") %>%
+  column_spec(2, width = "6em") %>%
+  column_spec(3, width = "8em")
+
 
 H.freesia   <- c("Home Club", "Away Club", "Date", "Ground", "Match Aggregate", "Match Overs")
 H.F.freesia <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
   kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
   column_spec(1, width = "8em") %>%
   column_spec(2, width = "8em") %>%
   column_spec(4, width = "6em")
@@ -143,9 +151,9 @@ H.wolfsbane <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Groun
 H.peony  <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Bowlers")
 H.F.dianthusfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
-  column_spec(1, width = "9em") %>%
-  column_spec(5, width = "9em") %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
+  column_spec(1, width = "8em") %>%
+  column_spec(5, width = "8em") %>%
   column_spec(6, width = "7em")
 
 
@@ -163,22 +171,22 @@ H.aspidistra <-  c("Name", "Runs", "Balls", "SR", "Date",         "Fielding Club
 
 H.F.aspidistra <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
   column_spec(6, width = "8em") %>%
   column_spec(7, width = "8em")
 
 H.lily <-        c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground",       "Res")
 H.hibiscus <-    c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground", "4", "6")
 H.safflower <-   c("Name", "Runs", "Balls", "SR", "Date", "Batting Club", "Fielding Club", "Ground", "How Out") 
-H.thistle <-     c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground",       "Opposition Score", "Contrib")
+H.thistle <-     c("Name", "Runs", "Balls", "SR", "Date", "Fielding Club", "Opposition Score", "Contrib")
 
 H.F.lilyfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>% 
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), 
-                font_size = 7)  %>% 
-  column_spec(1, width = "8em") %>%
-  column_spec(6, width = "5em") %>%
-  column_spec(7, width = "8em") %>%
+                font_size = 6)  %>% 
+  column_spec(1, width = "6em") %>%
+  column_spec(6, width = "6em") %>%
+  column_spec(7, width = "6em") %>%
   column_spec(8, width = "5em")
 
 
@@ -207,10 +215,11 @@ H.lupin <-  c("Name", "O", "M", "R", "W", "Date", "Fielding Side", "Batting Club
 
 H.F.cyclamen <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
-  column_spec(7, width = "8em") %>%
-  column_spec(8, width = "8em")  %>%
-  column_spec(9, width = "8em") 
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
+  column_spec(7, width = "6em") %>%
+  column_spec(7, width = "6em") %>%
+  column_spec(8, width = "6em")  %>%
+  column_spec(9, width = "6em") 
 
 # bowling avg is clematis, which displays in plain function
 
@@ -227,10 +236,12 @@ H.foxglove <- c("Match Summary", "Date", "Result",
 H.plum <-   c("Name", "Ct", "Std", "RO", "Date", "Fielding Club", "Batting Club", "Ground") 
 H.F.plum <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 7) %>%
-  column_spec(5, width = "8em") %>%
-  column_spec(6, width = "9em") %>%
-  column_spec(7, width = "9em")
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
+  column_spec(1, width = "6em") %>%
+  column_spec(5, width = "6em") %>%
+  column_spec(6, width = "6em") %>%
+  column_spec(7, width = "6em") %>%
+column_spec(8, width = "6em") 
 
 
 # allrounders
@@ -244,6 +255,15 @@ H.violet <- c("Match Summary", "Date",
                 "Ground", 
                "Name", "Runs", "Balls", 
                "O", "M", "R", "W", "Ct", "Std") 
+H.F.violetfam <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = 6) %>%
+  column_spec(1, width = "8em") %>%
+  column_spec(2, width = "4em") %>%
+  column_spec(3, width = "4em") %>%
+  column_spec(4, width = "4em") %>%
+   column_spec(5, width = "1.5em") %>%
+  column_spec(6, width = "1.5em") 
 
 H.petuina <- c("Name", "Runs", "BatAvg", "W", "BwlAvg", "Ct", "Std")
 
@@ -252,7 +272,7 @@ H.rose2 <- c("Name", "Season",  "Runs",   "Catches",  "Matches")
 
 # plain display-ing things
 
-H.hyacinth <- c("Match Summary", "Date", "Result")
+
 H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
 H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
 H.crocosmia <-   c("Name", "M", "Ct", "Std", "RO", "Dis/Inns")
@@ -265,7 +285,7 @@ H.F.plain <- function(x, this_caption, flower) x %>%
   select(all_of(flower)) %>% 
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
-                font_size = 7) 
+                font_size = 6) 
 
 # agapanthus, alyssum, buddleia, buttercup, carnation, clover, dahlia, echinacea, fuchsia, geranium, gladiolus, honeysuckle, hydrangea, jasmine, ipomoea, iris, lavender, lotus, magnolia, narcissus, nigella, orchid, oxeye, poppy, snowdrop, sunflower, tulip, verbena, waterlily, wisteria, 
 
@@ -639,7 +659,7 @@ cat ('\n\n')
 ### Our recent innings
 ```{r recent-inns}
 F.inningses.us %>% slice_max(actuallyDate, n=conf$default_list_length) %>% 
-  H.F.plain("Recent club innings", H.hyacinth) #was dianthus
+  H.F.hyacinthfam("Recent club innings", H.hyacinth) #was dianthus
 ```
 
 
@@ -690,7 +710,7 @@ F.inningses.us %>% filter(Yr==conf$year_of_interest) %>%
 B.allround %>% filter(Runs >= 30 & W >= 3 & 
                         batting_club_id == conf$club_of_interest & 
                         Yr==conf$year_of_interest) %>% 
-  H.F.plain("Thirty and three-for", H.violet)
+  H.F.violetfam("Thirty and three-for", H.violet)
 ```
 
 ## Fielding
@@ -1449,7 +1469,7 @@ F.inningses.circle %>%
 B.inningses %>% filter(batting_club_id == conf$club_of_interest,
                        `Runs/Wkt`!=0) %>%
   slice_min(`Runs/Wkt`, n=conf$default_list_length ) %>%
-  H.F.plain("Lowest runs/wkt, our batting", H.hyacinth)
+  H.F.hyacinthfam("Lowest runs/wkt, our batting", H.hyacinth)
 ```
 
 
@@ -1459,7 +1479,7 @@ B.inningses %>% filter(batting_club_id == conf$club_of_interest,
 B.inningses %>% filter(fielding_club_id == conf$club_of_interest,
                        `Runs/Wkt`!=0) %>%
   slice_min(`Runs/Wkt`, n=conf$default_list_length ) %>%
-  H.F.plain("Lowest runs/wkt, our batting", H.hyacinth)
+  H.F.hyacinthfam("Lowest runs/wkt, our batting", H.hyacinth)
 ```
 
 ### HIghest runs per wicket
@@ -1470,7 +1490,7 @@ B.inningses %>% filter(fielding_club_id == conf$club_of_interest,
 B.inningses %>% filter(batting_club_id == conf$club_of_interest,
                        `Runs/Wkt`!=0) %>%
   slice_max(`Runs/Wkt`, n=conf$default_list_length ) %>%
-  H.F.plain("Lowest runs/wkt, our batting", H.hyacinth)
+  H.F.hyacinthfam("Lowest runs/wkt, our batting", H.hyacinth)
 ```
 
 
@@ -1480,7 +1500,7 @@ B.inningses %>% filter(batting_club_id == conf$club_of_interest,
 B.inningses %>% filter(fielding_club_id == conf$club_of_interest,
                        `Runs/Wkt`!=0) %>%
   slice_max(`Runs/Wkt`, n=conf$default_list_length ) %>%
-  H.F.plain("Lowest runs/wkt, our batting", H.hyacinth)
+  H.F.hyacinthfam("Lowest runs/wkt, our batting", H.hyacinth)
 ```
 
 ### Highest total without batting milestones
@@ -1489,12 +1509,12 @@ In all of our matches
 # TODO output a short scorecard here
 F.inningses.circle %>% filter(topscore < 100) %>% 
   slice_max(Total, n=conf$default_list_length ) %>%
-  H.F.plain("Highest totals without any individual century", H.hyacinth)
+  H.F.hyacinthfam("Highest totals without any individual century", H.hyacinth)
 
 
 F.inningses.circle %>% filter(topscore < 50) %>% 
   slice_max(Total, n=conf$default_list_length ) %>%
-  H.F.plain("Highest totals without any individual fifty", H.hyacinth)
+  H.F.hyacinthfam("Highest totals without any individual fifty", H.hyacinth)
 
 
 ```
@@ -1504,11 +1524,11 @@ F.inningses.circle %>% filter(topscore < 50) %>%
 # TODO output a short scorecard here
 F.inningses.circle %>% filter(numcenturies >= 2) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Innings with two or more centuries", H.hyacinth)
+  H.F.hyacinthfam("Innings with two or more centuries", H.hyacinth)
 
 F.inningses.circle %>% filter(numfifties >= 3) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Innings with three or more fifties", H.hyacinth)
+  H.F.hyacinthfam("Innings with three or more fifties", H.hyacinth)
 
 
 ```
@@ -1520,7 +1540,7 @@ Qualification: six or more batters in the innings, all into double figures
 # TODO output a short scorecard here
 F.inningses.circle %>% filter(botscore >= 10  & numbats >= 6) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Innings with all (6+) batters making 10 or more", H.hyacinth)
+  H.F.hyacinthfam("Innings with all (6+) batters making 10 or more", H.hyacinth)
 ```
 
 ### Winning with low individual scores
@@ -1529,7 +1549,7 @@ F.inningses.circle %>% filter(botscore >= 10  & numbats >= 6) %>%
 # TODO output a short scorecard here
 F.inningses.circle %>% filter(Res == "W", topscore != 0,  topscore <= 15) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Winning with no batter over 15", H.hyacinth)
+  H.F.hyacinthfam("Winning with no batter over 15", H.hyacinth)
 
 ```
 
@@ -1542,11 +1562,11 @@ Showing recent instances:
 # TODO output a short scorecard here
 F.inningses.circle %>% filter(numfourfs >= 2) %>% 
   slice_max(actuallyDate, n=conf$default_list_length ) %>%
-  H.F.plain("Innings with two four-fors", H.hyacinth)
+  H.F.hyacinthfam("Innings with two four-fors", H.hyacinth)
 
 F.inningses.circle %>% filter(minwkts >= 2) %>% 
   slice_max(actuallyDate, n=conf$default_list_length ) %>%
-  H.F.plain("All bowlers taking at least two wickets", H.hyacinth)
+  H.F.hyacinthfam("All bowlers taking at least two wickets", H.hyacinth)
 ```
 
 ### Conceding runs equitably
@@ -1555,7 +1575,7 @@ F.inningses.circle %>% filter(minwkts >= 2) %>%
 # TODO output a short scorecard here
 F.inningses.circle %>% filter(Total > 250 & maxrunsccd < 50) %>%
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Innings for 250+ with no bowler conceding 50", H.hyacinth)
+  H.F.hyacinthfam("Innings for 250+ with no bowler conceding 50", H.hyacinth)
 ```
 
 
@@ -1641,7 +1661,7 @@ E.matches %>% filter(is_sphere & result_applied_to != "" & `Match Aggregate` > 0
 ```{r highmarginruns}
 F.inningses.circle %>% filter(BatInnsWinner == 1, Res == "W", Margin >= 250) %>% 
     arrange(desc(actuallyDate)) %>%
-    H.F.plain("Wins by 250 runs or more", H.phlox)
+    H.F.hyacinthfam("Wins by 250 runs or more", H.phlox)
 
 ```
 
@@ -1649,7 +1669,7 @@ F.inningses.circle %>% filter(BatInnsWinner == 1, Res == "W", Margin >= 250) %>%
 ```{r highmarginwkts}
 F.inningses.circle %>% filter(BatInnsWinner == 2, Res == "W", Margin == 10) %>% 
     arrange(desc(actuallyDate)) %>%
-    H.F.plain("Wins by 10 wickets", H.phlox)
+    H.F.hyacinthfam("Wins by 10 wickets", H.phlox)
 
 ```
 
@@ -1661,7 +1681,7 @@ By 1 run
 ```{r lowmargin}
 F.inningses.circle %>% filter(BatInnsWinner == 1, Res == "W", Margin == 1) %>% 
     arrange(desc(actuallyDate)) %>%
-    H.F.plain("Wins by 1 run", H.phlox)
+    H.F.hyacinthfam("Wins by 1 run", H.phlox)
 
 a.win1wktUs <- F.inningses.circle %>%
   filter(BatInnsWinner == 2, Res == "W", Margin == 1, 
@@ -1713,7 +1733,7 @@ a.runsinday %>%
 B.allround %>% filter(Runs >= 50 & W >= 4 & 
                         batting_club_id == conf$club_of_interest) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Fifty and four-for", H.violet)
+  H.F.violetfam("Fifty and four-for", H.violet)
 ```
 
 
@@ -1723,7 +1743,7 @@ B.allround %>% filter(Runs >= 50 & W >= 4 &
 B.allround %>% filter(Runs >= 100 & W >= 5 & 
                         is_circle==TRUE) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Hundred and five-for", H.violet)
+  H.F.violetfam("Hundred and five-for", H.violet)
 ```
 
 ### Fifty runs and three fielding dismissals in same match
@@ -1732,7 +1752,7 @@ B.allround %>% filter(Runs >= 100 & W >= 5 &
 B.allround %>% filter(Runs >= 50 & (Ct+ Std) >= 3 & 
                         batting_club_id == conf$club_of_interest) %>% 
   arrange(desc(actuallyDate)) %>%
-  H.F.plain("Fifty and three dismissals", H.violet)
+  H.F.violetfam("Fifty and three dismissals", H.violet)
 ```
 
 ### Season double
@@ -1865,7 +1885,7 @@ F.fielding.us  %>% filter(Ct >= 3) %>%
 ```{r catches-total}
 F.fielding.us %>% 
   group_by(player_id, Name) %>% summarise(n = sum(Ct)) %>% ungroup() %>%
-  filter(n != 0) %>% arrange(-n) %>%
+  filter(n >= 10) %>% arrange(-n) %>%
   H.F.plain("Most total catches", H.mugwort)
 
 ```
@@ -1966,7 +1986,7 @@ F.fielding.us  %>% filter(`W-K` == TRUE) %>%
 ```{r wkdiss-total}
 F.fielding.us %>% filter(`W-K` == TRUE) %>%
   group_by(player_id, Name) %>% summarise(n = sum(Ct)) %>% ungroup() %>%
-  filter(n != 0) %>% arrange(-n) %>%
+  filter(n >= 10) %>% arrange(-n) %>%
   H.F.plain("Most total WK catches", H.mugwort)
 
 F.fielding.us %>% filter(`W-K` == TRUE) %>%
@@ -2067,7 +2087,7 @@ F.inningses.circle %>% group_by(ground_id, Ground) %>%
 F.inningses.circle %>% group_by(ground_id) %>%
   slice_max(Total) %>% ungroup() %>% drop_na(Ground) %>%
      slice_max(Total, n=2*conf$default_list_length) %>%
-    H.F.plain("Highest team total at grounds", H.phlox)
+    H.F.hyacinthfam("Highest team total at grounds", H.phlox)
 ```
 
 
@@ -2533,7 +2553,7 @@ for (i in 1:length(conf$opponents_of_interest)) {
   
   B.inningses %>% filter(batting_club_id == conf$opponents_of_interest[[i]]) %>%
     slice_max(actuallyDate, n=conf$default_list_length) %>% 
-    H.F.plain("Recent opponents innings", H.hyacinth) %>%
+    H.F.hyacinthfam("Recent opponents innings", H.hyacinth) %>%
     print()
   
   cat ('\n\n')
@@ -2542,7 +2562,7 @@ for (i in 1:length(conf$opponents_of_interest)) {
     filter(conf$opponents_of_interest[[i]] == home_club_id |
              conf$opponents_of_interest[[i]] == away_club_id )%>%
     slice_max(actuallyDate, n=conf$default_list_length) %>% 
-    H.F.plain("Recent matches between us", H.hyacinth) %>%
+    H.F.hyacinthfam("Recent matches between us", H.hyacinth) %>%
     print()
   
   cat ('\n\n')
