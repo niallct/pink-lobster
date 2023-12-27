@@ -109,4 +109,6 @@ excluded_matches:
  - 4512934
  - 4512958
  - 3211535 # this is nearly complete but still four hit ball twice
+ - 515424 # duplicate batter
+ - 440098 # duplicate batter
 ---

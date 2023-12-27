@@ -1,5 +1,4 @@
 # ==== initialise ====
-# new get/format data
 library(jsonlite)
 library(purrr)
 library(dplyr)
@@ -651,7 +650,9 @@ B.bowling <- B.bowling %>%
     ovs.o = as.numeric(ifelse(is.na(str_split_i(O, "\\.", 1)),0,str_split_i(O, "\\.", 1))),
     ovs.b = as.numeric(ifelse(is.na(str_split_i(O, "\\.", 2)),0,str_split_i(O, "\\.", 2))),
     BB = ifelse(is.na(O), NA, (ovs.o * 6 ) + ovs.b + Wd + NB),
-    SRx = ifelse(is.na(BB), NA, ifelse( BB == 0, NA, avRn(W * 100 / BB) ) ),
+  #  SRx = ifelse(is.na(BB), NA, ifelse( BB == 0, NA, avRn(W * 100 / BB) ) ),
+  #  SR = ifelse(is.na(SRx), NA, as.numeric(SRx)),
+    SRx = ifelse(is.na(BB), NA, ifelse( BB == 0, NA, avRn(BB / W) ) ),
     SR = ifelse(is.na(SRx), NA, as.numeric(SRx)),
     Econ = ifelse((ovs.o + ovs.b/6) ==0, NA, as.numeric( avRn(R  / (ovs.o + ovs.b/6)))  ),
     ExtPc = ifelse(is.na(R), NA, avRn(100 * as.numeric( (Wd + NB) / R))),
@@ -752,6 +753,28 @@ B.fieldsumm <- B.fielding %>% makefieldsumm()
 #   select(-c(bat, bowl)) %>%
 #   rowwise() %>% 
 #   mutate(fow = list(as.data.frame(fow)) )%>% unnest(fow)
+
+# ---- allrounder -----
+
+# some sort of allrounder omnitable; this relies on batting as the more complete record
+# records with only bowling are therefore incomplete but not very interesting anyway
+# not really sure why it's a full join but just left it as it seems to work
+
+B.allround <- full_join(B.batting %>% filter(innings_number==1),
+                 B.bowling%>% filter(innings_number==1),
+                 by = c("match_id" = "match_id", "batsman_id" = "bowler_id",
+                        "Match Summary", "Date", "Result", "Type", "Name", "actuallyDate" ),
+                 keep = F, na_matches = "never", multiple = "first") %>%
+  left_join(B.fielding %>% select(match_id, player_id, Ct, Std, Capt, "W-K"),
+            by=c("match_id", "batsman_id" = "player_id"), keep=F, na_matches= "never" , multiple = "first") %>%
+  select("Match Summary", "Date", "Result", "Type", "Name",
+         "Ground" = "Ground.x", "Club" = "Batting Club.x",
+         "Runs", "Balls", "BatSR" = "SR.x", "How Out", "4", "6", "Contrib",
+         "O", "M", "R", "W" = "W.y", "Avg", "BowlSR" = "SR.y", "Econ",
+         "Ct", "Std", "Capt", "W-K",
+         "is_circle" = "is_circle.x", "is_sphere" = "is_sphere.x", 
+         "batting_club_id" = "batting_club_id.x", "Yr" = "Yr.x", "actuallyDate")
+
 
 # ---- dataset size --------------------
 # get the size, start and end of the dataset
@@ -856,7 +879,8 @@ makeBowlAvgs <- function(bowldata) {
       BB = sum(BB, na.rm = TRUE),
       Avg = as.numeric(format(round(R / W, 2), nsmall = 2)),
       Econ = avRn((R * 6 / BB)),
-      SR = avRn(W * 100 / BB),
+      #SR = avRn(W * 100 / BB),
+      SR = avRn(BB / W),
       O = paste(BB %/% 6, BB %% 6, sep="."),
     ) %>%
     ungroup() %>%
@@ -884,6 +908,17 @@ B.bowlAvg <- B.bowlAvg[!is.na(B.bowlAvg$bowler_id),]
 
 # Remove the temporary table
 rm(A.bowl)
+
+
+# ---- a joined avgs table ----
+
+B.joinAvgs <- full_join(B.batAvg, B.bowlAvg, by = c("batsman_id"="bowler_id"),
+                        keep = F, na_matches = "never", relationship = "many-to-many") %>%
+  select(Name= Name.x, 
+         Runs, Inns, NO, BatAvg = Avg.x, HS, BatSR = SR.x, `50`, `100`, BF, `4s`, `6s`,
+         Ct, Std, RO,
+         O, M, R, W, BB, BwlAvg = Avg.y, `5wi`, Econ, BwlSR = SR.y, Best,
+         club_id.x, club_id.y, is_us.x, is_us.y)
 
 # ==== match details ? teams =================================
 # match details... CURRENT > SEASONS > YYYY > CLUBS
@@ -958,6 +993,8 @@ save(B.fielding, file="./data/Bfielding")
 save(B.fieldsumm, file="./data/Bfieldsumm")
 save(E.fieldsumm, file="./data/Efieldsumm")
 save(B.inningses, file="./data/Binningses")
+save(B.allround, file="./data/Ballround")
+save(B.joinAvgs, file="./data/BjoinAvgs")
 save(E.matches, file="./data/Ematches")
 save(B.matches, file="./data/Bmatches")
 save(E.players, file="./data/Eplayers")

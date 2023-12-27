@@ -13,7 +13,11 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
 #source("get-data.R")
 #source("../parse-raw-data.R", local = knitr::knit_global())
 #load("./data/*")
@@ -28,6 +32,8 @@ load("./data/Bbowling")
 load("./data/Bdates")
 load("./data/Bfielding")
 load("./data/Binningses")
+load("./data/Ballround")
+load("./data/BjoinAvgs")
 load("./data/Ematches")
 load("./data/Bmatches")
 load("./data/Eplayers")
@@ -227,6 +233,23 @@ H.F.plum <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>
   column_spec(7, width = "9em")
 
 
+# allrounders
+
+H.yarrow <- c("Match Summary", "Date", "Result",
+               "Type", "Ground", 
+               "Name", "Club", "Runs", "Balls", "BatSR", "How Out", "4", "6", "Contrib",
+               "O", "M", "R", "W", "Avg", "BowlSR", "Econ") 
+
+H.violet <- c("Match Summary", "Date",
+                "Ground", 
+               "Name", "Runs", "Balls", 
+               "O", "M", "R", "W", "Ct", "Std") 
+
+H.petuina <- c("Name", "Runs", "BatAvg", "W", "BwlAvg", "Ct", "Std")
+
+H.rose <- c("Name", "Season",  "Runs",   "Wkts",  "Matches")
+H.rose2 <- c("Name", "Season",  "Runs",   "Catches",  "Matches")
+
 # plain display-ing things
 
 H.hyacinth <- c("Match Summary", "Date", "Result")
@@ -234,6 +257,7 @@ H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
 H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
 H.crocosmia <-   c("Name", "M", "Ct", "Std", "RO", "Dis/Inns")
 H.mugwort <- c("Name", "n")
+H.mimosa <- c("Name", "n", "Innings")
 H.yarrow <- c("Season", "Name", "Matches")
 H.heather <- c("Season", "Name", "Total", "Matches")
 H.heatherAv <- c("Season", "Name", "Avg", "Matches", "Wkts")
@@ -243,7 +267,7 @@ H.F.plain <- function(x, this_caption, flower) x %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
                 font_size = 7) 
 
-# agapanthus, alyssum,  buddleia, buttercup, carnation, clover, , dahlia, echinacea, fuchsia, geranium, gladiolus, honeysuckle, hydrangea, jasmine, ipomoea, iris, lavender, lotus,, magnolia, mimosa, narcissus, nigella, orchid, oxeye, poppy, petuina, rose, snowdrop, sunflower, tulip, verbena, violet, waterlily, wisteria, yarrow
+# agapanthus, alyssum, buddleia, buttercup, carnation, clover, dahlia, echinacea, fuchsia, geranium, gladiolus, honeysuckle, hydrangea, jasmine, ipomoea, iris, lavender, lotus, magnolia, narcissus, nigella, orchid, oxeye, poppy, snowdrop, sunflower, tulip, verbena, waterlily, wisteria, 
 
 ```
 
@@ -660,7 +684,14 @@ F.inningses.us %>% filter(Yr==conf$year_of_interest) %>%
 ```
 
 ## All-rounder
-todo
+### Thirty runs and three wickets in same match
+
+```{r double-us-ty}
+B.allround %>% filter(Runs >= 30 & W >= 3 & 
+                        batting_club_id == conf$club_of_interest & 
+                        Yr==conf$year_of_interest) %>% 
+  H.F.plain("Thirty and three-for", H.violet)
+```
 
 ## Fielding
 
@@ -847,12 +878,21 @@ B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
 ```
 
 ### Most ducks
-```{r ducks-all}
-B.batting %>%   filter(Runs==0, Name!="Unsure",
-                       us_batting==TRUE) %>%
-  group_by(Name) %>% tally() %>% 
+```{r ducks-all, message=FALSE, warning=FALSE}
+#B.batting %>%   filter(Runs==0, Name!="Unsure",
+#                       us_batting==TRUE) %>%
+#  group_by(batsman_id, Name) %>% tally() %>% ungroup() %>%
+#  slice_max(n, n=conf$default_list_length) %>%
+#  H.F.plain("Count of ducks, all time", H.mugwort)
+
+B.batting %>%   filter(Name!="Unsure",
+                       us_batting==TRUE,
+                       !is.na(Runs)) %>%
+  group_by(batsman_id, Name) %>%
+  summarise(n = sum(Runs==0), Innings = sum(!is.na(Runs))) %>% ungroup() %>%
   slice_max(n, n=conf$default_list_length) %>%
-  H.F.plain("Count of ducks, all time", H.mugwort)
+  H.F.plain("Count of ducks, all time", H.mimosa)
+
 ```
 
 ### Longest duck
@@ -1094,7 +1134,7 @@ Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
 ```{r bowl-avgs-alltime-bestsr}
 B.bowlAvg %>% 
   filter(club_id == conf$club_of_interest & !is.na(Name) & BB >= conf$qualify_balls_bowled) %>%
-  slice_max(SR, n=conf$default_list_length)%>%
+  slice_min(SR, n=conf$default_list_length)%>%
   H.F.plain("Best strike rate, all time", H.clematis)
 ```
 
@@ -1666,6 +1706,90 @@ a.runsinday %>%
 ```
 
 ## All-rounder
+
+### Fifty runs and four wickets in same match
+
+```{r little-double-us}
+B.allround %>% filter(Runs >= 50 & W >= 4 & 
+                        batting_club_id == conf$club_of_interest) %>% 
+  arrange(desc(actuallyDate)) %>%
+  H.F.plain("Fifty and four-for", H.violet)
+```
+
+
+### Hundred and five-for, our matches
+
+```{r double-us}
+B.allround %>% filter(Runs >= 100 & W >= 5 & 
+                        is_circle==TRUE) %>% 
+  arrange(desc(actuallyDate)) %>%
+  H.F.plain("Hundred and five-for", H.violet)
+```
+
+### Fifty runs and three fielding dismissals in same match
+
+```{r fldr-double-us}
+B.allround %>% filter(Runs >= 50 & (Ct+ Std) >= 3 & 
+                        batting_club_id == conf$club_of_interest) %>% 
+  arrange(desc(actuallyDate)) %>%
+  H.F.plain("Fifty and three dismissals", H.violet)
+```
+
+### Season double
+200 runs and 20 wickets in a season
+
+```{r season-double}
+full_join(
+B.batting %>% filter(batting_club_id== conf$club_of_interest) %>%
+  group_by(batsman_id, Yr, Name) %>% summarise(`Total` = sum(Runs), `Matches` = n()) %>% ungroup() %>%
+  rename(Season = Yr) ,
+B.bowling %>% filter(fielding_club_id== conf$club_of_interest) %>%
+  group_by(bowler_id, Yr, Name) %>% summarise(`Total` = sum(W), `Matches` = n()) %>% ungroup() %>%
+  rename(Season = Yr),
+by = c("Season", "batsman_id" = "bowler_id"), 
+keep = F, na_matches = "never") %>%
+  select(Name = Name.x, Season, Runs = Total.x, Wkts = Total.y, Matches = max("Matches.x", "Matches.y")) %>%
+  filter(Runs >= 200, Wkts >= 20)  %>%
+  arrange(desc(Runs)) %>%
+  H.F.plain("Season double", H.rose)
+```
+
+
+200 runs and 8 catches
+
+```{r season-fldg-double}
+full_join(
+B.batting %>% filter(batting_club_id== conf$club_of_interest) %>%
+  group_by(batsman_id, Yr, Name) %>% summarise(`Total` = sum(Runs), `Matches` = n()) %>% ungroup() %>%
+  rename(Season = Yr) ,
+F.fielding.us %>% 
+  group_by(player_id, Yr, Name) %>% summarise(`Total` = sum(Ct), `Matches` = n()) %>% ungroup() %>% 
+  rename(Season = Yr),
+
+by = c("Season", "batsman_id" = "player_id"), 
+keep = F, na_matches = "never") %>%
+  select(Name = Name.x, Season, Runs = Total.x, Catches = Total.y, Matches = max("Matches.x", "Matches.y")) %>%
+  filter(Runs >= 200, Catches >= 10)  %>%
+  arrange(desc(Runs)) %>%
+  H.F.plain("Season double", H.rose2)
+```
+
+
+### Career double
+2000 runs and 50 wickets
+```{r career-double-us}
+# - allrounder := bat avg >= 15, <= 2.5 wkts/match
+B.joinAvgs %>% filter(Runs >= 2000 & W >= 50 & 
+                        (is_us.x == TRUE | is_us.y==TRUE) ) %>% 
+  H.F.plain("2000 runs and 50 wickets", H.petuina)
+```
+
+2000 runs and 50 fielding dismissals
+```{r career-fldr-double-us}
+B.joinAvgs %>% filter(Runs >= 2000 & (Ct+ Std) >= 50 & 
+                        (is_us.x == TRUE | is_us.y==TRUE) ) %>% 
+  H.F.plain("2000 runs and fifty dismissals", H.petuina)
+```
 
 ### Most appearances as captain
 
