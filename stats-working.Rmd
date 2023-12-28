@@ -753,17 +753,17 @@ Excludes run-outs, because data are too flaky to be reliable.
 
 ```{r wkdiss-thisyear}
 F.fielding.us %>% filter(Yr==conf$year_of_interest, `W-K` == TRUE) %>%
-  arrange(desc(actuallyDate)) %>%
+  arrange(desc(actuallyDate)) %>% filter(Ct >0) %>%
     slice_max(Ct, n=conf$default_list_length, with_ties = F ) %>% 
   H.F.plum("Most WK catches in an innings, this year", H.plum)
 
 F.fielding.us %>% filter(Yr==conf$year_of_interest) %>%
-  arrange(desc(actuallyDate)) %>%
+  arrange(desc(actuallyDate)) %>% filter(Std >0) %>%
     slice_max(Std, n=conf$default_list_length, with_ties = F ) %>% 
   H.F.plum("Most stumpings in an innings, this year", H.plum)
 
 F.fielding.us %>% filter(Yr==conf$year_of_interest, `W-K` == TRUE) %>%
-  arrange(desc(actuallyDate)) %>%
+  arrange(desc(actuallyDate)) %>% filter(Dis >0) %>%
     slice_max(Dis, n=conf$default_list_length, with_ties = F ) %>% 
   H.F.plum("Most dismissals in an innings, this year", H.plum)
 
