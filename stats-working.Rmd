@@ -246,10 +246,10 @@ column_spec(8, width = "6em")
 
 # allrounders
 
-H.yarrow <- c("Match Summary", "Date", "Result",
+H.waterlily <- c("Match Summary", "Date", "Result",
                "Type", "Ground", 
                "Name", "Club", "Runs", "Balls", "BatSR", "How Out", "4", "6", "Contrib",
-               "O", "M", "R", "W", "Avg", "BowlSR", "Econ") 
+               "O", "M", "R", "W", "Avg", "BowlSR", "Econ", "Ct", "Std", "Capt", "W-K") 
 
 H.violet <- c("Match Summary", "Date",
                 "Ground", 
