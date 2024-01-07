@@ -482,7 +482,7 @@ B.inningses <- B.inningses %>%
       batting_team_id == away_team_id ~ home_team_id,
       TRUE ~ NA
     ),
-    fielding_team_name = case_when(
+    `Fielding Team` = case_when(
       batting_team_id == home_team_id ~ away_team_name,
       batting_team_id == away_team_id ~ home_team_name,
       TRUE ~ NA
@@ -770,7 +770,7 @@ B.allround <- full_join(B.batting %>% filter(innings_number==1),
   select("Match Summary", "Date", "Result", "Type", "Name",
          "Ground" = "Ground.x", "Club" = "Batting Club.x",
          "Runs", "Balls", "BatSR" = "SR.x", "How Out", "4", "6", "Contrib",
-         "O", "M", "R", "W" = "W.y", "Avg", "BowlSR" = "SR.y", "Econ",
+         "O", "M", "R", "W" = "W.y", "Avg", "BowlSR" = "SR.y", "Econ", "Analy",
          "Ct", "Std", "Capt", "W-K",
          "is_circle" = "is_circle.x", "is_sphere" = "is_sphere.x", 
          "batting_club_id" = "batting_club_id.x", "Yr" = "Yr.x", "actuallyDate")
@@ -978,6 +978,68 @@ Y.teams <-  rbind(B.matches %>% select(home_team_id, home_team_name, home_club_i
                            club_id = away_club_id,
                            club_name = `Away Club`)) %>% 
   distinct() %>% drop_na()
+
+# ==== Pretty output tables ====
+H.mallow <- c("Match Summary", "Date", "Result",
+              "Type", "Ground", "Home Side", "Away Side",
+              #could add firstinns and secondinns set if nicely renamed
+              "Match Aggregate", "Match Overs")
+
+W.matches <- B.matches %>% select(all_of(H.mallow))
+
+H.pansy <- c("Match Summary", "Date", "Result",
+             "Type", "Ground", "Home Side", "Away Side",
+             #could add firstinns and secondinns set if nicely renamed
+             #"Match Aggregate", "Match Overs"
+             "position", "player_name", "captain", "wicket_keeper", "team")
+
+W.matchplayers <- E.matchplayers %>% select(all_of(H.pansy))
+
+H.impatiens <- c("Match Summary", "Date", "Result",
+                 "Type", "Ground", #"Home Side", "Away Side",
+                 "Batting Side", "Score", "Ovs",  "Fielding Side", "Opposition Score",
+                 "Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
+                 "Inns of match", 
+                 "Res", "Ven")
+
+W.inningses <- B.inningses %>% select(all_of(H.impatiens))
+
+H.begonia <- c("Match Summary", "Date", "Result",
+               "Type", "Ground", #"Home Side", "Away Side",
+               "Batting Side", "Score", "Ovs",  "Fielding Side", "Opposition Score",
+               #"Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
+               "Inns of match", 
+               "Res", "Ven",
+               "Name", "Runs", "Balls", "SR", "How Out", "4", "6", "Contrib")
+
+W.batting <- B.batting %>% select(all_of(H.begonia))
+
+H.lilac <- c("Match Summary", "Date", "Result",
+             "Type", "Ground", #"Home Side", "Away Side",
+             "Batting Side", "Score", "Ovs",  "Fielding Side", "Opposition Score",
+             #"Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
+             "Inns of match", 
+             "Res", "Ven",
+             "Name", "O", "M", "R", "W", "Avg", "SR", "Econ")
+
+W.bowling <- B.bowling %>% select(all_of(H.lilac))
+
+H.foxglove <- c("Match Summary", "Date", "Result",
+                "Type", "Ground", #"Home Side", "Away Side",
+               # "Batting Side", "Score", "Ovs",  "Fielding Side", "Opposition Score",
+                #"Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
+                #"Inns of match", 
+                #"Res", "Ven",
+                "Name", "Ct", "Std")
+
+W.fielding <- B.fielding %>% select(all_of(H.foxglove))
+
+H.waterlily <- c("Match Summary", "Date", "Result",
+              "Type", "Ground", 
+              "Name", "Club", "Runs", "Balls", "BatSR", "How Out", "4", "6", "Contrib",
+              "O", "M", "R", "W", "Avg", "BowlSR", "Econ", "Ct", "Std", "Capt", "W-K") 
+
+W.allround <- B.allround %>% select(all_of(H.waterlily))
 
 # ==== Output data ====
 # dump out for use by other scripts

@@ -1,5 +1,6 @@
 - automate downloading, unzipping; report on date of download
 - a little scorecard output
+- (some sort of summary for all matches) -- add to alm
 - a run rate analysis; min/max for/against
 - matches W L, D, A, each XI, season.
 - fix the longest run stuff to show all tied records rather than the nth
@@ -11,6 +12,7 @@
 - recording an individual performance - ACS v 123 - persona report
 - averages tables into the personal report
 - batting first, win, totals; by day-of-year
+- fix phsip table in the almo
 
 ## Partnerships
 ### almanac
