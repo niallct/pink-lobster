@@ -7,6 +7,7 @@
 - tossing performance; long run of W/L - consecutively losing the toss (data poor) (add to Alm/Records)
 - three or more hundreds in successive innings, 50 and 4-for in consecutive inns
 - First to 1000 runs, 100 wkts in a season
+- std A b B and std B b A in same inns? or juat all pairs like that
 - Same player, many teams -- ovall avgs? play for most sides? chg pers report to be for this club, all clubs
 - some sort of score / win predictor
 - recording an individual performance - ACS v 123 - persona report

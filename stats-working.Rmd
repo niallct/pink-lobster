@@ -400,6 +400,7 @@ F.batting.us %>% filter(Runs == 0  & Balls<= 1 & `How Out`!="not out" & Yr==conf
 ```{r ducks}
 B.batting %>%   filter(Yr == conf$year_of_interest, Name!="Unsure",
                        Runs==0,
+                       `How Out`!= "not out",
                        us_batting==TRUE) %>%
   group_by(Name) %>% tally() %>% slice_max(n, n=conf$default_list_length) %>%
   H.F.plain("Count of ducks", H.mugwort)
