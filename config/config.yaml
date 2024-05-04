@@ -8,11 +8,14 @@ club_name: "Milton CC"
 
 opponents_of_interest: 
 # - "14848"
- - 12697
- - 8183
+# - 12697 # Reach
+# - 8183 # Cambourne
+- 1771 # Chatteris
+- 23328 # Northstowe
+- 4096 # Longstanton GH
 
 player_to_plot: 1878269
-#1878269
+#1878269 # WFD
 #5473720
 
 teams_of_interest:
