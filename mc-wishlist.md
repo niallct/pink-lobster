@@ -1,5 +1,10 @@
 - automate downloading, unzipping; report on date of download
+- why Joe not in the 50s in a season list
+- minimum inns qualif to the bowl averages
 - a little scorecard output
+- bowling when designated wk
+- sort duplicate player ids in E.players.NC
+- catches/inns in outfiled vs as keeper
 - (some sort of summary for all matches) -- add to alm
 - a run rate analysis; min/max for/against
 - matches W L, D, A, each XI, season.
@@ -14,6 +19,7 @@
 - averages tables into the personal report
 - batting first, win, totals; by day-of-year
 - fix phsip table in the almo
+- longest run as nominal captain but not on field
 
 ## Partnerships
 ### almanac

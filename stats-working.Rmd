@@ -302,16 +302,19 @@ Season `r conf$year_of_interest`. Latest match in dataset: `r B.dates$all_latest
 Strike rates calculated using only innings in which balls faced are recorded. 
 
 ### Batting averages
-Showing highest average first 
+Showing highest average first. 
+Qualification: three innings.
 
 ```{r bat-avgs-thisyear}
-E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(Avg)) %>% H.F.plain("Batting averages, this year", H.aster)
+E.batAvg.TY %>% filter(club_id == conf$club_of_interest &
+                         Inns >= conf$qualify_inns_avgs  &
+                         !is.na(Name)) %>% arrange(desc(Avg)) %>% H.F.plain("Batting averages, this year", H.aster)
 ```
 
 ### Most runs
 
 ```{r mostruns-thisyear}
-E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(Runs)) %>% H.F.plain("Batting averages, this year", H.aster)
+E.batAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(Runs)) %>% H.F.plain("Runs scored, this year", H.aster)
 ```
 
 ### Most runs by match type
@@ -327,7 +330,8 @@ for (i in levels(F.batting.us$Type)) {
     # slice_max(adam, n=conf$default_list_length) %>%
     ungroup() %>%
     slice_max(n, n=conf$default_list_length) %>%
-    H.F.plain("Most runs by type, this year", H.mugwort) %>% 
+    H.F.plain(paste("Most runs in ", i, " games this year"),
+              H.mugwort) %>% 
     print()
   cat ('\n\n')
   
@@ -455,7 +459,7 @@ E.bowlAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arr
 Showing most wickets first
 ```{r mostwkts-thisyear}
 E.bowlAvg.TY %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>% arrange(desc(W), R) %>%
-  H.F.plain("Bowling averages", H.clematis)
+  H.F.plain("Most wickets this year", H.clematis)
 ```
 
 
@@ -517,8 +521,11 @@ F.bowling.us %>% filter(W ==0 & Yr==conf$year_of_interest ) %>%
 ```
 
 ### Outstanding analysis
+
+In our competitions
+
 ```{r strong-analysis-sph}
-F.bowling.us %>% filter(Yr == conf$year_of_interest)  %>% arrange(desc(W), R) %>%
+F.bowling.sphere %>% filter(Yr == conf$year_of_interest)  %>% arrange(desc(W), R) %>%
   slice_max(W, n=conf$default_list_length, with_ties = F) %>%
   H.F.cyclamen("Outstanding analysis, our competitions, this year", H.marigold)
 ```
@@ -799,10 +806,10 @@ F.inningses.circle %>% filter(Total >= 150 & Byes == 0 & Yr == conf$year_of_inte
 ```
 
 
-
+<!--
 # Almanack: all clubs
 
-TODO copy the local section
+TODO copy the local section -->
 
 # Records: `r conf$club_name`
 
@@ -814,7 +821,7 @@ Strike rates calculated using only innings in which balls faced are recorded.
 
 ### Most runs
 ```{r mostruns-alltime}
-B.batAvg %>% filter(club_id == conf$club_of_interest & !is.na(Name)) %>%
+B.batAvg %>% filter(is_us == TRUE & !is.na(Name)) %>%
   arrange(desc(Runs)) %>% H.F.plain("Runs scored, all time", H.aster)
 ```
 
@@ -1059,7 +1066,7 @@ Out handled the ball, hit the ball twice, obstructing the field, timed out or hi
 ```{r unusual-dismissals}
 unusual_dismissals <- c("handled ball", "hit ball twice", "obstructing the field", "timed out", "hit wicket")
 
-F.batting.us %>% filter(`How Out` %in% unusual_dismissals) %>% arrange(desc(actuallyDate)) %>%
+F.batting.circle %>% filter(`How Out` %in% unusual_dismissals) %>% arrange(desc(actuallyDate)) %>%
   H.F.lilyfam("Unusual dismissals", H.safflower)
 ```
 
@@ -1640,7 +1647,8 @@ This section appears to contain spurious results.
 In completed matches
 
 ```{r low-match-agg-allt}
-B.matches %>% filter(is_circle & !is.na(result_applied_to)) %>% 
+B.matches %>% filter(is_circle & !is.na(result_applied_to)
+                        & `Match Aggregate` > 0 ) %>% 
   slice_min(`Match Aggregate`, n=conf$default_list_length) %>% 
   H.F.freesia("Lowest match aggregate", H.freesia)
 ```
@@ -2110,6 +2118,7 @@ F.batting.circle %>% group_by(ground_id) %>%
 
 ```
 
+<!--
 # Records: all clubs
 
 TODO copy the local section
@@ -2146,6 +2155,8 @@ a.runsinday %>%
 
 ```
 
+
+-->
 
 \newpage
 # Experimental analyses
@@ -2491,6 +2502,11 @@ plot <- data %>% filter(`Inns of match`==1, Res %in% c("W", "L")) %>%
   )
 
 plot(plot)
+
+png('plot-winfirst.png')
+plot(plot)
+dev.off()
+
 ```
 
 \newpage

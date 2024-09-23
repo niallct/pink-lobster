@@ -11,7 +11,8 @@ conf <- yaml.load_file("./config/config.yaml")
 conf$last_year <- as.character(as.integer(conf$year_of_interest) - 1)
 
 # a function to round averages
-avRn <- function(x) trunc(x*100, signif=2 )/100
+avRn <- function(x) floor(x*100)/100
+#WAS trunc(x*100, signif=2 )/100
 
 # ==== current clubs ====
 # CURRENT > CLUBS
@@ -95,7 +96,9 @@ load_json_file <- function(file, type) {
   # check those columns exist because friendlies etc don't have those keys
   if (type=="c") { 
     if ("league_name" %in% names(json_data) ){
+      json_data["competition_name"] <- as.character(json_data["competition_name"])
       jdc <- json_data[matchCompoHdrs]
+      
       return(jdc)} else {return(NULL)}}
   
   # deal with overs - calculate into decimal for later addition
@@ -302,7 +305,7 @@ load_json_file <- function(file, type) {
 # this is one file per match
 
 # Directory containing JSON files
-directory <- "./newdata/current/seasons/2023/match_details"
+directory <- "./newdata/current/seasons/2024/match_details"
 
 # Get list of JSON files in the directory
 json_files <- list.files(directory, pattern = "*.json", full.names = TRUE)
@@ -592,9 +595,11 @@ B.inningses <- B.batting %>% select(match_id, `Inns of match`, Runs) %>%
   summarise(topscore = ifelse(sum(!is.na(Runs))==0, 0, max(Runs, na.rm = TRUE)),
             botscore = ifelse(sum(!is.na(Runs))==0, 0, min(Runs, na.rm = TRUE)),
             numbats = sum(!is.na(Runs)),
+            numtens = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=10, na.rm = TRUE)),
             numcenturies = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=100, na.rm = TRUE)),
             numfifties = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=50, na.rm = TRUE)))%>% 
   ungroup() %>% right_join(B.inningses)
+
 
 
 # ---- bowling ------ 
@@ -661,16 +666,16 @@ B.bowling <- B.bowling %>%
 
 
 # interesting things in bowling, count them
-B.inningses <- B.bowling %>% select(match_id, `Inns of match`, W, R) %>%
+B.inningses <- B.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
   group_by(match_id, `Inns of match`) %>% 
   summarise(minwkts = ifelse(sum(!is.na(W)) < 2, 0, min(W, na.rm = TRUE)), # if one bowler, is dubious
             numfourfs = ifelse(sum(!is.na(W))==0, 0, sum(W>=4, na.rm = TRUE)),
             numfivefs = ifelse(sum(!is.na(W))==0, 0, sum(W>=5, na.rm = TRUE)),
-            maxrunsccd = ifelse(sum(!is.na(R))==0, 0, max(R, na.rm = TRUE))
+            maxrunsccd = ifelse(sum(!is.na(R))==0, 0, max(R, na.rm = TRUE)),
+            nummdns = sum(M)
           #  numfifties = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=50, na.rm = TRUE))
             )%>% 
   ungroup() %>% right_join(B.inningses)
-
 
 # ---- fielding ------------
 # pull our the individual fielding performance data from the batting table
@@ -798,7 +803,7 @@ makeBatAvgs <- function(batdata) {
   
   # batting avg table also includes fielding:
   adamField <- batdata %>%
-    group_by(fielder_id) %>%
+    group_by(fielder_id, fielding_club_id) %>%
     summarise(
       Ct = sum(`How Out` == "ct"),
       Std = sum(`How Out` == "st"),
@@ -807,8 +812,9 @@ makeBatAvgs <- function(batdata) {
     ungroup()
   
   outputBatAvgs <- batdata %>%
+    filter(!is.na(Runs)) %>%
     mutate(RunsO = Runs) %>%
-    group_by(batsman_id) %>%
+    group_by(batsman_id, batting_club_id) %>%
     summarise(
       Runs = sum(Runs),
       Inns = sum(!is.na(RunsO)),
@@ -829,27 +835,37 @@ makeBatAvgs <- function(batdata) {
       #RunsWBF = sum(Runs),
     ) %>%
     ungroup() %>%
-    left_join(adamField, by = c("batsman_id" = "fielder_id")) %>%
-    left_join(E.players, by = c("batsman_id" = "player_id")) %>%
+    left_join(adamField, by = c("batsman_id" = "fielder_id", 
+                                "batting_club_id" = "fielding_club_id")) %>%
+   left_join(E.playersNC, by = c("batsman_id" = "player_id")) %>%
+    #select(-club_id) %>%
+    rename(club_id=batting_club_id) %>%
     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
-      club_id != conf$club_of_interest ~ FALSE
-    ))
+      club_id != conf$club_of_interest ~ FALSE),
+        Ct = replace_na(Ct, 0),
+        Std = replace_na(Std, 0),
+        RO = replace_na(RO,0)
+    )
+    
   
   return(outputBatAvgs)
 }
 
 # subset just this year
+#A.bat <- B.batting %>%
+#  filter(Yr == conf$year_of_interest, !is.na(Runs))
+
 A.bat <- B.batting %>%
-  filter(Yr == conf$year_of_interest, !is.na(Runs))
+  filter(Yr == conf$year_of_interest)
 
 E.batAvg.TY <- makeBatAvgs(A.bat)
 
 # now all years
-A.bat <- B.batting %>%
-  filter(!is.na(Runs))
+#A.bat <- B.batting %>%
+#  filter(!is.na(Runs))
 
-B.batAvg <- makeBatAvgs(A.bat)
+B.batAvg <- makeBatAvgs(B.batting)
 B.batAvg <- B.batAvg[!is.na(B.batAvg$batsman_id),]
 
 # Remove the temporary table
@@ -861,15 +877,15 @@ rm(A.bat)
 makeBowlAvgs <- function(bowldata) {
   
   adamBestBowl <- bowldata %>% 
-    select(c(bowler_id, R, W, Analy)) %>%
+    select(c(bowler_id, R, W, Analy, fielding_club_id)) %>%
     filter(!is.na(bowler_id)) %>% 
-    group_by(bowler_id) %>% 
+    group_by(bowler_id, fielding_club_id) %>% 
     slice_max(W) %>% 
     slice_min(R, n=1, with_ties = F) %>%
     select(c(bowler_id, Analy))
   
   outputbowlAvg <- bowldata %>%
-    group_by(bowler_id) %>%
+    group_by(bowler_id, fielding_club_id) %>%
     summarise(
       # Runs = sum(Runs),
       `5wi` = sum(W>=5),
@@ -884,10 +900,11 @@ makeBowlAvgs <- function(bowldata) {
       O = paste(BB %/% 6, BB %% 6, sep="."),
     ) %>%
     ungroup() %>%
-    left_join(adamBestBowl, by = join_by(bowler_id)) %>%
+    left_join(adamBestBowl, by = join_by(bowler_id, fielding_club_id)) %>%
     rename(Best = Analy) %>%
-    left_join(E.players, by = c("bowler_id" = "player_id")) %>%
-    mutate( is_us = case_when(
+    left_join(E.playersNC, by = c("bowler_id" = "player_id")) %>%
+    rename(club_id=fielding_club_id) %>%
+     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
       club_id != conf$club_of_interest ~ FALSE
     ))
@@ -1072,3 +1089,8 @@ save(Y.compos, file="./data/Ycompos")
 
 # ==== suggest-o-matic outputs
 #table(F.inningses.us$league_id)
+# W are pretty lookuos, made in the Rmd
+# Y are lookups for grounds etc
+# G is archive
+# E is this year only
+# B is G + E

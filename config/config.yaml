@@ -1,18 +1,23 @@
 ---
 document_title: Milton Stats
-year_of_interest: "2023"
-default_list_length: 12
-short_list_length: 6
 club_of_interest: "4363"
 club_name: "Milton CC"
+year_of_interest: "2024"
+default_list_length: 12
+short_list_length: 6
+qualify_balls_faced: 300
+qualify_balls_bowled: 300
+qualify_inns_avgs: 3
 
 opponents_of_interest: 
+# - 4363 # Milton
 # - "14848"
 # - 12697 # Reach
 # - 8183 # Cambourne
-- 1771 # Chatteris
-- 23328 # Northstowe
-- 4096 # Longstanton GH
+# - 1771 # Chatteris
+# - 23328 # Northstowe
+# - 4096 # Longstanton GH
+ - 831 # Audley End
 
 player_to_plot: 1878269
 #1878269 # WFD
@@ -34,10 +39,6 @@ home_ground_names:
    51122: "NLP"
    12581: "Sycamores"
  
-qualify_balls_faced: 300
-
-qualify_balls_bowled: 300
-    
 #use this to exclude youth sides:
 excluded_teams:
  - 9872 #colts
