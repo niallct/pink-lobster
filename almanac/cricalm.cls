@@ -5,18 +5,25 @@
 \LoadClass[twoside]{report}
 %\RequirePackage{xcolor}
 %\definecolor{slcolor}{HTML}{882B21}
-
-\renewcommand{\footnotesize}{\fontsize{4}{4.8}\selectfont}
-\renewcommand{\small}{\fontsize{4.8}{5.1}\selectfont}
-\renewcommand{\normalsize}{\fontsize{5}{5.4}\selectfont}
-\renewcommand{\large}{\fontsize{8}{10}\selectfont}
-\renewcommand{\Large}{\fontsize{10}{12}\selectfont}
-
-\setlength{\textwidth}{8.4cm}
-\setlength{\textheight}{14cm}
 \setcounter{secnumdepth}{0}
 
-\usepackage[paperheight=15.8cm,paperwidth=10.2cm,textwidth=8.4cm]{geometry}
+% almanac size
+% \usepackage[paperheight=15.8cm,paperwidth=10.2cm,textwidth=8.4cm]{geometry}
+% \setlength{\textwidth}{8.4cm}
+% \setlength{\textheight}{14cm}
+% \renewcommand{\footnotesize}{\fontsize{4}{4.8}\selectfont}
+% \renewcommand{\small}{\fontsize{4.8}{5.1}\selectfont}
+% \renewcommand{\normalsize}{\fontsize{5}{5.4}\selectfont}
+% \renewcommand{\large}{\fontsize{8}{10}\selectfont}
+% \renewcommand{\Large}{\fontsize{10}{12}\selectfont}
+
+%a4 size - use when planning to reduce at print stage
+% don't forget to also change font sizes
+\usepackage[paperheight=29.7cm,paperwidth=21.0cm,textwidth=16cm]{geometry}
+\setlength{\textwidth}{16cm}
+\setlength{\textheight}{21cm}
+
+
 %\usepackage[paperheight=16cm,paperwidth=12cm,textwidth=10cm]{geometry}
 %
 

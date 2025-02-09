@@ -1,0 +1,2769 @@
+---
+title: "Milton Cricketers' Almanack"
+subtitle: "Season 2024"
+author: "Niall Taylor"
+# date: "`r Sys.Date()`"
+date: "April 2025"
+toc: true
+toc_depth: 1
+classoption: a4paper
+documentclass: cricalm
+#documentclass: report
+output:
+  pdf_document: default
+header-includes:
+   - \usepackage{tabularx}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+setwd("../")
+source("parse-tidy.R")
+source("displayFuncs.R")
+
+## load the config
+library(yaml)
+conf <- yaml.load_file("config/config.yaml")
+#conf$club_of_interest_name <- D.club$name[D.club$id== conf$club_of_interest] # this isn't neat, so just set it by hand in the yaml
+
+# load other packages
+library(tidyverse)
+library(kableExtra)
+library(lubridate)
+#library(dplR) # provides latexify, need this for club names containing \&
+
+# check the year of interest is sensible
+if (nrow(B.matches %>% filter(Yr == conf$year_of_interest)) == 0){
+  stop("ERROR: No data in year of interest.")}
+
+## a default size
+dfsz <- 7
+
+## Configure some heading sets for nice display
+
+ #H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date", "Team", "Batting Club", "Ground")
+
+H.F.cyclamen <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1, width = "10em") %>%
+  column_spec(6:7, width = "6em") %>%
+  column_spec(8:9, width = "9em")
+
+#  H.dianthus  <- c("Team", "Score", "Ovs", "Date", "Fielding Side", "Ground")
+# H.rudbeckia <- c("Team", "Score", "Ovs", "Date", "Fielding Side", "Extras")
+# H.wolfsbane <- c("Team", "Score", "Ovs", "Date", "Fielding Team", "Byes")
+# H.peony  <- c("Fielding Side", "Score", "Ovs", "Date", "Batting Side", "Bowlers")
+H.F.dianthusfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1, width = "10em") %>%
+   column_spec(4, width = "6em") %>%
+    column_spec(5:6, width = "10em")
+ 
+ 
+#H.freesia   <- c("Home Club", "Away Club", "Date", "Ground", "Match Aggregate", "Match Overs")
+H.F.freesia <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1:2, width = "10em") %>%
+  column_spec(3, width = "6em") %>%
+  column_spec(4, width = "9em")
+
+# #H.violet <- c("Match Summary", "Date",
+#                 "Ground", 
+#                "Name", "Runs", "Balls", 
+#                "Analy", "Ct", "Std") 
+H.F.violetfam <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1, width = "12em") %>%
+  column_spec(2, width = "6em") %>%
+  column_spec(3:4, width = "9em")
+
+#H.lily <-        c("Name", "Runs", "Balls", "Date", "Team", "Fielding Club", "Ground",       "Res") # now two short of the rest of the family
+# H.hibiscus <-    c("Name", "Runs", "Balls", "Date", "Fielding Club", "Ground", "4", "6")
+# H.safflower <-   c("Name", "Runs", "Balls", "Date", "Fielding Club", "Ground", "How Out") 
+# H.thistle <-     c("Name", "Runs", "Balls", "Date", "Fielding Club", "Opposition Score", "Contrib")
+
+H.F.lilyfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), 
+                font_size = dfsz)  %>% 
+  column_spec(1, width = "9em") %>%
+  #column_spec(2:3, width = "0.15cm") %>%
+  column_spec(5, width = "6em") %>%
+    column_spec(6:8, width = "9em") 
+
+# H.hyacinth <- c("Match Summary", "Date", "Result")
+H.F.hyacinthfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1, width = "25em") %>%
+  column_spec(2, width = "6em") %>%
+  column_spec(3, width = "12em")
+
+H.F.phloxfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1, width = "20em") %>%
+  column_spec(2, width = "6em") %>%
+  column_spec(3, width = "9em") %>%
+  column_spec(5, width = "9em")
+
+# H.primrose <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", "Ven")
+# H.periwinkle <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", 
+#                   "Score", "Oppo Score")
+H.F.primrosefam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
+  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
+  column_spec(1, width = "6em") %>%
+  column_spec(2:3, width = "9em") %>%
+  column_spec(6:7, width = "9em") 
+
+
+
+# plain display-ing things
+#H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
+# #H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+# H.crocosmia <-   c("Name", "M", "Ct", "Std", "RO", "Dis/Inns")
+# H.mugwort <- c("Name", "n")
+# H.mimosa <- c("Name", "n", "Innings")
+# H.yarrow <- c("Season", "Name", "Matches")
+# H.heather <- c("Season", "Name", "Total", "Matches")
+# H.heatherAv <- c("Season", "Name", "Avg", "Matches", "Wkts")
+H.F.plain <- function(x, this_caption, flower) x %>%  
+  select(all_of(flower)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = dfsz) 
+
+H.F.plainALL <- function(x, this_caption) x %>%  
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = dfsz) 
+
+```
+
+
+\newpage
+
+\setlength{\tabcolsep}{2pt}
+
+
+# Awards
+
+```{=latex}
+\begin{tabular}{ll}
+Club person of the year & Jay Dann \\ [2ex]
+
+Most runs &  Joe Jones  \\
+Highest score & Sam Jones \\
+Most wickets & Sam Jones \\
+Best bowling & Tom Holroyd \\
+%Best fielder & ~~ \\ 
+\end{tabular}
+```
+
+## 1st XI
+
+
+```{=latex}
+\begin{tabular}{ll}
+Player of the year & John Xavier  \\
+Batter of the year & Will Conlon   \\
+Bowler of the year & Shyam Perisetla \\
+\end{tabular}
+
+\smallskip
+
+\emph{By John Xavier, 1st XI Captain}
+
+The 1s had a strong start, winning four at the start of the season
+and then a tough string of five losses. Motivation was kept up with a
+curry night, which helped to regroup. Good availability
+saw us finishing fourth.
+Away at Cambourne we made 136 and despite Hendy taking 3/19 and having
+the opposition 95/9, they clung on to reach the target. A few more 
+losses inspired a tight win, bowling out St Giles in the 44th over with 
+four runs to spare.
+
+Thanks to vice-captains for their work.
+
+Performances with the bat, Will Conlon made a century and a 93 but out 
+to a poor shot. Sandesh made a 90, Nick 69 and Nath 65. Bowling, John 
+took 5/21 and Mark 4/19.
+
+```
+
+## 2nd XI
+
+```{=latex}
+
+\begin{tabular}{ll}
+Player of the year & Rakesh Panigrahi  \\
+Batter of the year & Joe Jones \\
+Bowler of the year & Zubair Akbar \\
+Captain's Impact Player Award & Harsha Mallesh \\
+\end{tabular}
+
+\smallskip
+
+\emph{By Rakesh Panigrahi, 2nd XI Captain}
+
+First of all congratulation to all team members for getting promoted to 
+J2, well done everyone and it was great for me as a captain when you have
+match winners in the team. It makes the job a little easier. 
+
+
+We could have won the league if the rain god had been in our favour and 
+we played a little better against Longstowe. But overall it's a year, 
+being no 2 in the table is a great achievement and congratulations 
+again.
+
+
+The would not have been possible without some dynamic performances from 
+two players, Joe Jones and Zubair Akbar. Joe for having a dream run this 
+season scoring 567 runs at 81.00 and seven 50s. He was top run getting 
+in the league as well. Zubair was lethal in his bowling taking 23 
+wickets with an average just below 12. That's just incredible. And he 
+was the second-highest wicket taken in the league as well.
+
+
+Ed Pinches for taking the highest number of catches, 7 with some 
+spectacular catches on the boundary line. And special thank you to 
+Pinches for helping me out, on and off the field, whenever I need him.
+
+
+I would like to thank the captains of 1st and 3rd team for helping me 
+getting a best team with the availability. You played part in getting 
+2s promoted as well. And to Nath and Jimmy for helping us win the last 
+game of the season.
+
+Harsha always performed when 
+the team needed him, whether it's batting or bowling. His contributions 
+helped us win some crucial games. 
+
+
+Thank you for voting for me as player of the year. I would like to 
+dedicate the award to my team, without them this would not have been 
+possible.
+
+```
+
+## 3rd XI
+```{=latex}
+
+\begin{tabular}{ll}
+Player of the year & Alex McPherson \\
+Batter of the year & Robin Nelder \\
+Bowler of the year & Jamie McPherson  \\
+\end{tabular}
+
+\smallskip
+
+\emph{By Tom Holroyd, 3rd XI Captain}
+
+Good availability this year, and an encouraging season.
+Thanks to Rakesh for his recruitment
+work. With young players showing improvement, and more experience 
+overall, their contribution was strong. Promotion to J4W has been 
+confirmed. It is much
+nicer to play not expecting to lose: we had many games this year which
+were close but didn't go our way. We took eight wickets against Over \&
+Willingham having made just 53. At March chasing 85, Andy Staplehurst's
+35 not out helped us over the line. Also with the bat, Tom Hingston's
+45 against Longstanton helped set a total we could defend. Bowling
+highlights were Holroyd's 6/32 and Katie Gibson 5/21. Alex McPherson
+stood out in the field, and a particular thanks here to all who kept
+wicket.
+
+
+```
+
+
+## Special Awards
+```{=latex}
+\emph{By Will Day, Secretary Emeritus}
+
+(something about Rakesh's umpiring -- @Will was this the bit to cut? I 
+didn't get it anyway)
+
+\subsubsection*{The Mark Barton Availability Award for Bravery in the Face of Relatives}
+\textbf{Nathan Sivajoti}, who despite becoming a father and warning
+he would not be around much, played almost every weekend, several 
+midweek, and went on
+tour twice.
+
+\subsubsection*{The James Drummond award for biggest junior league bully}
+In third, Joe Jones, for moving to Australia. In second, Sam Jones at
+Reach, hitting 116 in a friendly. The winner is \textbf{Zack Smith}, 
+for 256 at 18.29 and getting the 2s thrown out of the cup for being 
+too good.
+
+
+\subsubsection*{Most ducks}
+Third: Sam Jones. Second: Adam Roberts. First: \textbf{Phil Allen}, 
+with eight.
+
+\subsubsection*{The I Told You So Award}
+\textbf{Joe Jones}, who is reportedly now opening the bowling in 
+Australia.
+
+
+%EDITOR -- ADD IN 
+%~ \subsubsection*{A note from the Editor}
+%~ \textit{
+%~ An additional award has been created. The `Will Day 
+%~ ``Fuck It, That'll Do'' MVP Award for Embracing Minimal Viable Product'
+%~ celebrates borderline adequacy, just about phoning it in, and 
+%~ eliminating waste in cricket administration. The inaugural winner is 
+%~ Will Day, for delivering a series of entertaining mild insults dressed 
+%~ up as awards, which were not at all obviously written that afternoon, 
+%~ and handing out kinder eggs for all his prizes under a guise of 
+%~ thoughtful planning, not that the multipack was on offer in Tesco.}
+
+```
+
+\newpage 
+
+# Almanack: `r conf$club_name`
+
+\setlength{\tabcolsep}{3pt}
+
+## A statistical vignette
+*By Niall Taylor *
+
+As ever, my data source is play-cricket. If that is wrong, then
+what I am about to say is wrong, too.
+
+
+### Centuries
+
+\begin{tabular}{llll}
+116 & Sam Jones & Friendly XI vs Reach & 11 Aug 2024 \\
+104* & Will Conlon & 1st XI vs Linton & 18 May 2024 \\
+101* & Sam Jones & 3rd XI vs Cambourne & 20 Jul 2024 \\
+\end{tabular}
+
+\medskip
+
+Sam's 116 came in a friendly and is the highest score in friendlies, 
+beating Nick Widdowson's 2021 record by 22, but did not win the match. 
+It came from 100 balls, and a team total of 176. No other batter in 
+that match made double figures, there were 25 extras. His contribution 
+is a mere 65.9\%, the fourth highest proportion on record for Milton 
+but short of the Bannerman\footnote{At which match, one Jupp made 63 
+off 241 balls, SR 26.14; then 0 \& 1 as opener in the Second Test.}.
+
+\smallskip
+
+His 101* is now the eleventh century for the 3rd XI; in that match he 
+took three catches, a rare -- possibly unique -- double.
+
+\smallskip
+
+In May, a
+104* for Will Conlon, some way off his own record for the 1st XI.
+
+
+### Other batting
+
+As well as the centurions, eighteen batters made at least one fifty, 
+with Joe making a record seven in the year. Both Will and Nath 
+twice made fifty in matches Milton lost.
+
+There were 37 scores between 50 and 100 (2023: 24; 2022: 35).
+
+Strike rates: excluding some lower scores (Zubair Ikram 12 off 4), Will 
+Jupp's 19 off 9 (211.11) against TAC, is up there with Ani Ghosh 15 off 
+7 (214.29) against Fen Ditton, and Sam Jones 101 came from 38 (265.79).
+
+On the other end, Zack's 10 from 41 against St Giles
+ranks among the most balls faced for score of ten or less.
+
+The Midweek team against NCI on 4 June had the rare incident of all
+players either making 10 or more, or not batting at all\footnote{So we
+had everyone in double figures, cf vs Reach, where no-one was}.
+
+In a similar but less good way, Northstowe on 4 May made 91 to win
+with the top scoring batter on 15.
+
+### Noteable partnerships
+
+The partnership between Joe Jones and Rakesh against Longstowe in May, 
+at 162 for the second wicket is, for any wicket, the highest recorded 
+for the 2nd XI and sixth highest overall. 
+
+Pradeep and Sandesh made an opening 138 for 2nd XI at Stapleford, fifth 
+highest for that wicket.
+
+Joe and Pinches made 136 also for the second wicket, which is the 
+fourth highest for that wicket.
+
+Jay and Nick made 59 against Saffron Walden, fourth highest for the 
+eighth wicket.
+
+Back in April, Will Day and David Gibson were denied, by one run at 
+47*, a record-equalling eighth wicket stand in friendlies\footnote{This 
+is rather shaky, retirements are common and distort the picture}. 
+
+\medskip
+
+\noindent
+\begin{tabularx}{0.95\textwidth}[h]{lllXl}
+162  & 2nd & J Jones \& R Panigrahi     & 2nd XI vs Longstowe & 25 May 2024\\
+138  & 1st & P Gowda \& S Dambekodi    & 2nd XI vs Stapleford & 	08 Jun 2024 \\
+136  & 2nd & J Jones \& E Pinches & 2nd XI vs Northstowe & 	27 Jul 2024 \\	
+122* & 3rd & J Jones \& H Mallesh & 2nd XI vs Stapleford & 	13 Jul 2024 \\	
+103  & 4th & P Kumar \& J Xavier       & 1st XI vs Wilbrahams & 	17 Aug 2024 \\	
+101  & 2nd & J Jones \& R Panigrahi    & 2nd XI vs Steeple Morden &	29 Jun 2024 \\	
+94   & 2nd & P Kumar \& C Day 	       & 2nd XI vs Barrington & 03 Aug 2024 \\	
+\end{tabularx}
+\medskip
+
+
+### Bowling
+
+W Day with 2-2-0-3 in the internal friendly joins a short list of those 
+to take wickets for no runs.
+
+T Holroyd 6 for 32 on 31 August against Ramsey is the eighth best 
+analysis on record and the best in competitive games since 2015. 
+Milton still lost; this is the best analysis in a game lost at home.
+
+There were sixteen four-fors (2023: 12; 2022: 11):
+
+\medskip
+
+\noindent
+\begin{tabularx}{0.95\textwidth}[h]{llXl}
+
+6/32 &	Thomas Holroyd 	& 3rd XI vs Ramsey &	31 Aug 2024 \\
+5/21 &	John Xavier 	& 1st XI vs Cambridge St. Giles & 	27 Jul 2024 \\
+5/21 & 	Katie Gibson 	& 3rd XI vs Wisbech Town & 25 May 2024 \\
+5/39 &	Zubair Akbar 	& 2nd XI vs Madingley & 	18 May 2024 \\
+4/5  &	Stephen Dye 	& 3rd XI vs Over and Willingham & 17 Aug 2024 \\
+4/10 &	Jamie McPherson & 3rd XI vs March Town & 	15 Jun 2024 \\
+4/15 &	Rahul Pillai 	& 2nd XI vs Barrington & 	03 Aug 2024 \\
+4/16 &	David Gibson 	& 2nd XI vs Fen Ditton &	01 Jun 2024 \\
+4/19 &	Harsha Mallesh 	& 2nd XI vs TAC &  	22 Jun 2024 \\
+4/19 &	Mark Barton 	& 1st XI vs Chatteris &	04 May 2024 \\
+4/24 &	Keshav Rattan 	& 3rd XI vs Longstanton Grasshoppers & 22 Jun 2024 \\
+4/27 &	Shyam Perisetla & 1st XI vs Madingley  & 10 Aug 2024 \\
+4/28 &	Rakesh Panigrahi 	& 2nd XI vs   Stapleford & 08 Jun 2024 \\
+4/29 &	Jamie McPherson 	& 3rd XI vs   Burwell \& Exning & 	08 Jun 2024 \\
+4/31 &	William Robinson 	& 2nd XI vs   Longstowe  & 25 May 2024 \\
+4/35 &	Zubair Akbar 	& 2nd XI vs Steeple Morden &	11 May 2024\\
+
+
+\end{tabularx}
+
+
+
+\medskip
+
+At Saffron Walden on 25 May, our 1st XI bowlers shared the spoils, a
+rare occurrence of every bowler taking at least two. 
+
+There was sharing too 
+against Madingley on 22 June: despite conceding 264, the plan of using
+nine bowlers meant no-one went for more than 50, the 3rd XI doing the
+same for Eaton Socon on 18 May.
+
+Drummond overwintered on a hat trick and opened his year with a dot.
+
+
+### Wicket-keeping
+
+\noindent
+\begin{tabular}{lll}
+
+Robin Nelder & 8ct, 1 std & plus 3 outfield catches \\
+Will Day     & 4ct, 4 std &  	~~''~~ 4~~~~~~~       ''	and one run out\\
+William Conlon 	& 8ct       &  	~~      	\\
+Sandesh Dambekodi & 4ct, 1std     &   ~~''~~ 4~~~~~~~      '' and two run outs\\
+Phillip Allen 	    & 1ct, 3std       & 	~~''~~ 2~~~~~~~      ''	\\
+
+
+\end{tabular}
+
+\medskip
+
+All of Sandesh's w-k dismissals this year came in the same match, 
+against Wilbrahams on 17 August. He also effected one run out in that 
+match. This is only the second instance on record of five 
+wicket-keeping dismissals in an innings, the other being Dye (3ct, 
+2std, 0ro) on 28 May 2016.
+
+All of Phil's w-k dismissals this year came in the same match, against
+Ramsey on 31 August. This was the first instance of
+four wicket-keeping dismissals for a fortnight, and the only instance 
+recorded at North Lodge.
+
+Three of Conlon's catches were in the same innings, 10 August 
+vs Madingley.
+
+
+Conlon (52, 41ct/11std) remains third in all-time wicket-keeping 
+wickets; Day (50, 37ct/13std) remains fourth. O'Kane (55, 43ct/12std)
+is second, for now.
+
+
+### Fielding
+
+
+Alex McPherson took eleven catches in the field. Pete While took ten.
+John Xavier, Jay Dann, Nathan Sivajoti each took nine, Chris Goodall
+eight.
+
+As a club, there were 178 catches taken
+by 36 fielders. (2023: 121 by 30; 2022: 98 by 26; all in addition
+to wicket-keeping catches)
+
+Run outs: as last year, I have not included here, as data tend to be 
+incomplete.
+
+Fielders took three catches in an innings five times: John Xavier,
+ Sam Jones, Ed Pinches, Tom Sharrock and Alex McPherson.
+
+
+
+
+### Others
+
+
+The most runs
+scored by the club in a single day this year was 606 on 27 July, 
+fourteenth in the
+list of daily totals. (2023-07-08: 578, 28th; 2022-07-23: 887, 1st)
+
+In the year, play-cricket (and my records) has:
+
+- seventeen primaries for thirteen Milton players (2023: 16; 2022: 11; 2021: 20), of which three came on the same day
+-  three Milton players dismissed without facing (2023 1; 2022: nil, 2021: 2)
+-  24 dropped and 28 missed catches (totals: 2023: 15; 2022: 19)
+-  12 half-chances (2023: 13; 2022: 23)
+-  five missed run outs or stumpings
+-  no recorded instance of hit in the lower abdomen (2023: nil)
+-  one bowler falling over and nearly into the non-striker
+
+### Notes
+
+
+Last year I closed my remarks hoping for a change of fortunes. My 
+friends, what a change. The performances on the field, and the 
+atmosphere off it showed that we are back, baby, where we belong, 
+squarely in the top half or even top third of things.
+
+The weather took its share, and I'd like to think we are getting a 
+reputation for trying to get a game on. On a couple of occasions we 
+were narrowly denied an opportunity to play a side burdened by their 
+own negativity.
+
+We host a good party, don't we? I greatly enjoyed the club day with 
+friends old and new, my thanks to all who organised. I also record my 
+gratitude to Nath for organising two tours, one with rather more 
+activity than the other.
+
+I will let the captains lead on the actual cricket, though if I may 
+mention a few things still in my mind? Sandesh took an 
+\emph{astonishing} catch at Cambourne, running round to deep mid-wicket 
+from, I think, somewhere around point. In the early season friendly, 
+from short cover I witnessed Will Day's almost sinfully sensual leg 
+glances. Best of all, not one but two instances of \emph{very nearly} 
+run out sub by a man in jeans.
+
+On my reading list for the winter is to go back to last year's ICEC 
+report. It is important to keep issues in mind, to call out 
+unacceptable behaviours if we should see them.
+
+I have no remarkable queries recorded this year, though I enjoy the 
+reprise of `retired hungover', and when the wicket-keeper is allowed to 
+stray in front of the stumps. My DMs are open for entertaining 
+discussion of any aspect which comes to mind.
+
+If anyone would like to learn more about the electronic scoring I use, 
+a matchday shadow is (almost) always welcome. This is not recruitment 
+of an established colleague, but more resilience is not a bad thing. 
+
+I will see you, if I am spared, for winter socials, and on that 
+glorious day in spring with the season ahead of 
+us\footnote{ie the maintenance day}.
+
+\begin{centering}
+
+ * * *
+ 
+\end{centering}
+
+I had a remark last year (but not for the first time) that what I had 
+presented was rather too long for comfort. So I will keep this brief.
+
+The stats speak for themselves. With a rather more successful 
+background than last year I'd like to share, again, what I see that 
+doesn't make the numbers. 
+
+Spirit. The congratulating each other. The spotting that a teammate is 
+having an off day and picking up for them, no hassle\footnote{I record 
+here my gratitude to the Hague tour for carrying your scorer}. The 
+cheering and encouragement on the field: to the ears of this Eeyorish 
+character there is almost relentless positivity from some quarters (you 
+know who you are). This is not recorded, but it's the spirit that makes 
+the club, and I love you for it. 
+
+Enough of looking back, I want to close looking forward. We know from 
+club day that when we play with ourselves we lose, so can I thank in 
+advance everyone who will give us a good run next season?
+
+
+## Results
+\begin{itemize}
+	\item[1st] P16 W9 L7
+	\item[2nd] P16 W12 L4
+	\item[3rd] P15 W6 L9 
+	\item[F] P6 W1 L5
+	\item[Mid] P7 W4 L3
+	\item[ALL] P60 W32 L28 
+\end{itemize}
+
+Not including the internal friendly or the Stoehr games.
+(2023: played 66, won 20, lost 44, abandoned 2).
+
+Seven games abandoned without a 
+ball bowled, not including the abandoned spring tour (2023: 10; 2022: 
+nil).
+
+
+## Batting
+Strike rates calculated using only innings in which balls faced are recorded. 
+
+### Batting averages
+Showing highest average first. 
+Qualification: `r conf$qualify_inns_avgs` innings.
+
+```{r bat-avgs-thisyear}
+F.batavg.us.ty %>% D.batavg.bestbatavgs("Batting averages, this year")
+```
+
+
+### Most runs
+
+Showing highest `r conf$default_list_length`.
+
+```{r mostruns-thisyr}
+F.batavg.us.ty %>%  D.batavg.mostruns("Most runs this year", conf$default_list_length)
+```
+
+
+### Fifties this year
+```{r fifties-this-year}
+a.numfifties <- nrow(F.batting.us.ty %>%
+                       filter(Runs>=50))
+```
+There have been `r a.numfifties` fifties so far this season.
+```{r fifties-this-year-2}
+F.batting.us.ty %>% D.bat.fifties("Fifties this season")
+```
+
+### Fifties without a team win
+Showing most recent `r conf$default_list_length`:
+```{r fifties-no-win}
+F.batting.us.ty %>% D.bat.fiftieslosing("Fifties without team win")
+```
+
+### Consecutive fifties
+
+Showing consecutive fifties
+```{r consecutive-batmilestones-ty}
+F.batting.us.ty %>% D.bat.consecbatms("Consecutive fifties, this year", 50)
+```
+
+### Recent fifties, for each team
+Showing most recent `r conf$default_list_length`:
+
+```{r fifties-byteam, results='asis'}
+ #cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
+map(conf$teams_of_interest, D.bat.batmsteam, cap=paste("Recent fifties"), 
+    df=F.batting.us, ms=50)
+```
+
+
+### Top individual scores, by match type
+
+Showing scores over 35,
+
+```{r high-inns-type-ty, results='asis'}
+
+map(levels(F.batting.us.ty$Type), D.bat.highestscorebytype , 
+    cap= "Highest innings this year in",
+    min=35,
+    df=F.batting.us.ty )
+```
+
+### Primaries this season
+```{r primaries}
+F.batting.us.ty %>% D.bat.primaries("Primaries this season")
+```
+
+
+### Most ducks this season
+```{r ducks}
+F.batting.us.ty %>%  D.bat.duckcount("Ducks this season")
+```
+
+### Longest duck this season
+```{r longduck}
+F.batting.us.ty %>%  D.bat.ducklength("Long ducks this season")
+
+```
+
+### Sixes this season
+```{r sixes-thisyear}
+F.batavg.us.ty %>% D.batavg.sixcount("Most sixes this season")
+```
+
+### Carried bat
+Position 1 or 2 and not out. Care! May not be accurate if retirements involved.
+
+```{r carried-bat}
+F.batting.us.ty %>% D.bat.carriedbat("Carried bat, this year")
+```
+
+
+## Partnerships
+
+In the partnerships section, retirements are not handled cleanly. Retirements
+are common in friendly games, any appearance here of a high partnership in a
+friendly is likely to be spurious.
+
+### Top scores for each wicket, this year
+
+Showing the top few for each wicket, all club, where over 25
+```{r top-pship-ty, results='asis'}
+map(1:10, D.fow.pshiptopwkt, cap=paste("Our top scores this year"), df=F.fow.us.ty)
+```
+
+
+## Bowling
+
+### Bowling averages
+Qualification: `r conf$qualify_inns_avgs` innings.
+
+```{r bowl-avgs-thisyear}
+F.bowlavg.us.ty %>% D.bowlavg.best("Bowling averages, this season")
+```
+
+### Most wickets
+Showing highest `r conf$default_list_length`.
+
+```{r mostwkts-thisyear}
+F.bowlavg.us.ty %>% D.bowlavg.wkt("Most wickets, this season", howmany=conf$default_list_length)
+```
+
+### Most wickets by match type
+```{r mostwickts-ty-type, message=FALSE, warning=FALSE, results='asis'}
+map(levels(F.bowling.us.ty$Type) , D.bowl.mostwktstype, cap="Most wickets",
+    df = F.bowling.us.ty)
+```
+
+
+
+### Four-fors this year 
+```{r fourfor-this-year}
+a.numfourfors <- nrow(F.bowling.us.ty %>% filter(W>=4))
+```
+There have been `r a.numfourfors` four-fors so far this season.
+```{r fourfor-this-year-2}
+F.bowling.us.ty %>% D.bowl.fourfors("Four-fors this season")
+```
+
+### Consecutive four-fors
+
+```{r consec-4for-ty}
+F.bowling.us.ty %>% D.bowl.consecbowlms("Consecutive four-fors", 4)
+```
+
+
+### Dry days
+```{r no-wickets}
+F.bowling.us.ty %>% D.bowl.nowkts("No wickets, highest runs conceded")
+```
+
+### Outstanding analysis
+
+In our matches and competitions
+
+```{r strong-analysis-sph}
+F.bowling.sphere.ty  %>%
+  D.bowl.bestanalysis("Outstanding analysis, our competitions, this year")
+```
+
+
+### Gloves off
+
+Bowling as designated wicketkeeper
+
+```{r keeperbowl-ty}
+F.allround.us.ty %>% D.allround.keeperbowling("Bowling this year as keeper")
+
+```
+
+\newpage
+
+## Team
+
+### Matches this year
+
+```{r matches-ty}
+F.matches.circle.ty %>% D.match.matchview("Our matches this year")
+```
+
+### Quotients
+
+Overall,
+```{r quotients}
+D.inns.quotients(F.inningses.us.ty,F.inningses.them.ty, "Quotients")
+```
+
+By team, 
+```{r quotients-byteam, results='asis'}
+map(conf$teams_of_interest, D.inns.teamquotients, cap=paste("Quotients"), 
+    df=F.inningses.circle.ty)
+```
+
+### Highest innings total
+```{r high-inns-us-ty}
+F.inningses.us.ty %>% D.inns.highinnstotal("Our highest innings totals, this season")
+```
+
+### Highest innings batting second
+```{r high-inns-us-2-ty}
+F.inningses.us.ty %>% D.inns.high2ndinns("Our highest innings totals 
+                                         batting second, this season")
+```
+
+### Highest match aggregate
+This section appears to contain spurious results.
+
+```{r high-match-agg-circle}
+F.matches.circle.ty %>% D.match.highmatchagg("Highest match aggregate, this season")
+```
+
+### Lowest innings total
+```{r low-inns-us-ty}
+F.inningses.us.ty %>% D.inns.lowinnstotal("Our lowest innings totals, this season")
+```
+
+### Most extras
+```{r most-extras-us}
+F.inningses.us.ty %>% D.inns.mostextras("Most extras in our innings")
+```
+
+### Tossing performance
+
+```{r tossing-ty}
+F.inningses.us.ty %>% D.inns.tossresult("Our tossing and match results this year")
+```
+
+\newpage
+
+## All-rounder
+### Thirty runs and three wickets in same match
+
+```{r double-us-ty}
+F.allround.us.ty %>% D.allround.matchdouble("Thirty and three-for", 30,3)
+
+```
+
+
+## Fielding
+
+### Catches this year
+
+Showing most first, including as wicket-keeper; most recent where tied.
+
+```{r catches-thisyear}
+F.fielding.us.ty %>% D.fielding.mostcatchesinns("Most catches in an innings, this year")
+
+
+F.fieldsumm.us.ty %>% D.fieldsumm.mostcatches("Most total catches, this year", 
+                                              howmany=conf$default_list_length)
+
+```
+
+### Victims per innings
+
+Showing highest rate per innings, including as wicket-keeper. Qualification: four matches.
+
+```{r victims-thisyear}
+F.fieldsumm.us.ty %>% D.fieldsumm.mostdisperinns("Most dismissals per innings, this year")
+
+```
+
+
+## Wicket-keeping
+
+
+### Dismissals this year, per innings
+
+Showing most first; most recent where tied.
+
+Excludes run-outs, because data are too flaky to be reliable.
+
+```{r wkdiss-thisyear}
+F.fielding.us.ty %>% D.fielding.mostblahinns( "Most WK catches in an innings, this year", "Ct")
+
+F.fielding.us.ty %>% D.fielding.mostblahinns( "Most stumpings in an innings, this year", "Std")
+
+F.fielding.us.ty %>% D.fielding.mostblahinns( "Most WK dismissals in an innings, this year", "Dis")
+
+```
+
+### Tally of dismissals, this year
+
+Minimum: three.
+
+```{r wkdiss-total-ty}
+F.fielding.us.ty %>% D.fielding.mostblah("Most total WK catches, this year", "Ct")
+F.fielding.us.ty %>% D.fielding.mostblah("Most total stumpings, this year", "Std")
+F.fielding.us.ty %>% D.fielding.mostblah("Most total WK dismissals, this year", "Dis")
+
+```
+
+### No byes conceded for total of 150 or more
+```{r no-byes-100-total-cy}
+F.inningses.us.ty %>% D.inns.nobyes("No byes conceded for total of 150 runs or more, this season")
+
+```
+
+
+# Records: `r conf$club_name`
+
+These are 'all-time' records. 'All time' means all of the dataset which is 
+available, which may start after a player did.
+
+## Batting
+Strike rates calculated using only innings in which balls faced are recorded.
+
+### Batting averages
+Showing highest average first. 
+Qualification: `r conf$qualify_inns_avgs` innings.
+
+```{r bat-avgs-allt}
+F.batavg.us %>% D.batavg.bestbatavgs("Batting averages, all time")
+```
+
+### Most runs
+
+Showing highest `r conf$default_list_length`.
+
+```{r mostruns-allt}
+F.batavg.us %>%  D.batavg.mostruns("Career run totals", conf$default_list_length)
+```
+
+### Highest career strike rates
+Minimum qualification: `r conf$qualify_balls_faced` balls faced
+```{r bat-highSR-alltime}
+F.batavg.us %>% D.batavg.highSR("Highest strike-rates, all time") 
+```
+
+### Most centuries
+```{r centuries}
+F.batavg.us %>% D.batavg.centurycount("Most centuries")
+```
+
+### Most ducks
+```{r ducks-all, message=FALSE, warning=FALSE}
+F.batting.us %>%  D.bat.duckcount("Count of ducks, all time")
+```
+
+### Longest duck
+```{r longduck-all}
+F.batting.us %>% D.bat.ducklength("Long ducks")
+```
+
+### Fifty on debut
+'Debut' here means the first recorded innings in the dataset, which may have started
+after a player's actual debut.
+```{r fifty-debut}
+F.batting.us %>% D.bat.batmsdebut("Fifties on debut")
+```
+
+### Centuries without a team win
+Showing most recent `r conf$default_list_length`:
+```{r cent-no-win-allt}
+F.batting.us %>% D.bat.fiftieslosing("Centuries without team win", 100)
+```
+
+### Consecutive centuries
+
+Showing consecutive centuries
+```{r consecutive-batmilestones}
+
+F.batting.us %>% D.bat.consecbatms("Consecutive centuries", 100)
+
+```
+
+
+
+### Top individual scores
+
+```{r top-bat-performances}
+F.batting.us %>% D.bat.highestscore("All-time highest scores")
+
+```
+
+### Top individual scores for each team
+```{r topbat-byteam, results='asis'}
+map(conf$teams_of_interest, D.bat.highestscorebyteam , 
+    cap= "Highest innings for",
+    min=35,
+    df=F.batting.us)
+```
+
+
+### 200 runs before the end of May
+```{r 200-end-May}
+F.batting.us %>% D.bat.maybatms("200 runs in April and May")
+```
+
+
+### 500 runs in a season
+```{r mostruns-season}
+F.batting.us %>% D.bat.500season("500 runs in a season")
+```
+
+### Quickest to 500 in a season
+Showing the date of match in which the 500th run was made
+```{r quick500}
+F.batting.us %>% D.bat.quickest500("Quickest to 500 in a season")
+```
+
+### Most fifties in a season
+```{r mostfifties-season}
+F.batting.us %>% D.bat.most50season("Most fifties in a season")
+```
+
+### Most boundaries in a season
+```{r mostbounds-season}
+F.batting.us %>% D.bat.mostbryseason("Most boundaries in a season")
+
+```
+
+
+### Monopolised batting
+More than 60\% of the team's runs. Excludes scores of less than 10.
+
+In March 1877, Charles Bannerman scored 165 from a team total of 245, 67.34\%.
+
+```{r batting-monopoly}
+
+F.batting.us %>% D.bat.bannerman("Monopolised runs", 0.6, 10)
+
+```
+
+### Batter outscoring the whole opposition
+
+```{r outscore-opposition}
+F.batting.us %>% D.bat.outscoringoppo("Outscoring the opposition")
+```
+
+### Most balls faced in an innings
+```{r most-balls}
+F.batting.us %>% D.bat.longinns("Longest innings")
+```
+
+### Most balls faced for a score 10 or less
+```{r most-balls-lowscore}
+F.batting.us %>% D.bat.longinns("Longest innings", 10)
+```
+
+### Most sixes in an innings
+```{r most-sixes}
+F.batting.us %>% D.bat.most6inns( "Most sixes in an innings")
+
+F.batting.us %>% D.bat.mostBryinns("Most boundaries in an innings")
+```
+
+### Most career sixes
+```{r career-sixes}
+F.batavg.us %>% D.batavg.sixcount("Most career sixes")
+```
+
+### Most boundaries in an innings, for each team
+```{r top4s-byteam, results='asis'}
+map(conf$teams_of_interest, D.bat.mostBryinnsteam , 
+    cap= "Most boundaries in an innings for",
+    df=F.batting.us)
+```
+
+
+### Unusual dismissals
+Out handled the ball, hit the ball twice, obstructing the field, timed out or hit wicket.
+
+```{r unusual-dismissals}
+F.batting.circle %>% D.bat.unusualdiss("Unusual dismissals, our matches")
+
+#F.batting.sphere %>% D.unusualdiss("Unusual dismissals, our leagues")
+```
+
+
+\newpage
+## Partnerships
+
+In the partnerships section, retirements are not handled cleanly. Retirements
+are common in friendly games, any appearance here of a high partnership in a
+friendly is likely to be spurious.
+
+### Top scores for each wicket, all time
+
+Showing the top few for each wicket, all club,
+```{r top-pship-alltime, results='asis'}
+map(1:10, D.fow.pshiptopwkt, cap=paste("Our top scores"), df=F.fow.us)
+```
+
+### Big partnerships
+```{r big-pship}
+F.fow.us %>% D.fow.highpship("Partnerships over 150, all time", 150)
+
+```
+
+### Partnerships dominating the innings
+```{r dompships}
+
+F.fow.us %>% D.fow.dompship("Partnership over 80\\% of the total")
+
+```
+
+
+### Partnerships outscoring the whole opposition
+```{r pshipsoveropp}
+
+F.fow.us %>% D.fow.pshipoveropp("Partnership outscoring the opposition")
+
+```
+
+\newpage
+
+## Bowling
+
+
+### Bowling averages
+Qualification: `r conf$qualify_inns_avgs` innings.
+
+```{r bowl-avgs-alltime}
+F.bowlavg.us %>% D.bowlavg.best("Bowling averages, all time")
+```
+
+### Most wickets
+Showing highest `r conf$default_list_length`.
+
+```{r mostwkts-alltime}
+F.bowlavg.us %>% D.bowlavg.wkt("Most wickets, all time", conf$default_list_length)
+```
+
+### Most wickets by match type
+```{r mostwickts-allt-type, message=FALSE, warning=FALSE, results='asis'}
+map(levels(F.bowling.us$Type) , D.bowl.mostwktstype, cap="Most wickets",
+    df = F.bowling.us)
+```
+
+### Most wickets in a season
+```{r mostwkts-season}
+F.bowling.us %>% D.bowl.mostwktseason("Most wickets in a season")
+```
+
+### Lowest average in a season
+Qualification: bowled in `r conf$qualify_inns_avgs` innings.
+
+```{r bestavg-season}
+F.bowling.us %>% D.bowl.bestavgseason("Best average in a season") 
+```
+
+### Four-for on debut
+'Debut' here means the first recorded bowling instance in the dataset, which may
+have started
+after a player's actual debut. Fielding without bowling is not considered as debut for
+this table; it is debut with the ball.
+
+```{r fourfor-debut}
+F.bowling.us %>% D.bowl.msdebut("Four-for on debut")
+```
+
+
+### Consecutive five-fors
+
+```{r consec-5for}
+F.bowling.us %>% D.bowl.consecbowlms("Consecutive five-fors", 5)
+```
+
+
+### Dry days
+```{r no-wickets-allt}
+F.bowling.us %>% D.bowl.nowkts("No wickets, highest runs conceded")
+```
+
+
+### All maidens
+
+Qualification: two or more
+
+```{r all-maidens}
+F.bowling.us %>% D.bowl.allmaidens("All maidens")
+```
+
+### Outstanding analysis
+```{r strong-analysis-us}
+F.bowling.us  %>%
+  D.bowl.bestanalysis("Outstanding analysis, our club, all years")
+```
+
+### Cheapest five-for
+```{r cheap-5for}
+F.bowling.us %>% D.bowl.cheap5for("Cheapest five-fors, our club, all years") 
+```
+
+### Highest average with a five-for
+
+```{r bowl-avgs-with-5for-at}
+F.bowlavg.us %>% D.bowlavg.highavgwith5for("Highest career averages including
+                                           a five-for, all time")
+
+```
+
+### Gloves off
+
+Best analysis when bowling as designated wicketkeeper
+
+```{r keeperbowl}
+F.allround.us %>% D.allround.keeperbowling("Bowling as keeper")
+```
+
+### Quickest to 40 wickets
+
+Showing the date on which they took their 40th wicket
+
+```{r fastest40}
+F.bowling.us %>% D.bowl.fast40("Fastest to 40 wickets in a season")
+```
+
+
+### Best career economy
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
+```{r bowl-avgs-alltime-lowecon}
+F.bowlavg.us %>% D.bowlavg.econ("Lowest economy, all time")
+```
+
+### Best career strike-rate
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled
+```{r bowl-avgs-alltime-bestsr}
+F.bowlavg.us %>% D.bowlavg.sr("Best strike rate, all time")
+```
+
+### Most career five-fors
+```{r bowl-avgs-alltime-most5}
+F.bowlavg.us %>% D.bowlavg.most5wi("Most five-fors, all time")
+```
+
+### Five-fors without a team win
+Showing most recent `r conf$default_list_length`:
+```{r fourfor-no-win}
+F.bowling.us %>% D.bowl.fiveforlose("Five-fors without team win")
+```
+
+\newpage
+
+## Team
+
+### Results
+All teams, including friendlies and internal matches
+
+```{r results}
+A.resultssumm %>% D.resultsumm.results("Results by year")
+```
+
+### Highest innings totals
+
+#### By us
+```{r high-inns-us-allt}
+F.inningses.us %>% D.inns.highinnstotal("Our highest innings totals, all time")
+```
+
+#### Against us
+```{r high-inns-them-allt}
+F.inningses.them %>% D.inns.highinnstotal("Our highest innings totals, all time")
+```
+
+#### Batting second
+```{r high-inns-us-2-allt}
+F.inningses.circle %>% D.inns.high2ndinns("Our highest innings totals batting second, all time")
+```
+
+### Highest innings totals losing one or no wickets
+#### By us
+```{r high-inns-us-for1}
+F.inningses.us %>% D.inns.highforone("Highest innings by us for one or no wicket")
+```
+
+#### Against us
+```{r high-inns-circle-for1}
+F.inningses.them %>% D.inns.highforone("Highest innings against us for one or no wicket")
+```
+
+### High successful chases
+In our matches
+```{r high-chase}
+F.inningses.circle %>% D.inns.highchase("Highest successful run chases")
+```
+
+### Lowest innings totals
+
+Matches recorded as abandoned are excluded. Note that this also includes winning totals which reached 
+an opponent's low total.
+
+#### By us
+```{r low-inns-us-allt}
+F.inningses.us %>% D.inns.lowinnstotal("Our lowest innings totals, all time")
+```
+
+#### Against us
+```{r low-inns-them-allt}
+F.inningses.them %>% D.inns.lowinnstotal("Opponents' lowest innings totals, all time")
+```
+
+### Highest total without batting milestones
+In all of our matches
+```{r hightotal-nomilestone-us}
+# TODO output a short scorecard here
+
+F.inningses.circle %>% D.inns.hightotalnocent("Highest totals without any individual century", 100)
+
+F.inningses.circle %>% D.inns.hightotalnocent("Highest totals without any individual fifty", 50)
+
+```
+
+### Multiple batting milestones 
+```{r multiplebat-milestones}
+# TODO output a short scorecard here
+
+F.inningses.circle %>% D.inns.manycentury("Innings with two or more centuries")
+
+F.inningses.circle %>% D.inns.manyfifty("Innings with three or more fifties")
+
+```
+
+### All batters contributing
+Qualification: six or more batters in the innings, all into double figures
+
+```{r allbats-doublefigs-us}
+# TODO output a short scorecard here
+F.inningses.circle %>% D.inns.allbatscontrib("Innings with all (6+) batters making 10 or more", 10, 6)
+```
+
+
+### Multiple bowling milestones 
+
+Showing recent instances:
+
+```{r multiplebowl-milestones}
+# TODO output a short scorecard here
+
+F.inningses.circle %>% D.inns.many4for("Innings with two four-fors",2)
+
+F.inningses.circle %>% D.inns.allwkttakers("All bowlers taking at least two wickets")
+
+```
+
+### Conceding runs equitably
+
+```{r equal-conceding-us}
+# TODO output a short scorecard here
+F.inningses.them %>% D.inns.equitbowl("Innings for 250+ with no bowler conceding 50", 250, 50)
+```
+
+
+### Ties
+```{r ties-us}
+F.matches.circle %>% D.match.ties("Tied matches")
+```
+
+
+### Most extras
+This section appears to contain spurious results.
+
+#### Our batting
+```{r most-extras-us-alltime}
+F.inningses.us %>% D.inns.mostextras("Most extras in our innings, all time")
+```
+
+#### Our bowling
+```{r most-extras-them-alltime}
+F.inningses.them %>% D.inns.mostextras("Most extras in our innings, all time")
+```
+
+### Highest match aggregate
+This section appears to contain spurious results.
+
+```{r high-match-agg-circle-allt}
+F.matches.circle %>% D.match.highmatchagg("Highest match aggregate")
+```
+
+### Lowest match aggregate
+This section appears to contain spurious results.
+
+In completed matches:
+
+```{r low-match-agg-allt}
+F.matches.circle %>% D.match.lowmatchagg("Lowest match aggregate")
+```
+
+
+### Shortest completed matches
+This section appears to contain spurious results, and does not account for 
+eight-ball overs in evening games.
+
+```{r short-complete}
+F.matches.circle %>% D.match.short("Shortest completed matches")
+```
+
+### High winning margins
+
+#### 250 runs or more
+```{r highmarginruns}
+F.inningses.circle %>% D.inns.winmargin("Wins by 250 runs or more", 1, 250, op=`>=`)
+```
+
+#### 10 wickets
+```{r highmarginwkts}
+F.inningses.circle %>% D.inns.winmargin("Wins by 10 wickets", 2, 10)
+```
+
+### Narrow winning margins
+
+#### By 1 run
+```{r lowmarginruns}
+F.inningses.circle %>% D.inns.winmargin("Wins by 1 run or more", 1, 1, op=`==`)
+```
+
+#### By 1 wicket
+```{r lowmarginwkt}
+a.win1wktUs <- F.inningses.us %>% W.inns.winmargin(2, 1, op=`==`) %>% nrow()
+
+a.win1wktThem <- F.inningses.them %>% W.inns.winmargin(2, 1, op=`==`) %>% nrow()
+```
+
+We have won `r a.win1wktUs` and lost `r a.win1wktThem ` matches by one wicket.
+
+### Most runs for the club in a day
+```{r daily-agg}
+D.inns.dayagg(F.inningses.us, "Highest daily aggregate, this club")
+```
+
+### Tossing performance
+
+```{r tossing-all}
+F.inningses.us %>% D.inns.tossresult("Our tossing and match results, all time")
+```
+  
+\newpage
+
+## All-rounder
+
+### Fifty runs and four wickets in same match
+
+```{r little-double-us}
+F.allround.us %>% D.allround.matchdouble("Fifty and four-for", 50,4)
+```
+
+### Hundred and five-for, our leagues
+
+```{r double-sphere}
+F.allround.sphere %>% D.allround.matchdouble("Hundred and five-for", 100, 5)
+```
+
+### Fifty runs and three fielding dismissals in same match
+
+```{r fldr-double-us}
+F.allround.us %>% D.allround.fielddouble("Fifty and three dismissals")
+```
+
+### Season double
+500 runs and 20 wickets in a season
+
+```{r season-double}
+D.ar.seasondouble(F.batting.us, F.bowling.us, F.fielding.us, "Season double", 500, 20, 0)
+```
+
+
+500 runs and 10 dismissals
+
+```{r season-fldg-double}
+D.ar.seasondouble(F.batting.us, F.bowling.us, F.fielding.us, "Season double", 500, 0, 10)
+```
+
+
+### Career double
+2000 runs and 50 wickets
+```{r career-double-us}
+# - allrounder := bat avg >= 15, <= 2.5 wkts/match
+F.joinavgs.us %>% D.joinav.careerdouble("2000 runs and 50 wickets", 2000, 50, 0)
+```
+
+2000 runs and 50 fielding dismissals
+```{r career-fldr-double-us}
+F.joinavgs.us %>% D.joinav.careerdouble("2000 runs and 50 dismissals", 2000, 0, 50)
+```
+
+### Most appearances
+
+```{r most-apps}
+
+F.fielding.us %>% D.fielding.mostappsseason("Most appearances in a season")
+
+F.fielding.us %>% D.fielding.appsalltime("Most appearances, all time")
+```
+
+\newpage
+
+## Fielding
+
+### Most catches in an innings
+
+Showing most first, including as wicket-keeper; most recent where tied.
+
+```{r catches-inns}
+F.fielding.us %>% D.fielding.mostcatchesinns("Most catches in an innings, all-time")
+```
+
+### Tally of catches, all-time
+Including as wicket-keeper. Showing highest `r conf$default_list_length`.
+
+```{r catches-total}
+F.fieldsumm.us %>% D.fieldsumm.mostcatches("Most total catches, all time", 
+                                           conf$default_list_length)
+```
+
+### Most catches in a season
+```{r mostcatch-season}
+F.fielding.us %>% D.fielding.mostcatchseason("Most catches in a season")
+```
+
+\newpage
+
+## Wicket-keeping
+
+### Most dismissals in an innings
+
+Showing most first; most recent where tied.
+
+Excludes run-outs, because data are too flaky to be reliable.
+
+```{r wkdiss-alltime}
+F.fielding.us %>% D.fielding.mostblahinns( "Most WK catches in an innings, all time", "Ct")
+
+F.fielding.us %>% D.fielding.mostblahinns( "Most stumpings in an innings, all time", "Std")
+
+F.fielding.us %>% D.fielding.mostblahinns( "Most WK dismissals in an innings, all time", "Dis")
+
+```
+
+### Most dismissals in a season
+```{r mostwkdis-season}
+F.fielding.us %>% D.fielding.mostblahseason("Most WK catches in a season", "Ct")
+F.fielding.us %>% D.fielding.mostblahseason("Most stumpings in a season", "Std")
+F.fielding.us %>% D.fielding.mostblahseason("Most WK dismissals in a season", "Dis")
+```
+
+### Tally of dismissals, all time
+Minimum: three.
+
+```{r wkdiss-total}
+F.fielding.us %>% D.fielding.mostblah("Most total WK catches, all time", "Ct")
+F.fielding.us %>% D.fielding.mostblah("Most total stumpings, all time", "Std")
+F.fielding.us %>% D.fielding.mostblah("Most total WK dismissals, all time", "Dis")
+
+```
+
+### Most appearances as wicket-keeper
+
+```{r most-apps-wk}
+F.fielding.us %>% D.fielding.mostappsseason("Most appearances in a season", "As keeper")
+
+F.fielding.us %>% D.fielding.appsalltime("Most appearances, all time", "As keeper")
+```
+
+
+### No byes conceded for high totals
+```{r no-byes-200-total}
+F.inningses.them %>% D.inns.nobyes("No byes conceded for total of 150 runs or more, this season", ms=200)
+
+```
+
+\newpage
+
+## Grounds
+
+Considering only matches involving our club:
+
+### Most total runs at a ground
+
+```{r mostruns-ground}
+F.inningses.circle %>% D.inns.groundmostruns("Most runs at grounds")
+```
+
+### Highest team score at a ground
+
+```{r highteamtotal-ground}
+F.inningses.circle %>% D.inns.groundhighteam("Highest team total at grounds")
+```
+
+### Highest individual score at a ground
+
+```{r highindiviscore-ground}
+F.batting.circle %>% D.bat.groundhighindiv("Highest individual score at grounds")
+```
+
+\newpage
+
+# Tours
+
+*By Will Day and The Tourists*
+
+## MILTON at LEISURE, 2024
+
+At Oxton, Cheshire, 13 April 2024. Abandoned before the toss.
+
+At Milton, Notts, 14 April 2024. Abandoned before the toss.
+
+\begin{verse}
+
+When April with his frequent showers sweet\\
+The drought of March has piercèd to the root,\\
+And bathed each pitch, soft liquor soaking in\\
+The turn, to bring the flowering of spin,\\
+And joyful melody from crowds that cheer\\
+While drinking all the day at ale and beer,\\
+And stir in them desire for bat on ball,\\
+Then cricketers make plans to go on tour,\\
+And players seek to find bars of renown,\\
+Play friendly clubs, based in distant towns.\\
+And specially in twenty-four we'd wend,\\
+Between the Dee and Mersey was our end,\\
+A brisk and blissful friendly for to seek,\\
+To strengthen that which winter's cloak made weak.\\
+Our host at Childer lodgings for us bought,\\
+At Aintree would they run at the King's sport,\\
+At Oxted would we play a hundred ends,\\
+And merry make with old and novel friends.\\
+But all for nought, we bowlèd not a ball.\\
+The winter rain, wild and greatest in all\\
+The century left ground unfit for use.\\
+Our consolation was: we did not lose.\\
+
+\par\medskip
+
+So we arranged we should watch others play,\\
+In name alone was it a tailored day,\\
+Ill fortune said a bus should take us tither:\\
+We had no choice, it was no fault of Sivvers.\\
+The Oval blessed in hazy morning sun\\
+Saw Surrey back at forty-two for none.\\
+Our lunch was liquid from St James' Gate\\
+That Waitrose has at thirteen pounds for eight,\\
+The pitch grew dry, the sun grew warm and we\\
+Caught it in watching Sibley’s century.\\
+
+\par\medskip
+
+An artificial strip on Sunday fair \\
+Saw sixteen come to warm up playing pairs.\\
+A few good balls, a few good shots, the game\\
+Was close: won by a run, and not by rain.\\
+This tour's success was not in notches scored,\\
+For cricket has the weather as its lord.\\
+And better that we have our pitches rolled,\\
+The less the chance we have of being bowled.\\
+
+\end{verse}
+
+
+## MILTON in THE HAGUE, 2024
+
+*Happy in The Hague for a drunken hour*
+
+Those on the ferry had an early start out of Milton for a 09.00 sailing
+--  Race, Taylor, and While having already sampled the first of many 
+outdoor café seating areas in what the signs described as `Historic 
+Harwich'. The Eurostar contingent scarcely behind, but ahead on early 
+beer stakes: Arun on the vanguard of the ferry beers, on his way to 
+four. Will D fed his corporate machine, Sam explained the perfect 
+chicken and sweetcorn wrap; others found, and presumably paid, the 
+ferryman for a special visit to the car for the bat and duck costume 
+needed for playing on a literal deck. We confused and delighted 
+onlookers, losing only one ball to the waves. 
+
+A change at Rotterdam brought the land-bound closer, meeting at the 
+hostel: basic and fine, right on a square of several bars. We explored 
+the options at a nearby food hall, Andy fixing the electrics in the 
+corner to allow the first of many darts games. The number of players 
+at their two-pint-peak meant quality of the gameplay matched that 
+of the nasi goreng, though it was teetotal Sam who surprised us with a 
+previously-unknown aptitude for the game, despite his difficulty in 
+locating each number on the board. Our scorer notes only the result of 
+the final game -- Nath won -- in a brewpub a short walk away. We ended 
+the night back at the square, Pete demonstrating that sleeping is not 
+just an indoor activity. 
+
+Saturday saw us on the train to Amsterdam to watch the semi-final of 
+the national 50-over competition with our hosts Voorburg against VRA 
+Amsterdam. Leaving the department of silence and central Amsterdam's 
+bizarre architecture, and with news of a delayed start, we strolled to 
+a city park for lunch beside a rowing lake. So generous were 
+the portions a croque-monsieur could be secreted, Paddington-style, for 
+later. 
+
+The delay was due to a wet pitch: even at this level, clumsiness in 
+use of covers is still a thing. In a reduced 33-over game, Voorburg 
+lost the toss and early wickets, making just 106. We chased shade on 
+the balcony of the pavilion and later on the boundary. Soon after tea, 
+Stock retired fucked, while others delighted in the biggest jugs you 
+have ever seen: anything else, you'd have to go into town for. A 
+delayed return still allowed time for hair washing, some quick 
+unsheathed hoemoes, an Italian restaurant, a few half-litres in a 
+London-styled dark pub, and bed.
+
+Morning: tram to the beach and a stroll along the prom, which offered 
+the full spectrum from tacky beach clubs blaring drum and bass, to empty 
+chairs and weary cleaning staff, to high end beach volleyball 
+facilities: or, a walk, under a cascade of bath pearls from giggling 
+children, to gezellig café for coffee and excellent cake. Happy Toast 
+promised but failed to deliver -- this as the sign of things to come.
+
+Greeted at the ground by Kirk, our genial and welcoming Canadian/Kiwi 
+host. We got underway briskly, winning the toss and batting. We weren't 
+there to fellate mosquitos.
+
+A meal after the game of biryani, little apple cakes, and beer. 
+Voorburg gave us a lot of beer. And food. And more beer, and good chat. 
+We had a lively discussion of London police and the price of milk (the 
+ladies love it) in the taxi. Then just two more at Zeta, to 
+Pete's long-anticipated credit, discussing Jos 
+Buttler's average penis under the strongest fuck off home vibes this 
+side of the \IJ. A club of sorts, Chlamydia Campari in charge as the 
+stern guardian of the lav. A final late nightcap and some wordplay to 
+close, one dorm room capturing Pete for what remained of the night.
+
+Monday the most gentle of starts, a pancake breakfast and excellent 
+supermarket cheese for a buffet lunch on the ferry. Only a few overs of 
+ferry cricket were allowed, conditions being unfit through wind and 
+sway. We dozed and discussed JSON, compiling ourselves into
+readiness for the grey evening on the A14: bringing good Billy ashore
+neither orange nor duck-yellow, but contented in seeing out the old
+year in peaceful hope of more good times.
+
+\medskip
+
+The stats:
+
+-  Sam Jones got four off nine,
+-  43,9 km in four days, and one Day, walked,
+-  ducks: many real, two metaphorical and one ersatz,
+-  one tourist earning a gentle rebuke from the Dutch police.
+
+
+### Voorburg CC ZaMi vs Milton CC
+
+Only ODI.
+
+At Voorburg, 8 September. Voorburg won by 4 wickets. Toss: Milton.
+
+
+Thirteen off the first over showed promise but slowing a little, 
+including Jay bowled just after his first run, and an early qualifier 
+to wear the duck costume as Nath caught behind. Will C kept up the 
+rate with lofty boundaries, hitting goalposts just beyond the rope, and 
+retiring in the ninth over on fifty off 30 balls. 
+
+Quick running of singles from 
+Randy and Arun, the former bowled bringing Sam to continue the steady 
+progress until caught at long on at the cusp of drinks, 88 for 4 off 
+17. Arun caught behind shortly after, leaving Pete bringing form from 
+the late season friendlies and Will D's sexy sweeps to put on 46 for 
+the sixth wicket, ended with Pete bowled, and soon after Will hit only 
+just low enough to be lbw. Phil giving the keeper his third catch, 
+Niall narrowly avoiding the duck before chipping to gully, Chris making 
+four tidy singles and caught at backward-point in the final over, 
+giving 155 all out. 
+
+Tea was pakoras and sheathed hummus, and just a 
+little beer. The reply started well for Milton: 10 for 2 in the fifth 
+over, one each for Dann and Jones, the latter an alert stumping from 
+Day. The third came from Allen's first ball, drilled to A Sivajoti at 
+square leg with the score at 19. 
+
+That was to be the best of it: K Mirthi and M Qadar putting on 110 at 
+around 7 an over. At drinks -- beer -- 101 for three after 16 could not 
+inspire, a handful of good and tidy balls were not enough, though some 
+honour was regained by three later catches: by N Sivajoti at cover off 
+Dann, and two off Conlon, one by While at extra-cover and one 
+behind.
+Taylor bringing about the end in the 27th over, 
+a missed half-chance then a high six from loose outside leg. 
+
+\medskip
+
+
+```{=latex}
+
+
+
+\begin{tabularx}{0.82\textwidth}[t]{Xrrl}
+\textbf{\large Milton}  & ~ & ~ & ~  \\
+~       & ~ & \emph{B} & \emph{4/6} \\
+W Conlon not out \dotfill & 60 & 35 &  7/2\\
+J Dann b Krishna \dotfill & 1  & 15 & 0 \\
+*N Sivajoti ct \dag{}Luciw b Krishna \dotfill & 0 & 1 & 0 \\
+A Race b Koopman \dotfill & 15 & 19 &  1 \\
+A Sivajoti ct \dag{}Luciw b Holleman \dotfill & 6  & 29 & 0 \\
+S Jones ct Krishna b Batro \dotfill & 4  & 9 & 0 \\
+\dag{}W Day lbw b de Graaf \dotfill & 17 & 37 &  1 \\
+P While b Koopman \dotfill & 20 & 43 &  1 \\
+P Allen ct \dag{}Luciw b Siro \dotfill & 0 & 5 & 0 \\
+C Stock ct b Holleman \dotfill &  4 & 10 & 0 \\
+N Taylor ct Kaushal b Holleman \dotfill & 1 & 8 & 0 \\
+B 2, l-b 2, w 18, nb 5. \dotfill   & 27  &~&~\\ \cline{2-2}
+~~~~~~~~~~~(all out, 34.3 ovs) & 155 &~&~\\ [2ex]
+\end{tabularx}
+
+
+\smallskip
+
+1/34(2) 2/50(3) 3/79(4) 4/88(6) 5/88(5) 6/134(8) 7/135(9) 8/137(7) 9/140(11) 10/155(10)
+Conlon retired at 50 (30b) when the score was 58/2 and Race 2*.
+~
+
+\smallskip
+
+De Graaf 6-0-52-1, Krishna 4-1-11-2, Batro 5-0-22-1, Koopman 5-1-12-2, 
+Holleman 3.3-0-13-3, Elsley 5-1-11-0, Koster 4-0-20-0, Siro 2-0-10-1.
+
+\medskip 
+
+\begin{tabularx}{0.82\textwidth}[t]{Xrrl}
+\textbf{\large Voorburg}  & ~ & ~ & ~  \\
+~       & ~ & \emph{B} & \emph{4/6} \\
+Siro b Dann \dotfill & 1 & 7 & 0 \\
+*\dag{}K Luciw std Day b Jones \dotfill & 4 & 9 & 0 \\
+K Marthi retired not out \dotfill & 44 & 45 & 3/1 \\
+M Koster ct A Sivajoti b Allen \dotfill & 2 & 7 & 0 \\
+M Qadar retired not out \dotfill & 47 & 41 & 5/1 \\
+P Krishna ct N Sivajoti b Dann \dotfill & 16 & 19 & 1 \\
+J Batro ct While b Conlon \dotfill & 5 & 8 & 0 \\
+Dave ct \dag{}Day b Conlon \dotfill & 4 & 10 & 0 \\
+S de Graaf not out \dotfill & 16 & 10 & 0/2 \\
+Nick not out \dotfill & 1 & 1 & 0 \\
+B 2, w 13, nb 2 \dotfill   & 17  &~&~\\ \cline{2-2}
+~~~~~~~~~~~(6 wkts, 26.3 ovs) & 157 &~&~\\ [2ex]
+\end{tabularx}
+
+\smallskip
+
+1/1(1) 2/10(2) 3/18(4) 4/128(6) 5/133(7) 6/145(8). 
+Marathi retired at 100/4 (Qadar 36*) and Qadar retired at 134/6 (Dave 0*)
+
+\smallskip
+
+F Holleman did not bat.
+
+\smallskip
+
+Jones 4-0-11-1, Dann 6-0-24-2, Race 2-0-13-0, Allen 2-0-22-1, 
+Stock 2-0-19-0, N Sivajoti 2-0-10-0, While 2-0-15-0, 
+A Sivajoti 2-0-19-0, Conlon 4-0-16-2, Taylor 0.3-0-6-0.
+
+```
+
+\newpage
+
+# Stoehr Memorial Tournament, 2024
+
+
+
+## A third year for the Stoehr games brings new success
+
+<!-- *By Ed Conlon* -->
+
+The third Peter Stoehr memorial game  on 30 June 
+brought club members, families, 
+and friends to play and watch a day of relaxed and joyfully 
+competitive cricket.
+
+Since losing Peter in 2020 the club has held fundraising days in 
+his memory. 
+This year we repeated the six-a-side format from 2023, this time
+with six teams. Each side batted for five overs, and everyone
+except the keeper bowls. 
+
+Although four teams were invited `external' sides, there was strong
+Milton representation across the slate. And surely for such an 
+occasion we would put our individual pride to one side, and let
+cricket be the winner, wouldn't we?
+
+Almost. 
+
+The first innings had the President's team hit a loosely Press 
+\& Assessment based team for 80, the highest total of the day; missing
+their star batter from last year Julius Jackson, CUPA would later 
+fall well short in the chase.
+
+Things settled down then -- the barbeque was lit, the bar open, and
+Milton players old and new shared out nice shots and good balls. 
+
+We kept the games pacy and with many small sides, there was plenty
+of time to sit and watch with a burger, drink and snacks from the 
+wide selection on offer, donated by club members.
+
+Top individual score of the day, 46 not out from Nick Widdowson, aided
+no doubt by Ollie taking any remaining shine off the ball early, was
+only just enough to hold off Blobble's Wobbles, who Will Jupp had
+coaxed down from London for the day with the promise of good cake. 
+They would be kind enough to come back a few months later, even after 
+we'd made them face the rather tidy Waterbeach bowling.
+
+Our friends from Reach were also there for a day out, losing only
+one wicket across both their group games and winning both.
+
+We paused for the raffle and some well-chosen words. It was a delight
+to see so many had come to the event: families in particular, 
+showing that we are part of a bigger community with the open and welcoming
+spirit of Milton CC in full swing. 
+
+Back to the cricket, our own Milton side also won both their group 
+games but in a baffling, stats-driven format point, they played off 
+with Reach progressing to see Blobble's Wobbles again, sent into the 
+final by rep\^{e}chage. Reach won, we shall say easily,  in good time.
+
+Although the cricket wrapped up earlier than last year as England were 
+playing another sport that evening, many stayed around in the 
+clubhouse to help with the leftovers and keep the donations going. 
+
+This event is becoming a highlight of the season for many and 
+was again a special day in memory of Peter. This year we
+raised a record \pounds1200, with a donation being made to the Air Ambulance 
+charity and, through the generosity of the Stoehr family, 
+retained in the club.
+
+Milton CC would again like to extend a huge thanks to all who 
+attended, played and helped make it happen. See you next time.
+
+## Teams
+
+### CUPA
+  Phil Allen\dag{},
+  Will Day*,
+  Chris Goodall,
+  Sam Jones, 
+  Chris Stock,
+  Pete While.
+
+### President's VI
+ Mark Barton*,
+ Ed Conlon,
+ Ani Ghosh,
+ Jez Major,
+ Zack Smith\dag{},
+ Adam South.
+
+### Waterbeach
+ Ed Cree,
+ Pradeep Gowda\dag{},
+ Rakesh Panigrahi*,
+ Andy Peck,
+Alastair, 
+Temoc.
+
+### Milton
+ Noah Barton,
+ Jay Dann,
+ Nathan Sivajoti*\dag{},
+ Nick Widdowson,
+Ollie, 
+Tarquin.
+
+### Reach
+ M Mead*,
+ Ewan Cameron,
+ T Clark,
+ Ross Clark,
+ Tony Fordham,
+ Archie Fordham,
+ James Henderson\dag{}.
+
+### Blobble's Wobbles
+Mr H Boutflower,
+Mr J Goodhart,
+Mr J Jones,
+Jupp,
+Mr W Mathewson,
+Mr R Uloth*\dag{}.
+
+## Results
+
+All played at The Sycamores, 30 June 2024. Conditions: fair, warm, jovial.
+
+1.  President's VI bt CUPA by 41 runs
+2.  Reach bt President's VI by 13 runs
+3.  Blobble's Wobbles bt Waterbeach by 16 runs
+4.  Reach bt CUPA by 5 wickets
+5.  Milton bt Blobble's Wobbles by 7 runs
+6.  Milton bt Waterbeach by 3 wickets
+
+\medskip
+
+Reach and Milton progress to semi-final. In the semi-final, Reach (38/1, 4.5 ovs)
+beat
+Milton (37/3, 5 ovs) by four wickets.
+
+\bigskip
+
+Blobble's Wobbles move to the final by having the highest net quotient
+from among those not in the semi-final.
+
+\bigskip
+
+Final: Reach (46/0, 2.2 ovs) beat Blobble's Wobbles (45/0, 5 ovs) by
+5 wickets.
+
+\bigskip
+
+
+## Batting
+```{=latex}
+\setlength{\tabcolsep}{2pt}
+\begin{tabularx}{0.95\textwidth}[h]{X*{7}{r}ll}
+\textbf{Name} & \textbf{M} & \textbf{I} & \textbf{NO} & 
+  \textbf{Runs} & \textbf{HS} & \textbf{Avg} & \textbf{SR}
+  & \textbf{4/6} & \textbf{Ct}\\ \hline \hline
+
+%Julius Jackson &  3 & 2 & 2 & 62 & 42* & - & 482.35 & 1/8 & 1\\
+
+M Mead      	&4&	3&	3&	96&	34*&	--&	259.45&	5/8	    &~      \\
+N Widdowson	    &3&	3&	3&	59&	46*&	--&	268.18&	11/1	&1          \\
+S Jones	        &4&	3&	2&	47&	28& 	47&	180.76&	4/3	    &~     \\
+E Conlon	    &2&	2&	1&	42&	25*&	42&	182.60&	4/2	    &~    \\
+R Uloth	        &3&	3&	1&	38&	25*&	19&	135.71&	5	    &~      \\
+E Cameron	    &4&	3&	2&	37&	20&	    37&	176.19&	2/2	    &~      \\
+H Boutflower	&3&	3&	2&	34&	19*&	34&	154.54&	3	    &~     \\
+J Major	        &3&	2&	2&	32&	19&	    --&	177.77&	5	    &~      \\
+W Jupp	        &3&	2&	1&	29&	18&	    29&	193.33&	5	    &~      \\
+A Ghosh     	&2&	1&	1&	24&	24*&	--&	342.85&	3/1	    &~      \\
+J Dann	        &4&	3&	0&	24&	14&	     8&	114.28&	2	    &~      \\
+P Gowda	        &2&	2&	1&	16&	9*&	    16&	228.57&	3	    &~      \\
+Alastair	    &1&	1&	1&	16&	16*&	--&	114.28&	1	    &~      \\
+W Day	        &2&	1&	0&	16&	16&	    16&	145.45&	3	    &~      \\
+J Henderson  	&3&	2&	1&	16&	10&	    16&	177.77&	4/1	    &~      \\
+P Allen	        &2&	2&	2&	15&	14*&	--&	93.75&	2	    &~      \\
+A Fordham	    &4&	1&	1&	14&	14*&	--&	107.69&	1	    &~      \\
+T Fordham	    &4&	1&	1&	13&	13*&	--&	118.18&	2	    &~      \\
+A Peck       	&2&	2&	0&	13&	10&	    6.5&	81.25&	1	&~          \\
+J Jones	        &3&	1&	1&	10&	10*&	--&	250.00&	1	    &~      \\
+Z Smith      	&2&	2&	0&	9&	8&	    4.5&	128.57&	1	&~          \\
+N Sivajoti	    &2&	1&	1&	7&	7*&	    --&	87.50&	~&	1          \\
+N Barton	    &3&	2&	1&	7&	5&	     7&	35.00&	~&	          \\
+W Mathewson	    &3&	2&	1&	5&	4*&	    5&	62.50&	~&	          \\
+P While	        &1&	1&	0&	4&	4&	    4&	66.66&	~&	1          \\
+J Goodhart	    &3&	2&	0&	4&	4&	    2&	44.44&	~&	          \\
+C Stock      	&2&	1&	1&	3&	3*&	    --&	37.50&	~&	          \\
+Temoc	        &2&	1&	0&	1&	1&	     1&	33.33&	~&	1          \\
+M Barton	    &3&	1&	0&	1&	1&	     1&	33.33&	~&	          \\
+E Cree	        &2&	2&	1&	1&	1&	     1&	20.00&	~&	          \\
+
+Ollie	        &2&	2&	0&	0&	0&    	0	&0.00&	~&	1          \\
+R Clark	        &2&	0&	0&	0&	--&	    --&	--	&	~&1          \\
+R Panigrahi	    &2&	0&	0&	0&	--&	    --&	--	&	~&1          \\
+
+
+A South	        &3&	1&	0&	0&	0&	     0&	0.00&	~&	          \\
+C Goodall	    &2&	1&	0&	0&	0&	     0&	0.00&	~&	          \\
+
+T Clark	        &1&	0&	0&	0&	--&	    --&	--	&	~&          \\
+Tarquin	        &3&	0&	0&	0&	--&	    --&	--	&	~&          \\
+
+\end{tabularx}
+
+```
+\newpage
+
+## Bowling
+```{=latex}
+
+
+\begin{tabularx}{0.95\textwidth}[h]{Xl*{7}{r}}
+\textbf{Name} & \textbf{B} & \textbf{D} & \textbf{R} & 
+  \textbf{W} & \textbf{SR} & \textbf{Avg} & \textbf{Econ}\\ \hline \hline
+Widdowson&	18&	9&	18&	3&	6.00&	6.00&	6.00\\
+Jones	S&	18&	7&	24&	3&	6.00&	8.00&	8.00\\
+Fordham A &	24&	13&	21&	2&	12.00&	10.50&	5.25\\
+Panigrahi&	12&	5&	21&	2&	6.00&	10.50&	10.50\\
+Fordham T&	24&	4&	47&	2&	12.00&	23.50&	11.75\\
+Jupp	&	6&	4&	2&	1&	6.00&	2.00&	2.00\\
+Alastair&	3&	1&	6&	1&	3.00&	6.00&	12.00\\
+Peck	&	12&	8&	9&	1&	12.00&	9.00&	4.50\\
+Barton M&	6&	1&	9&	1&	6.00&	9.00&	9.00\\
+Uloth	&	8&	4&	12&	1&	8.00&	12.00&	9.00\\
+Barton N&	17&	6&	15&	1&	17.00&	15.00&	5.29\\
+Stock	&	12&	3&	16&	1&	12.00&	16.00&	8.00\\
+Cree	&	12&	4&	20&	1&	12.00&	20.00&	10.00\\
+Ghosh	&	12&	2&	25&	1&	12.00&	25.00&	12.50\\
+Major	&	18&	8&	30&	1&	18.00&	30.00&	10.00\\
+Mead	&	24&	7&	32&	1&	24.00&	32.00&	8.00\\
+Temoc	&	18&	6&	37&	1&	18.00&	37.00&	12.33\\
+Clark	R&	12&	7&	8&	0&	--&	--&	4.00\\
+Clark	T&	6&	1&	9&	0&	--&	--&	9.00\\
+Gowda	&	6&	3&	12&	0&	--&	--&	12.00\\
+Barton	&	12&	2&	15&	0&	--&	--&	7.50\\
+South	&	12&	5&	17&	0&	--&	--&	8.50\\
+While	&	6&	1&	18&	0&	--&	--&	18.00\\
+Conlon	&	12&	4&	19&	0&	--&	--&	9.50\\
+Dann	&	12&	4&	19&	0&	--&	--&	9.50\\
+Ollie	&	12&	1&	23&	0&	--&	--&	11.50\\
+Goodall	&	7&	0&	23&	0&	--&	--&	19.71\\
+Boutflower&	12&	1&	26&	0&	--&	--&	13.00\\
+Cameron	&	18&	4&	27&	0&	--&	--&	9.00\\
+Goodhart&	12&	1&	28&	0&	--&	--&	14.00\\
+Jones J	&	18&	9&	30&	0&	--&	--&	10.00\\
+Tarquin	&	18&	5&	32&	0&	--&	--&	10.66\\
+Mathewson&	18&	3&	38&	0&	--&	--&	12.66\\
+Day		&	12&	0&	42&	0&	--&	--&	21.00\\
+
+
+\end{tabularx}
+
+
+```
+\newpage
+## Scorecards
+```{=latex}
+
+Editor's note: in this section, bowling figures are given as
+balls-dots-runs-wickets.
+
+
+
+\newlength{\oldtabcolsep}
+\setlength{\oldtabcolsep}{\tabcolsep}
+\setlength{\tabcolsep}{2pt}
+
+```
+
+### President's VI vs CUPA
+```{=latex}
+President's VI win by 41 runs.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{President's VI}
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+%\textbf{\large President's VI}  & ~ & ~ & ~  \\
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 \dag{}Z. Smith     \emph{b 3}     \dotfill & 8   & 4  & 1 \\
+2 J. Major           \emph{not out} \dotfill & 19  & 7  & 4 \\
+3 E. Conlon          \emph{c 7 b 6} \dotfill & 17  & 8  & 2/1 \\
+4 A. Ghosh           \emph{not out} \dotfill & 24  & 7  & 3/1 \\
+B 1, lb 1, w 8, nb 2    & 12  &~&~\\ \cline{2-2}
+~~~(2 wkts, 5 ovs) & 80 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/10(1) 2/39(3)
+
+\smallskip
+
+5 A. South and  6 *M. Barton did not bat. 
+
+\smallskip
+
+Jones 6-1-11-1, While 6-1-18-0, Stock 6-2-8-1, Goodall 6-0-18-0, 
+Day 6-0-23-0.
+
+\end{minipage}%
+%\hfill
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{CUPA}
+
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 \dag{}P. Allen    \emph{not out} \dotfill & 14  &  15 & 2 \\
+2 J. Dann           \emph{b 4}     \dotfill & 8   &  10 & - \\
+3 S. Jones          \emph{not out} \dotfill & 13  &  4  & 1/1 \\
+W 2, nb 2   & 4  &~&~\\\cline{2-2}
+~~~(1 wkt, 5 ovs) & 39 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/25(2)
+
+\smallskip
+
+4. *W. Day, 5 C. Goodall and 6 C. Stock did not bat. 7. P While fielded.
+
+\smallskip
+
+Major 6-3-9-0, South 6-4-3-0, Conlon 6-1-8-0, Barton 6-2-5-0, 
+Ghosh 6-1-14-1.
+\end{minipage}
+
+
+
+```
+
+### Reach vs President's VI
+```{=latex}
+Reach win by 13 runs.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+
+\textbf{ Reach } 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 *M. Mead             \emph{not out} \dotfill & 29   & 15  & 1/2 \\
+2 E. Cameron           \emph{b 3}     \dotfill & 20  & 11  & 2/1 \\
+3 \dag{}J. Henderson   \emph{not out} \dotfill & 6  & 4  & 2/1 \\
+B 3, lb 2   & 5  &~&~\\ \cline{2-2}
+~~~(1 wkt, 5 ovs) & 60 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/49(2).
+
+\smallskip
+
+4 T. Fordham, 5 A. Fordham and 6 T. Clark did not bat. 
+
+\smallskip
+
+Ghosh 6-1-11-0, South 6-1-14-0, Conlon 6-3-11-0, Major 6-3-9-1,
+Barton 6-0-10-0.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{ President's VI} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 \dag{}Z. Smith     \emph{c\&{}b 5} \dotfill & 1    &  3  & - \\
+2 E. Conlon          \emph{not out}  \dotfill & 25   &  15 & 2/1 \\
+3 J. Major           \emph{not out}  \dotfill & 13   &  11 & 1 \\
+W 2, nb 6   & 8  &~&~\\\cline{2-2}
+~~~(1 wkt, 5 ovs) & 47 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/2(1)
+
+\smallskip
+
+4 *M. Barton, 5 A. South and 6 A. Ghosh did not bat.
+
+\smallskip
+
+A Fordham 6-4-2-1, Mead 6-1-9-0, Clark 6-1-9-0, Cameron 6-1-11-0,
+T Fordham 6-1-16-0.
+
+\end{minipage}
+```
+
+
+### Blobble's Wobbles vs Waterbeach
+```{=latex}
+Blobble's Wobbles win by 16 runs.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+
+\textbf{ Blobble's Wobbles } 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 H. Boutflower        \emph{b 7} \dotfill & 10   & 5  & 2 \\
+2 *\dag{}R. Uloth       \emph{b 1}     \dotfill & 6  & 7  & 1 \\
+3 W. Mathewson          \emph{c 2 b 3} \dotfill & 1  & 3  & - \\
+4 J Goodhart            \emph{b 6} \dotfill & 0  & 3  & - \\
+5 W. Jupp               \emph{not out} \dotfill & 11  & 7  & 2 \\
+6 J. Jones              \emph{not out} \dotfill & 10  & 4  & 1 \\
+B 1, w 2, nb 10   & 13  &~&~\\ \cline{2-2}
+~~~(4 wkts, 5 ovs) & 51 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/16(1) 2/18(3) 3/24(2) 4/39(4).
+
+\smallskip
+
+~
+
+\smallskip
+
+Temoc 6-2-16-1, Cree 6-3-3-1, Peck 6-4-7-1, Gowda 6-3-12-0, 
+Panigrahi 6-2-12-1.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{ Waterbeach} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 A. Peck    \emph{lbw b 5} \dotfill & 10    &  10  & 1 \\
+2 \dag{}P. While    \emph{r 5}  \dotfill & 4   &  6 & - \\
+3 E. Cree           \emph{run out}  \dotfill & 0   &  3 & - \\
+4 P. Gowda          \emph{not out}  \dotfill & 9   &  4 & 2 \\
+5 A. South          \emph{run out}  \dotfill & 0   &  3 & - \\
+B 2, w 8, nb 2   & 12  &~&~\\\cline{2-2}
+~~~(4 wkts, 5 ovs) & 35 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/16(2) 2/16(1) 3/20(3) 4/35(4).
+
+\smallskip
+
+6 *R. Panigrahi did not bat. 7 Temoc fielded.
+
+\smallskip
+
+Boutflower 6-1-10-0, Mathewson 6-2-4-0, Jupp 6-4-2-1, 
+Jones 6-5-4-0, Goodhart 6-1-13-0.
+
+\end{minipage}
+
+```
+
+### CUPA vs Reach
+```{=latex}
+Reach win by 5 wickets.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{CUPA } 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 S. Jones       \emph{c 3 b 1} \dotfill & 6   & 6  & 1 \\
+2 *W. Day       \emph{b 4}     \dotfill & 16  & 11  & 3 \\
+3 C. Stock          \emph{not out} \dotfill & 3  & 8  & - \\
+4 C. Goodall            \emph{b 4} \dotfill & 0  & 1  & - \\
+5 \dag{}P. Allen               \emph{not out} \dotfill & 1 & 1  & - \\
+B 6, w 7, nb 4   & 17  &~&~\\ \cline{2-2}
+~~~(3 wkts, 5 ovs) & 43 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/17(1) 2/41(2) 3/41(3).
+
+\smallskip
+
+6 J. Dann did not bat.
+
+\smallskip
+
+A Fordham 6-3-7-0, Mead 6-2-8-1, Tarquin 6-1-14-0, Clark 6-3-4-0, T Fordham 6-3-4-2.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{Reach} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 *\dag{}M. Mead    \emph{not out} \dotfill & 33    &  13  & 2/2 \\
+2 E. Cameron    \emph{not out}  \dotfill & 7   &  5 & - \\
+B 2, l-b 1, w 4   & 7  &~&~\\\cline{2-2}
+~~~(no wkts, 3.1 ovs) & 47 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+~
+
+\smallskip
+3 R. Clark, 4 T. Fordham, 5 A. Fordham, 6 Tarquin did not bat.
+
+%Fuck knows who bowled or did not bat, the scoresheet is a mess, thanks guys
+
+\smallskip
+
+Day 6-0-19-0, Dann 6-1-13-0, Stock 6-1-8-0, Goodall 1-0-4-0.
+
+\end{minipage}
+```
+
+### Milton vs Blobble's Wobbles
+```{=latex}
+Milton win by 7 runs.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{Milton } 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 Ollie        \emph{b 3} \dotfill & 0   & 3  & - \\
+2 *\dag{}N. Sivajoti       \emph{not out}     \dotfill & 7  & 8  & - \\
+3 N. Widdowson    \emph{not out} \dotfill & 46  & 18  & 8/1 \\
+
+L-b 2, w 2, nb 2   & 6  &~&~\\ \cline{2-2}
+~~~(1 wkt, 5 ovs) & 59 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/0(1).
+
+\smallskip
+
+4 S Jones, 5 Temoc, and 6 N Barton did not bat.
+
+\smallskip
+
+Uloth 6-4-5-1, Goodhart 6-0-15-0, Jones 6-3-6-0, 
+Mathewson 6-1-15-0, Boutflower 6-0-16-0.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{ Blobble's Wobbles} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 J. Goodhart    \emph{c\&b 3} \dotfill & 4    &  6  & - \\
+2 \dag{}W. Jupp    \emph{b 3}  \dotfill & 18   &  8 & 3 \\
+3 *R. Uloth           \emph{c 1 b 4}  \dotfill & 7   &  4 & 1 \\
+4 W. Mathewson          \emph{not out}  \dotfill & 4   &  5 & - \\
+5 H. Boutflower          \emph{not out}  \dotfill & 5   &  4 & - \\
+B 1, l-b 1, w 6, nb 6   & 14  &~&~\\\cline{2-2}
+~~~(3 wkts, 5 ovs) & 52 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/33(2) 2/36(1) 3/40(3).
+
+\smallskip
+
+6 J. Jones did not bat. 
+
+\smallskip
+
+Ollie 6-1-11-0, Temoc 6-0-17-0, Widdowson 6-2-7-2, Jones 6-4-8-1,
+Barton 6-1-7-0.
+
+\end{minipage}
+```
+
+
+### Waterbeach vs Milton
+```{=latex}
+Milton win by 3 wickets.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{ Waterbeach } 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 Alastair        \emph{not out} \dotfill & 16  & 14  & 1 \\
+2 \dag{}P. Gowda       \emph{b 5}     \dotfill & 7  & 3  & 1 \\
+3 A. Peck        \emph{c 6 b 1} \dotfill & 3  & 6  & - \\
+4 Temoc            \emph{b 3} \dotfill & 1  & 3  & - \\
+5 E. Cree               \emph{not out} \dotfill & 1  & 2  & - \\
+B 2, w 4, nb 2   & 8  &~&~\\ \cline{2-2}
+~~~(3 wkts, 5 ovs) & 36 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/16(2) 2/25(3) 3/31(4).
+
+\smallskip
+
+6 *R. Panigrahi did not bat
+
+\smallskip
+
+Ollie 6-0-12-0, Widdowson 6-4-6-1, Jones 6-2-5-1, Dann 6-3-6-0,
+Barton 6-3-5-1.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{Milton}
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 S. Jones    \emph{retired} \dotfill & 28    &  16  & 2/2 \\
+2 J. Dann    \emph{c\&b 6}  \dotfill & 2   &  2 & - \\
+3 N. Barton           \emph{not out}  \dotfill & 2   &  6 & - \\
+4 Ollie         \emph{c 4  b 1}  \dotfill & 0   &  2 & - \\
+5 N. Widdowson          \emph{not out}  \dotfill & 4   & 1 & 1 \\
+Nb 2   & 2  &~&~\\\cline{2-2}
+~~~(2 wkts, 4.3 ovs) & 38 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/26(2) 2/34(4). Jones retired at 32/1.
+
+\smallskip
+
+6 *\dag{}N. Sivajoti did not bat. 
+
+\smallskip
+
+Cree 6-1-17-0, Panigrahi 6-3-9-1, Peck 6-4-2-0, 
+Temoc 6-4-4-0. Alastair 3-1-6-1.
+
+\end{minipage}
+
+```
+
+### Quotients
+```{=latex}
+
+\begin{tabularx}{0.95\textwidth}[t]{X*{7}{r}}
+~ & \multicolumn{2}{ c }{Runs} & \multicolumn{2}{ c }{Wkts} & \multicolumn{3}{ c }{Quotient} \\
+Team & F &  A & A & F & F & A & Net \\ \hline \hline
+Reach & 107 & 90 & 1 & 4 & 107.00 & 22.50 & 84.50 \\
+Milton & 97 & 88 & 2 & 6 & 48.50 & 14.66 & 33.83 \\
+
+Blobble's Wobbles & 103 & 94 & 7 & 5 & 14.71 & 18.80 & -4.08 \\
+President's VI & 127 & 99 & 3 & 2 & 42.33 & 49.50 & -7.16 \\
+
+Waterbeach & 71 & 89 & 7 & 5 & 10.14 & 17.80 & -7.65 \\
+CUPA & 82 & 127 & 4 & 2 & 20.50 & 63.50 & -43.00 \\ 
+
+\end{tabularx}
+
+
+```
+
+### Semi-final: Milton vs Reach
+```{=latex}
+Reach win by 4 wickets.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{Milton} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 *M. Barton  \emph{b 3} \dotfill & 1  & 3  & - \\
+2 N. Barton  \emph{r 1} \dotfill & 5  & 14  & - \\
+3 \dag{}J. Dann \emph{run out} \dotfill & 14  & 9  & 2 \\
+4 N. Widdowson \emph{not out} \dotfill &  9 & 3  & 2 \\
+W 2, nb 6    & 8  &~&~\\ \cline{2-2}
+~~~(3 wkts, 5 ovs) & 37 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/4(1) 2/27(2) 3/37(3).
+
+\smallskip
+
+5 J. Major, 6 Tarquin did not bat.
+
+\smallskip
+
+A Fordham 6-2-7-1, Mead 6-2-7-0, R Clark 6-4-4-0, Cameron 6-2-7-0,
+T Fordham 6-0-12-0.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+\textbf{Reach} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1 T. Fordham  \emph{not out} \dotfill & 13  &  11 & 2 \\
+2 \dag{}J. Henderson \emph{lbw b 1} \dotfill &  10 &  5 & 2 \\
+3 A. Fordham \emph{not out} \dotfill & 14  & 13  & 1 \\
+L-b 1   & 1  &~&~\\\cline{2-2}
+~~~(1 wkt, 4.5 ovs) & 38 &~&~\\ [2ex]
+
+\end{tabularx}
+
+\smallskip
+
+1/21(2).
+
+\smallskip
+ 4. *M Mead, 5 R. Clark and 6 E. Cameron did not bat.
+
+\smallskip
+
+Major 6-2-10-0, Tarquin 6-2-11-0, M Barton 6-1-9-1, Widdowson 6-3-5-0,
+N Barton 5-2-3-0.
+
+\end{minipage}
+```
+
+
+### Final: Blobble's Wobbles vs Reach 
+
+```{=latex}
+Reach win by 5 wickets. Toss: Blobble's Wobbles.
+
+\medskip
+
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+
+\textbf{Blobble's Wobbles}
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1. H. Boutflower   not out  \dotfill & 19  & 13  & 1 \\
+2. *\dag{}R. Uloth  not out \dotfill & 25  & 17  & 3 \\
+L-b 1 \dotfill   & 1  &~&~\\ \cline{2-2}
+~~~(no wkts, 5 overs) & 45 &~&~\\ [2ex]
+\end{tabularx}
+
+\smallskip
+
+3. W. Mathewson, 4. J Goodhart, 5. W Jupp and 6. J Jones did not bat.
+
+\smallskip
+
+A Fordham 6-4-5-0, Mead 6-2-8-0, Tarquin 6-2-7-0,
+Cameron 6-1-9-0, T Fordham 6-0-15-0.
+
+\end{minipage}%
+\noindent
+\begin{minipage}[t]{.5\textwidth}
+\raggedright
+
+\textbf{Reach} 
+\begin{tabularx}{0.95\textwidth}[t]{Xrrl}
+~       & ~ & \emph{B} & \emph{4/6} \\
+1. *M. Mead not out \dotfill & 34  & 9  & 2/4 \\
+2. E. Cameron not out \dotfill & 10  & 5  & 0/1 \\
+
+B 2 \dotfill   & 2  &~&~\\ \cline{2-2}
+~~~(no wkts, 2.2 overs) & 46 &~&~\\ [2ex]
+\end{tabularx}
+
+\smallskip
+
+3. T. Fordham, 4. Tarquin, 5. A. Fordham and 6. \dag{}J. Henderson did not bat.
+
+\smallskip
+
+Jones 6-1-20-0, Mathewson 6-0-19-0, Uloth 2-0-7-0.
+
+\end{minipage}
+
+
+
+```
+\newpage
+
+
+# Setup
+
+## Leagues and competitions
+This year we played in the following competitions:
+
+```{r ourleagues}
+Y.compos %>% filter(ours==TRUE, current==TRUE) %>% select(id = competition_id,
+                                                          Name = competition_name, 
+                                                          league_id,
+                                                          `League Name` = league_name) %>%
+  kbl(longtable = T, booktabs = T, row.names = F) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = 7) 
+```
+
+In the whole dataset, we have played in leagues with id 
+numbers `r F.inningses.us %>% select(league_id) %>% distinct() %>% drop_na() %>%pull()` and
+in `r F.inningses.us %>% select(competition_id) %>% distinct() %>% drop_na() %>% nrow()` distinct competitions.
+
+## Players
+
+There are `r nrow(Y.currentplayers %>% filter(player_club==conf$club_of_interest))` recorded
+playing for the club this season or last season, and `r nrow(Y.players)` in the whole
+dataset.
+
+## Date ranges
+Data collected from Play-Cricket. 
+For `r conf$club_name`, from `r B.dates$our_earliest` to `r B.dates$our_latest`,
+n=`r B.dates$count_us` innings.  For all matches, from `r B.dates$all_earliest` to
+`r B.dates$all_latest`, n=`r B.dates$count_all` innings.
+
+# Notes
+
+The underlying dataset is collected from play-cricket, then processed and analysed. This 
+report will therefore not include data which are missing from play-cricket, and 
+will replicate errors from there. It is not, and cannot be, a complete record.
+
+Records with missing data are interpreted as nicely as feels sensible, but in general are 
+simply ignored. This usually results in the exclusion of part-complete data, probably
+giving incorrect aggregate or average figures. A very few match scorecards are so 
+unreliable that they are excluded.
+
+Many tables presented here are one end of a filtered and sorted dataset. There 
+is more interest 
+in tops than in bottoms, though both are represented. The underlying data are versatile 
+enough to output further, if requested, with appropriate preparation.
+
+No responsibility is taken for any purpose to which this report may be put. It should be 
+viewed as mere entertainment, or for scholarly statistical purposes^[which are,
+of course, inherently entertaining], and not relied upon as the sole judge of performance.
+No assessment of an individual's performance is made or implied. 
+
+_Comment is free, but stats are sacred._

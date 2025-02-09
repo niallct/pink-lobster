@@ -1,32 +1,32 @@
-- automate downloading, unzipping; report on date of download
-- why Joe not in the 50s in a season list
-- minimum inns qualif to the bowl averages
-- a little scorecard output
-- bowling when designated wk
-- sort duplicate player ids in E.players.NC
-- catches/inns in outfiled vs as keeper
-- (some sort of summary for all matches) -- add to alm
-- a run rate analysis; min/max for/against
-- matches W L, D, A, each XI, season.
-- fix the longest run stuff to show all tied records rather than the nth
-- tossing performance; long run of W/L - consecutively losing the toss (data poor) (add to Alm/Records)
-- three or more hundreds in successive innings, 50 and 4-for in consecutive inns
-- First to 1000 runs, 100 wkts in a season
-- std A b B and std B b A in same inns? or juat all pairs like that
-- Same player, many teams -- ovall avgs? play for most sides? chg pers report to be for this club, all clubs
-- some sort of score / win predictor
-- recording an individual performance - ACS v 123 - persona report
-- averages tables into the personal report
-- batting first, win, totals; by day-of-year
-- fix phsip table in the almo
-- longest run as nominal captain but not on field
+- sort out filter vs display functions
+- tidy up column selection
+- tidy up column widths
+- Handle 8-ball overs properly
 
-## Partnerships
-### almanac
-- top 5 for each wicket, home and away, by XI
-- all over 150
-- partnership dominates inns
-### records
-- top 5 for each wicket
-- monopolising runs in a partnership
-- all pship over 150
+## acs123:
+                own team  O M R W                    Opp tot   Ct
+ gloucs vs notts, gloucester, june 6 & 7. Notts won by 8 wkts
+ c Hallam b Gunn  29  122  9 5 11 2    T Simpson b    167  2
+                                       Hemingway b Dennet
+ b T G Wass       10  177                            135/2 1
+ 
+ (did not bat      - )
+ 
+## extras
+All bowlers have a maiden 
+Best bowl avg by match type
+Worst average but many runs, wickets
+Highest run chase in 20 ovs game 
+Outfield catches, by pt WK Vs others 
+Bowling 8 or lower and taking a wicket 
+Fewest games played by nominal captain
+Longest wait for a captain to play in a season 
+Longest run of losses, not wins,  as captain 
+Five-for and golden duck on dayboo
+All bowled in an innings 
+Most maidens 
+all-time Fifties by XI
+for Jay:  runs, wkts per home game, and by month
+for Jay:  runs, wkts per season at home
+High totals with multiple, without any century, fifty; show scorecards
+

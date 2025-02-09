@@ -14,54 +14,33 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-#source("get-data.R")
-#source("../parse-raw-data.R", local = knitr::knit_global())
-#load("./data/*")
-library(readr)
-Zclub <- read_csv("data/Zclub.csv", col_types = cols(...1 = col_skip()))
-#load("./data/EbatAvgTY")
-#load("./data/BbatAvg")
-load("./data/Bbatting")
-#load("./data/EbowlAvgTY")
-#load("./data/BbowlAvg")
-load("./data/Bbowling")
-load("./data/Bdates")
-#load("./data/Bfielding")
-#load("./data/Binningses")
-#load("./data/Ematches")
-#load("./data/Bmatches")
-load("./data/Eplayers")
-#load("./data/EplayersNC")
+source("parse-tidy.R")
 
 ## load the config
 library(yaml)
 conf <- yaml.load_file("./config/config.yaml")
-#conf$club_of_interest_name <- D.club$name[D.club$id== conf$club_of_interest] # this isn't neat, so just set it by hand in the yaml
 # load other packages
-library(tidyr)
-library(dplyr)
 library(kableExtra)
-library(ggplot2)
 library(lubridate)
 #library(dplR) # provides latexify, need this for club names containing \&
 
 # get the subject's name
-player_name <- as.character(E.players %>% filter(player_id==conf$player_to_plot) %>% 
+player_name <- as.character(E.players %>% filter(player_id == conf$player_to_plot[[1]]) %>% 
                               slice_head(n=1) %>% select("Name"))
 
-thisbatterty <- B.batting %>% filter(!is.na(Runs), batsman_id==conf$player_to_plot,
+thisbatterty <- B.batting %>% filter(!is.na(Runs), batsman_id %in% conf$player_to_plot,
                                    Yr == conf$year_of_interest)
 
 numbatsty <- nrow(thisbatterty)
 
-thisbatter <- B.batting %>% filter(!is.na(Runs), batsman_id==conf$player_to_plot)
+thisbatter <- B.batting %>% filter(!is.na(Runs), batsman_id %in% conf$player_to_plot)
 
 numbats <- nrow(thisbatter)
 
-thisbowlerty <- B.bowling %>% filter(!is.na(O), bowler_id==conf$player_to_plot,
+thisbowlerty <- B.bowling %>% filter(!is.na(O), bowler_id %in% conf$player_to_plot,
                                      Yr == conf$year_of_interest)
 numbowlsty <- nrow(thisbowlerty)
-thisbowler <- B.bowling %>% filter(!is.na(O), bowler_id==conf$player_to_plot)
+thisbowler <- B.bowling %>% filter(!is.na(O), bowler_id %in% conf$player_to_plot)
 numbowls <- nrow(thisbowler)
 
 
@@ -73,16 +52,39 @@ H.F.plain <- function(x, this_caption, flower) x %>%
                 font_size = 7) 
 
 
-# a function to round averages
-avRn <- function(x) trunc(x*100, signif=2 )/100
-
 ```
 
-`r paste("# Report for", player_name)`
+---
+subtitle: `r paste(player_name)`
+---
+
+<!-- `r paste("# Report for", player_name)` -->
+
+This report contains, unless indicated, records for all clubs present in the
+dataset.
 
 ## Batting
 
 `r paste("For", numbatsty, "innings this year and", numbats, "in all")`
+
+### Averages
+```{r }
+B.batAvg %>% filter(batsman_id %in% conf$player_to_plot) %>%
+H.F.plain("Career batting average", H.asterC)
+```
+
+### Performances
+```{r bat-perfs}
+thisbatter %>% slice_max(actuallyDate, n=2*conf$default_list_length) %>%
+  select(all_of(H.comfrey)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = "Recent batting performances") %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = 7) %>%
+    column_spec(1, width = "8em") %>%
+  column_spec(6, width = "8em") %>%
+  column_spec(7, width = "8em")
+
+```
 
 ### Generally
 ```{r mainBat, echo=FALSE}
@@ -276,6 +278,26 @@ plot(plot4)
 
 ## Bowling
 
+### Averages
+```{r bowl-avgs}
+B.bowlAvg %>% filter(bowler_id %in% conf$player_to_plot) %>%
+H.F.plain("Career bowling average", H.clematisC)
+```
+
+### Performances
+```{r bowl-perfs}
+thisbowler %>% slice_max(actuallyDate, n=2*conf$default_list_length) %>%
+  select(all_of(H.buttercup)) %>% 
+  kbl(longtable = T, booktabs = T, row.names = F, caption = "Recent bowling performances") %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = 7) %>%
+    column_spec(1, width = "8em") %>%
+  column_spec(7, width = "8em") %>%
+  column_spec(8, width = "8em")
+
+```
+
+### Plots
 ```{r bowl-gen, echo=FALSE, warning=FALSE}
 plot <- thisbowler %>%   ggplot(aes(x = as.factor(W), y= R, col=Ven, fill=Ven,
                                      na.rm = TRUE)) + geom_boxplot() +
@@ -332,10 +354,12 @@ plot(plot4)
 
 ```
 
+
+
 ## Bowling stats by season
 ```{r bowl-stats}
 
-B.bowling %>% filter(bowler_id == conf$player_to_plot) %>%
+B.bowling %>% filter(bowler_id %in% conf$player_to_plot) %>%
   group_by(Yr) %>% 
   summarise(`Avg` = avRn(sum(R)/sum(W)), `Matches` = n(), Wkts = sum(W)) %>% ungroup() %>%
   rename(Season = Yr) %>%

@@ -30,10 +30,13 @@ vignettes/*.pdf
 old/*
 # the database key
 config/db-key.yaml
+getter/command.txt
+getter/azcopy
 # temp working files
 stats-working.toc
 stats-working.pdf
 stats-working.aux
+almanac/test/*
 # the main workinf data dump
 data/*
 # the main incoming data dump
@@ -43,3 +46,7 @@ play-.R
 *.log
 *.pdf
 pink-lobster.Rproj
+# the catching project
+catching/*
+output/*
+plots.Rmd
