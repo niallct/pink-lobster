@@ -2,14 +2,13 @@
 library(yaml)
 library(tidyverse)
 
-## load the config
-conf <- yaml.load_file("./config/config.yaml")
+conf <- yaml.load_file("./config/config.yaml") ## load the config
 
 ## load in the prepared R objects from the 'load.R' script
-load("./data/Bmatches")
 load("./data/BinningsesX")
-load("./data/Bmatchplayers")
 load("./data/Bmatchcompos")
+load("./data/Bmatches")
+load("./data/Bmatchplayers")
 load("./data/Eplayers")
 load("./data/EplayersNC")
 
@@ -20,7 +19,6 @@ R.dismissed <- c("b", "ct", "handled ball", "hit roof", "hit wicket", "lbw",
 
 ## a function to round averages
 avRn <- function(x) floor(x*100)/100
-# was trunc(x*100, signif=2 )/100
 
 conf$last_year <- as.character(as.integer(conf$year_of_interest) - 1)
 
@@ -28,6 +26,9 @@ R.nths <- c("first", "second", "third", "fourth", "fifth", "sixth",
             "seventh", "eighth","ninth", "tenth")
 
 R.unusual_dismissals <- c("handled ball", "hit ball twice", "obstructing the field", "timed out", "hit wicket")
+
+# function for lowest x never made
+ltnm <- function(foo, start=1) {min(setdiff(seq(start:max(foo, na.rm = TRUE)+1), pull(foo)))}
 
 # ==== add club into the player match list ====
 # don't forget this will get deleted later when it gets made into fielding table
@@ -41,6 +42,37 @@ B.matchplayers <- B.matchplayers %>%
     "Player Name" = player_name,
     "Capt" = captain,
     "W-K" = wicket_keeper) 
+
+# ==== do some renaming to tidy things up ====
+
+#replace home ground names with friendly alternatives
+
+# make lookup from the config file
+our_ground_lookup <- stack(conf$home_ground_names) %>% 
+  rename(ground_nickname = values, ground_id = ind) %>%
+  mutate(ground_id = as.numeric(as.character(ground_id)))
+
+B.inningsesX <- B.inningsesX %>%
+  left_join(our_ground_lookup, by = "ground_id") %>%
+  mutate(Ground = coalesce(ground_nickname, Ground),
+         Place = case_when(
+    is.na(ground_id) ~ NA_character_,
+    is.na(ground_nickname)     ~ "Other",
+    TRUE             ~ ground_nickname
+  )) %>%
+  select(-ground_nickname)
+
+B.matches <- B.matches %>%
+  left_join(our_ground_lookup, by = "ground_id") %>%
+  mutate(Ground = coalesce(ground_nickname, Ground)) %>%
+  select(-ground_nickname)
+
+B.matchplayers <- B.matchplayers %>%
+  left_join(our_ground_lookup, by = "ground_id") %>%
+  mutate(Ground = coalesce(ground_nickname, Ground)) %>%
+  select(-ground_nickname)
+
+rm(our_ground_lookup)
 
 # ==== make some new and prettier bits of innings-level data ======
 
@@ -129,7 +161,6 @@ B.inningses <- B.inningses %>%
       batting_team_id == secondinnsbattid ~ firstinnsscore
     ))
 
-
 B.inningses <- mutate(B.inningses, 
                       `Runs/Wkt` = Total / W,
                       Score = paste(Total, W, sep="/"),
@@ -143,10 +174,6 @@ B.inningses <- mutate(B.inningses,
                       )),
                       # competition_type = as.factor(competition_type),
                       match_type = as.factor(match_type),
-                      Venue = as.factor(case_when(
-                        ground_id %in% names(conf$home_ground_names) ~ "Home",
-                        TRUE ~ "Other"
-                      )),
                       Res = as.factor(case_when(
                         Result == "Abandoned" ~ "A",
                         Result == "Tied" ~ "T",
@@ -166,16 +193,28 @@ B.inningses <- mutate(B.inningses,
                         fielding_club_id == conf$club_of_interest ~ TRUE,
                         fielding_club_id != conf$club_of_interest ~ FALSE
                       )
-                      # our_role = as.factor(case_when(
-                      #   team_batting_id == conf$club_of_interest ~ "bat",
-                      #   team_fielding_id == conf$club_of_interest ~ "field",
-                      #   TRUE ~ "not"
-                      #  )),
 )
+
+# reorder the results factors
+B.inningses$Res <- fct_relevel(B.inningses$Res, c("W", "L", "D", "T", "A"))
+B.inningses$result_club <- fct_relevel(B.inningses$result_club, c("W", "L", "D", "T", "A", "C", "?", "n/a"))
+B.inningses$result_match <- fct_relevel(B.inningses$result_match, c("HW", "AW", "D", "T", "A", "C", "?", ""))
+
+B.matches$result_match <- fct_relevel(B.matches$result_match, c("HW", "AW", "D", "T", "A", "C", "?", ""))
+
+# reorder venue factor
+B.inningses$Ven <- fct_relevel(B.inningses$Ven, c("H", "A"))
 
 #read in who is supposed to be captain, then match
 A.captains <- read_tsv("./config/captains.tsv", col_type = list(year = "i", team_id = "i", `Nominal Captain` = "c"))
 B.inningses <- B.inningses %>% left_join(A.captains, by=c("Yr" = "year", "batting_team_id"="team_id"))
+#TODO fix so that this also covers fielding innings - maybe implement our_team_id
+
+#read in the file of missing competition-set number of overs
+A.inferredovers <- read_tsv("./config/compo-to-over.tsv", col_types = list(competition_id="i", inferred_overs="i"))
+B.matches <- B.matches %>% left_join(A.inferredovers, by=join_by(competition_id))
+B.inningses <- B.inningses %>% left_join(A.inferredovers, by=join_by(competition_id))
+#TODO fix so it's in the lower level ds too
 
 # ---- batting --------
 # unstack the individual batting performance data
@@ -217,22 +256,16 @@ B.batting <- B.batting %>%
     Contrib = ifelse(Total == 0, NA, paste(format((Runs * 100)/Total , digits = 1),"%")),
     RunsWBF =  ifelse(is.na(Balls), NA, Runs),
     FullOut = makeHowOut(`How Out`, bowler_name, fielder_name)
-    # FullOut = case_when(
-    #   `How Out` %in% c("b") ~ paste(`How Out`, bowler_name),
-    #   `How Out` %in% c("lbw", "hit roof", "hit wicket") ~ paste(`How Out`, "b", bowler_name),
-    #   `How Out` %in% c("ct", "st") ~ paste(`How Out`, fielder_name, "b", bowler_name),
-    #   `How Out` == "run out" ~ paste("ro", fielder_name),
-    #   `How Out` %in% c("not out", "did not bat", "absent", "handled ball", "obstructing the field",
-    #                    "retired not out", "retired out", "timed out" ) ~ `How Out`,
-    #   TRUE ~ "blah"    )
   )
 
 # interesting things in batting, count them
 
-B.batting <- B.batting %>% select(match_id, `Inns of match`, Runs) %>%
+B.batting <- B.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`) %>%
   group_by(match_id, `Inns of match`) %>% 
-  summarise(topscore = ifelse(sum(!is.na(Runs))==0, 0, max(Runs, na.rm = TRUE)),
-            botscore = ifelse(sum(!is.na(Runs))==0, 0, min(Runs, na.rm = TRUE)),
+  summarise(topscore = as.integer(ifelse(sum(!is.na(Runs))==0, 0, max(Runs, na.rm = TRUE))),
+            botscore = as.integer(ifelse(sum(!is.na(Runs))==0, 0, min(Runs, na.rm = TRUE))),
+            numvalidbf = sum( !is.na(Balls) & 
+                                (Balls > 0 |  (Balls == 0 & Runs == 0 & !`How Out` %in%  c("b", "ct", "lbw")) )  ),
             numbats = sum(!is.na(Runs)) ) %>% ungroup() %>% right_join(B.batting)
 
 B.inningses <- B.batting %>% select(match_id, `Inns of match`, Runs, `How Out`) %>%
@@ -247,26 +280,8 @@ B.inningses <- B.batting %>% select(match_id, `Inns of match`, Runs, `How Out`) 
             numfifties = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=50, na.rm = TRUE)))%>% 
   ungroup() %>% right_join(B.inningses)
 
-
-
 # ---- bowling ------ 
 # unstack the individual bowling performance data
-
-# B.bowling <- B.inningses %>%
-#   select  (-c(bat, fow)) %>% 
-#   rowwise() %>% 
-#   print(str(B.inningses$bowl)) 
-#   mutate(bowl = list(as.data.frame(bowl) %>%
-#                        mutate(overs = as.numeric(overs)) # this can't find `overs`
-#                      )) %>%
-#          unnest(bowl)
-# 
-#   B.bowling <- B.inningses %>%
-#     select(-c(bat, fow)) %>% 
-#     rowwise() %>% 
-#     mutate(bowl = map(bowl, ~mutate(.x, overs = as.numeric(overs)))) %>%
-#     unnest(bowl)
-
 # this is the one that works but we don't know how
 # if it breaks, good luck!
 B.bowling <- B.inningses %>%
@@ -275,6 +290,7 @@ B.bowling <- B.inningses %>%
     bowl = map(bowl, ~ {
       df <- as.data.frame(.x)  # Convert to data frame if it's a list
       df$overs <- as.numeric(as.character(df$overs))  # Convert overs to numeric
+      df$bowlpos <- row(df)[,1]
       df
     })
   ) %>%
@@ -312,7 +328,6 @@ B.bowling <- B.bowling %>%
     MdnPc = ifelse(is.na(O), NA, avRn(100 * as.numeric( M / O )))
   ) %>% select(-SRx)
 
-
 # interesting things in bowling, count them
 B.inningses <- B.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
   group_by(match_id, `Inns of match`) %>% 
@@ -322,6 +337,7 @@ B.inningses <- B.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
             `Wicket-takers` = ifelse(sum(!is.na(W))==0, 0, sum(W>=1, na.rm = TRUE)),
             maxrunsccd = ifelse(sum(!is.na(R))==0, 0, max(R, na.rm = TRUE)),
             nummdns = sum(M),
+            numbowlsmdn =  ifelse(sum(!is.na(M))==0, 0, sum(M>=1, na.rm = TRUE)),
             `Bowlers used` = n()
           #  numfifties = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=50, na.rm = TRUE))
             )%>% 
@@ -333,7 +349,6 @@ B.inningses <- B.bowling %>% group_by(match_id, `Inns of match`, Analy, fielding
             group_by(match_id, `Inns of match`, fielding_club_id) %>% slice_max(BWIA, with_ties = FALSE) %>%
                 ungroup() %>% rename(`SharedAnaly` = Analy) %>% right_join(B.inningses)
 
- 
 # ---- fielding ------------
 # pull our the individual fielding performance data from the batting table
 
@@ -375,6 +390,14 @@ B.fielding <- B.matchplayers %>%
       team == "away" ~ `Away Club`,
       team == "home" ~ `Home Club`
     ),
+    "Batting Team" = case_when(
+      team == "home" ~ away_team_name,
+      team == "away" ~ home_team_name
+    ),
+    "Fielding Team" =  case_when(
+      team == "away" ~ away_team_name,
+      team == "home" ~ home_team_name
+    ),
     "fielding_club_id" =  case_when(
       team == "away" ~ away_club_id,
       team == "home" ~ home_club_id
@@ -387,27 +410,31 @@ B.fielding <- B.matchplayers %>%
   ) %>% select(-catches, -stumpings, -runouts) %>%
   rename(Name = `Player Name`)
 
-
 rm(B.matchplayers)
 rm(adamCatN); rm(adamStumpN); rm(adamRunOutN)
 
 makefieldsumm <- function(fielddata) {
  x <- fielddata %>%
   group_by(player_id, Name, fielding_club_id) %>% 
-  summarise(Ct = sum(Ct),
+  summarise(WKCt = sum(Ct[`W-K`]),
+            OFCt = sum(Ct[`W-K`==F]),
+            Ct = sum(Ct),
             Std = sum(Std), 
             RO = sum(RO), 
+            WKM = sum(`W-K`),
+            OFM = sum(`W-K`==F),
             M = n()) %>%
   ungroup() %>%
-  mutate(`Dis/Inns` = avRn((Ct + Std  + RO)/M))
+  mutate(`Dis/Inns` = avRn((Ct + Std  + RO)/M),
+         `OF Ct/M` = avRn(OFCt/OFM),
+         `WK Ct/M` = avRn(WKCt/WKM)
+  )
 
 return(x)
 }
 
 E.fieldsumm <- B.fielding %>% filter(Yr == conf$year_of_interest) %>% makefieldsumm() %>% drop_na(Name)
-  
 B.fieldsumm <- B.fielding %>% makefieldsumm() %>% drop_na(Name)
-          
 
 # ---- fall-of-wicket --------------
 #runs, wickets, batsman_out_name, batsman_out_id, batsman_in_name, batsman_in_id, batsman_in_runs
@@ -416,24 +443,45 @@ B.fow <- B.inningses %>%
   select(-c(bat, bowl)) %>%
   rowwise() %>%
   mutate(fow = list(as.data.frame(fow)) )%>% unnest(fow) %>% drop_na(runs) %>%
-  mutate( Fall = paste(wickets, runs, sep="/")) %>%
+  mutate( Fall = paste(wickets, runs, sep="/"), is_no = FALSE) %>%
   rename( `Wkt` = wickets,
           `Batter Out` = batsman_out_name,
-          `Batter Rem` = batsman_in_name) %>%
+          `Batter Rem` = batsman_in_name
+          ) %>%
   group_by(match_id, `Inns of match`) %>%
   mutate(Partnership = runs - lag(runs, default = 0)) %>% ungroup()
 
-#the not-out partnerships at the end of an inns
-B.fow <- B.fow %>%   group_by(match_id, `Inns of match`) %>% slice_max(Wkt) %>%
+#the not-out partnerships at the end of an inns which already has fow
+B.fow <- B.fow %>%
+  group_by(match_id, `Inns of match`) %>% slice_max(Wkt) %>%
+    filter(Wkt < (no_of_players - 1), (Wkt + 1)  > W) %>% #  suppress this if all out!
   mutate(
     Partnership = Total - runs,
+    is_no = TRUE,
     runs = Total,
     Wkt = Wkt + 1,
-    `Batter Out` = "*",
+    `Batter Out` = "*", #TODO collect the no-o batter name
     batsman_out_id = NA,
-    Fall = Score
+    Fall = ""  #was the score, but that's odd
   ) %>% rbind(B.fow) %>% ungroup()
 
+#a not-out first wicket partnership - no existing useful fow table here
+zxc <- B.inningses %>% filter(W==0) %>% #select(match_id, , `Inns of match`, bat, Total) %>%
+  hoist(bat, foo=2) %>% hoist(foo, bat1=1, bat2=2) %>% select(-foo, -bat, -bowl, -fow) %>%
+  drop_na(bat1, bat2) %>%
+  mutate(Fall = "",
+         Wkt = 1,
+         runs = Total, #yes we need this as well as partnership
+         Partnership = Total,
+         is_no=TRUE,
+         batsman_in_id=NA,
+         batsman_out_id=NA,
+         batsman_in_runs=NA) %>%
+  rename(`Batter Out` = bat1,
+         `Batter Rem` = bat2) # TODO prolly check there's no duplictates when we rbind
+
+B.fow <- B.fow %>% rbind(zxc)
+rm(zxc)
 
 # ---- allrounder -----
 
@@ -461,7 +509,6 @@ B.allround <- full_join(B.batting %>% filter(innings_number==1),
         # "fielding_club_id" = "fielding_club_id.y", 
          "Yr" = "Yr.x", "actuallyDate")
 
-
 # ---- dataset size --------------------
 # get the size, start and end of the dataset
 
@@ -477,7 +524,6 @@ B.dates <- list(
   count_all = nrow(B.inningses),
   count_us = nrow(B.inningses %>% filter(is_circle==TRUE))
 )
-
 
 # ==== lookup tables ====
 
@@ -533,98 +579,93 @@ Y.teams <-  rbind(B.matches %>% select(home_team_id, home_team_name, home_club_i
                            club_name = `Away Club`)) %>% 
   distinct() %>% drop_na()
 
-
-
 # ---- batting averages ------
 # the function
-makeBatAvgs <- function(batdata) {
+makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club, *p player only, a no grouping
   
   # batting avg table also includes fielding:
-  adamField <- batdata %>%
-    group_by(fielder_id, fielding_club_id) %>%
-    summarise(
-      Ct = sum(`How Out` == "ct"),
-      Std = sum(`How Out` == "st"),
-      RO = sum(`How Out` == "run out")
-    ) %>%
-    ungroup()
+  if(mode=='c'){ adF <- batdata %>% group_by(fielder_id, fielding_club_id) }
+  else  if(mode=='a'){adF <- batdata}
+         else {adF <- batdata %>% group_by(fielder_id) }
   
-  outputBatAvgs <- batdata %>%
-    filter(!is.na(Runs)) %>%
-    mutate(RunsO = Runs) %>%
-    group_by(batsman_id, batting_club_id) %>%
-    summarise(
-      Runs = sum(Runs),
-      Inns = sum(!is.na(RunsO)),
-      NO = sum((`How Out` == "not out" | `How Out` == "retired not out") & !is.na(`How Out`)),
-      Avg = avRn(Runs / (Inns - NO)),
-      HSraw = max(RunsO),
-      adsN = sum(RunsO == HSraw & `How Out` == "not out") ,
-      HS = as.character(ifelse(adsN == 0, HSraw, paste(HSraw, "*", sep=""))),
-      SR = avRn(sum(RunsWBF, na.rm = TRUE) * 100 / sum(Balls, na.rm = TRUE)),
-      `50` = sum(RunsO >= 50 & RunsO < 100),
-      `100` = sum(RunsO >= 100),
-      #Ct = sum(`How Out` == "ct"),
-      #Std = sum(`How Out` == "st"),
-      #RO = sum(`How Out` == "run out"),
-      BF = sum(Balls, na.rm = TRUE),
-      `4s` = sum(`4`, na.rm = TRUE),
-      `6s` = sum(`6`, na.rm = TRUE),
-      #RunsWBF = sum(Runs),
-    ) %>%
-    ungroup() %>%
-    left_join(adamField, by = c("batsman_id" = "fielder_id", 
-                                "batting_club_id" = "fielding_club_id")) %>%
-   left_join(E.playersNC, by = c("batsman_id" = "player_id")) %>%
-    #select(-club_id) %>%
-    rename(club_id=batting_club_id) %>%
+  adamField <- adF %>% summarise(
+    Ct = sum(`How Out` == "ct"),
+    Std = sum(`How Out` == "st"),
+    RO = sum(`How Out` == "run out")) %>%  ungroup()
+  
+  zxc <- batdata %>%  filter(!is.na(Runs)) %>%  mutate(RunsO = Runs) 
+  
+  if(mode=='c'){ zxc <- zxc %>% group_by(batsman_id, batting_club_id) }
+  else  if(mode=='a'){zxc <- zxc}
+        else {zxc <- zxc %>% group_by(batsman_id) }
+  
+  xcv <- zxc %>%  summarise(
+    Runs = sum(Runs),
+    Inns = sum(!is.na(RunsO)),
+    NO = sum((`How Out` == "not out" | `How Out` == "retired not out") & !is.na(`How Out`)),
+    Avg = avRn(Runs / (Inns - NO)),
+    HSraw = max(RunsO),
+    adsN = sum(RunsO == HSraw & `How Out` == "not out") ,
+    HS = as.character(ifelse(adsN == 0, HSraw, paste(HSraw, "*", sep=""))),
+    SR = avRn(sum(RunsWBF, na.rm = TRUE) * 100 / sum(Balls, na.rm = TRUE)),
+    `50` = sum(RunsO >= 50 & RunsO < 100),
+    `100` = sum(RunsO >= 100),
+    BF = sum(Balls, na.rm = TRUE),
+    `4s` = sum(`4`, na.rm = TRUE),
+    `6s` = sum(`6`, na.rm = TRUE)  ) %>%
+    ungroup() 
+  
+  if(mode=='c'){ xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id", 
+                                                              "batting_club_id" = "fielding_club_id"))  %>%
+    rename(club_id=batting_club_id) %>% 
     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
-      club_id != conf$club_of_interest ~ FALSE),
-        Ct = replace_na(Ct, 0),
-        Std = replace_na(Std, 0),
-        RO = replace_na(RO,0)
-    ) %>% left_join(Y.clubs) %>% rename(`Club` = club_name)
-    
+      club_id != conf$club_of_interest ~ FALSE)) %>% 
+    left_join(Y.clubs) %>% rename(`Club` = club_name)}
+  else if(mode=='a'){xcv <- xcv}
+      else {xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id"))}
+  
+  if(mode!="a"){outputBatAvgs <- xcv %>%
+    left_join(E.playersNC, by = c("batsman_id" = "player_id")) %>%
+    mutate(
+      Ct = replace_na(Ct, 0),
+      Std = replace_na(Std, 0),
+      RO = replace_na(RO,0)
+    ) } else {outputBatAvgs <- xcv}
   
   return(outputBatAvgs)
 }
 
 # subset just this year
-#A.bat <- B.batting %>%
-#  filter(Yr == conf$year_of_interest, !is.na(Runs))
-
 A.bat <- B.batting %>%
   filter(Yr == conf$year_of_interest)
 
-E.batAvg.TY <- makeBatAvgs(A.bat) %>% drop_na(Name)
-
-# now all years
-#A.bat <- B.batting %>%
-#  filter(!is.na(Runs))
-
-B.batAvg <- makeBatAvgs(B.batting) %>% drop_na(Name)
-
+E.batAvg.TY <- makeBatAvgs(A.bat, mode='c') %>% drop_na(Name)
 # Remove the temporary table
 rm(A.bat)
 
-# ---- bowling averages --------------------------------------------
+# now all years
+B.batAvg <- makeBatAvgs(B.batting) %>% drop_na(Name)
 
+# ---- bowling averages --------------------------------------------
 # the function
-makeBowlAvgs <- function(bowldata) {
+makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and club, *p player only, a no grouping
   
-  adamBestBowl <- bowldata %>% 
-    select(c(bowler_id, R, W, Analy, fielding_club_id)) %>%
-    filter(!is.na(bowler_id)) %>% 
-    group_by(bowler_id, fielding_club_id) %>% 
-    slice_max(W) %>% 
-    slice_min(R, n=1, with_ties = F) %>%
-    select(c(bowler_id, Analy))
+  if(mode=='c'){ zxc <- bowldata %>% group_by(bowler_id, fielding_club_id) %>%
+    filter(!is.na(bowler_id))  }
+  else  if(mode=='a'){zxc <- bowldata }
+  else {zxc <- bowldata %>% group_by(bowler_id) %>%
+    filter(!is.na(bowler_id)) }
   
-  outputbowlAvg <- bowldata %>%
-    group_by(bowler_id, fielding_club_id) %>%
+  foo <- zxc %>%  slice_max(W) %>% 
+    slice_min(R, n=1, with_ties = F) %>% ungroup()
+  
+  if(mode=='a'){adamBestBowl  <- foo %>% select(Analy)}
+  else if(mode=='c'){adamBestBowl  <- foo %>% select(c(bowler_id, Analy, fielding_club_id))}
+       else {adamBestBowl  <- foo %>% select(c(bowler_id, Analy))}
+  
+  xcv <- zxc %>%
     summarise(
-      # Runs = sum(Runs),
       `5wi` = sum(W>=5),
       M = sum(M),
       R = sum(R),
@@ -632,21 +673,25 @@ makeBowlAvgs <- function(bowldata) {
       BB = sum(BB, na.rm = TRUE),
       Avg = as.numeric(format(round(R / W, 2), nsmall = 2)),
       Econ = avRn((R * 6 / BB)),
-      #SR = avRn(W * 100 / BB),
       SR = avRn(BB / W),
       Inns = sum(!is.na(O)),
-      O = paste(BB %/% 6, BB %% 6, sep="."),
+      O = paste(BB %/% 6, BB %% 6, sep=".")  ) %>%
+    ungroup()
 
-    ) %>%
-    ungroup() %>%
-    left_join(adamBestBowl, by = join_by(bowler_id, fielding_club_id)) %>%
-    rename(Best = Analy) %>%
+    if(mode=='c'){ outputbowlAvg <- xcv %>%
+      left_join(adamBestBowl, by = join_by(bowler_id, fielding_club_id)) %>%
+      rename(Best = Analy) %>%
     left_join(E.playersNC, by = c("bowler_id" = "player_id")) %>%
     rename(club_id=fielding_club_id) %>%
      mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
       club_id != conf$club_of_interest ~ FALSE
-    )) %>% left_join(Y.clubs) %>% rename(`Club` = club_name)
+     )) %>% left_join(Y.clubs) %>% rename(`Club` = club_name) }
+    else {if(mode=='a'){outputbowlAvg <- xcv %>% cbind(adamBestBowl) %>% rename(Best = Analy)}
+         else {outputbowlAvg <- xcv %>%
+           left_join(adamBestBowl, by = join_by(bowler_id)) %>%
+           rename(Best = Analy) %>%
+           left_join(E.playersNC, by = c("bowler_id" = "player_id") ) } }
   
   return(outputbowlAvg)
 }
@@ -662,7 +707,6 @@ B.bowlAvg <- makeBowlAvgs(B.bowling) %>% drop_na(Name)
 
 # Remove the temporary table
 rm(A.bowl)
-
 
 # ---- a joined avgs table ----
 
@@ -685,36 +729,53 @@ A.resultssumm <- as_tibble(B.matches %>% filter(is_circle) %>% select(Yr, result
 
 H.oxeye.XI <- c("Yr", "Our Team", "P", "W", "L", "D", "T", "A")
 
-A.resultssummXI <- as_tibble(B.matches %>% filter(is_circle) %>% select(Yr, result_club, `Our Team`) %>% table()) %>%
-  pivot_wider(names_from="result_club", values_from = "n") %>% mutate(P = rowSums(select(., -c(Yr, `Our Team`)))) %>%
-  filter(P != 0) %>%
+A.resultssummXI <- as_tibble(B.matches %>% filter(is_circle) %>%
+        select(Yr, result_club, `Our Team`) %>% table()) %>%
+  pivot_wider(names_from="result_club", values_from = "n") %>% 
+  mutate(P = rowSums(select(., -c(Yr, `Our Team`)))) %>%filter(P != 0) %>%
   select(all_of(intersect(H.oxeye.XI, names(.))))
 
-
-# === Identify possible cases of our duplicate people ====
-duplicates <- Y.players %>%
+# ==== Identify possible cases of our duplicate people ====
+A.duplicates <- Y.players %>%
   filter(player_club== conf$club_of_interest) %>%
   group_by(Name) %>%
   filter(n() > 1) %>%
   arrange(Name) %>%
   ungroup()
 
-write.csv(duplicates, "dupes.csv")
+write.csv(A.duplicates, "output/dupes.csv")
 
 # ==== Sets of headers to select the nicest things ====
-
 ## ---- match level ----
 H.mallow <- c("Match Summary", "Date", "Result",
               "Type", "Ground", "Home Side", "Away Side",
+              "Home Club", "Away Club",
               "Match Aggregate", "Match Overs")
 
+#Angel:
 H.phlox <- c("Match Summary", "Date", "Result",
              "Type", "Ground")
 
+#Honey:
 H.hyacinth <- c("Match Summary", "Date", "Result")
 
-H.freesia <- c("Home Club", "Away Club", "Date", "Ground", "Match Aggregate",
-                 "Match Overs")
+#Lamington:
+# H.freesia <- c("Home Club", "Away Club", "Date", "Ground", "Match Aggregate",
+#                "Match Overs")
+
+H.freesia <- c("Match Summary", "Date", "Ground", "Match Aggregate",
+               "Match Overs")
+
+# these next two get used in the load script so watch for duplication
+H.morningglory <- c("match_id", "match_date", "ground_name", "ground_id", "competition_id","league_id",
+                    "competition_type", "match_type", "no_of_overs", "batted_first",
+                    "home_team_name", "home_team_id", "home_club_name", "home_club_id",
+                    "away_team_name", "away_team_id", "away_club_name", "away_club_id", 
+                    "toss", "result_description", "result_applied_to", "toss_won_by_team_id")
+
+H.cornflower <- c("match_id", "match_date", "competition_id","league_id", "league_name",
+                  "competition_name", "competition_type", "match_type", "no_of_overs",
+                  "Result", "home_team_id", "away_team_id")
 
 ## ---- innings level ----
 
@@ -723,36 +784,44 @@ H.impatiens <- c("Match Summary", "Date", "Result",
                  "Batting Side", "Score", "Ovs",  "Fielding Side", "Oppo Score",
                  "Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
                  "Inns of match", 
+                 #"Bowlers",
                  "Res", "Ven")
 
-
+#Madeira:
 H.dianthus  <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res")
+H.dahlia  <- c("Batting Team", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res")
 H.rudbeckia <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Extras")
-H.wolfsbane <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Byes")
+#H.wolfsbane <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Byes")
 H.peony     <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Bowlers")
-
 
 ## ---- batting level ----
 H.begonia <- c("Match Summary", "Date", "Result",
                "Type", "Ground", #"Home Side", "Away Side",
                "Batting Side", "Score", "Ovs",  "Fielding Side", "Oppo Score",
                #"Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
-               "Inns of match", 
+               "Inns of match", "Fielding Club", "Team", "Batting Club",
                "Res", "Ven",
                "Name", "Runs", "Balls", "SR", "How Out", "4", "6", "Contrib")
 
-H.aspidistra <-  c("Name", "Runs", "Balls", "SR", "Date", "Type", "Fielding Club", "Ground", "Ven")
-H.comfrey <-     c("Batting Side", "Runs", "Balls", "SR", "Date",         "Fielding Club", "Ground",       "Res")
-H.lily <-        c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground",       "Res")
-H.lotus <-       c("Name", "Runs", "Balls",       "Date", "Team", "Fielding Club", "Ground")
-H.hibiscus <-    c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground", "4", "6")
+
+#H.aspidistra <-  c("Name", "Runs", "Balls", "SR", "Date", "Type", "Fielding Club", "Ground", "Ven")
+#H.lotus <-       c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground")
+# H.lilyRED <-     c("Name", "Runs", "Team", "Fielding Club", "Date")
+
+# Carrot:
+H.lily <-        c("Name", "Runs", "Balls", "SR", "Date", "Team",          "Fielding Club", "Ground", "Res")
+H.comfrey <-     c("Name", "Runs", "Balls", "SR", "Date", "Batting Side" ,                  "Ground", "Res")
+H.hibiscus <-    c("Name", "Runs", "Balls", "SR", "Date", "Team",          "Fielding Club", "Ground", "4", "6")
+H.thistle <-     c("Name", "Runs", "Balls", "SR", "Date", "Contrib",       "Fielding Club", "Oppo Score" )
+
+#Lemon:
 H.safflower <-   c("Name", "Runs", "Balls", "SR", "Date", "Batting Club", "Fielding Club", "Ground", "How Out") 
-H.thistle <-     c("Name", "Runs", "Balls", "SR", "Date",          "Fielding Club", "Oppo Score", "Contrib")
 
 ## ---- partnership ----
 
-H.primrose <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", "Ven")
-H.periwinkle <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", 
+# Battenberg:
+H.primrose <-   c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", "Ven")
+H.periwinkle <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", "Fall",
                   "Score", "Oppo Score")
 
 ## ---- bowling ----
@@ -761,25 +830,30 @@ H.lilac <- c("Match Summary", "Date", "Result",
              "Type", "Ground", #"Home Side", "Away Side",
              "Batting Side", "Score", "Ovs",  "Fielding Side", "Oppo Score",
              #"Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
-             "Inns of match", 
+             "Inns of match", "Batting Club", "Fielding Club",
              "Res", "Ven",
-             "Name", "O", "M", "R", "W", "Avg", "SR", "Econ")
+             "Name", "O", "M", "R", "W", "Wd", "NB", "Avg", "SR", "Econ")
 
-H.cyclamen <-  c("Name", "O", "M", "R", "W", "Date",  "Team", "Batting Club", "Ground", "Res")
-H.buttercup <-  c("Fielding Side", "O", "M", "R", "W", "Date", "Batting Club", "Ground", "Res")
-H.lupin <-      c("Name", "O", "M", "R", "W", "Date", "Team", "Batting Club", "Ground", "Wd", "NB")
-
+#Parkin:
+H.cyclamen <-   c("Name", "O", "M", "R", "W", "Date",  "Team", "Batting Club", "Ground", "Res")
+H.lupin <-      c("Name", "O", "M", "R", "W", "Date",  "Team", "Batting Club", "Ground", "Wd", "NB")
+H.cyclamen2 <-  c("Name", "O", "M", "R", "W", "Date",  "Fielding Club", "Batting Club", "Ground", "Res")
+#H.buttercup <-  c("Fielding Side", "O", "M", "R", "W", "Date", "Batting Club", "Ground", "Res")
 
 ## ---- fielding ----
 H.foxglove <- c("Match Summary", "Date", "Result",
-                "Type", "Ground", #"Home Side", "Away Side",
+                "Type", "Ground", 
+                "Fielding Club", "Batting Club", #"Home Side", "Away Side",
                 # "Batting Side", "Score", "Ovs",  "Fielding Side", "Oppo Score",
                 #"Extras", "Byes" ,"Leg byes", "Wides", "No-balls", "% Extras", 
                # "Inns of match", #TODO add these
               #  "Res", "Ven", ##TODO add these
-                "Name", "Ct", "Std")
+                "Batting Team", "Fielding Team",
+                "Name", "Ct", "Std", "RO")
 
+#Lemon:
 H.plum <-   c("Name", "Ct", "Std", "RO", "Date", "Fielding Club", "Batting Club", "Ground") 
+H.poppy <-   c("Name", "Ct", "Std", "RO", "Date", "Fielding Team", "Batting Club", "Ground") 
 
 ## ---- allrounder ----
 H.waterlily <- c("Match Summary", "Date", "Result",
@@ -787,11 +861,11 @@ H.waterlily <- c("Match Summary", "Date", "Result",
                  "Name", "Club", "Runs", "Balls", "BatSR", "How Out", "4", "6", "Contrib",
                  "O", "M", "R", "W", "Avg", "BowlSR", "Econ", "Ct", "Std", "Capt", "W-K") 
 
+#Gingerbread:
 H.violet <- c("Match Summary", "Date",
               "Ground", 
               "Name", "Runs", "Balls", 
               "O", "M", "R", "W", "Ct", "Std") 
-
 
 ## ---- just playing ----
 H.pansy <- c("Match Summary", "Date", "Result",
@@ -800,14 +874,16 @@ H.pansy <- c("Match Summary", "Date", "Result",
              #"Match Aggregate", "Match Overs"
              "Position", "Name", "Capt", "W-K", "team", "Playing For")
 
-# agapanthus, alyssum, amaranth, azalea, bluebell, buddleia, carnation, chrysanthemum, clover,  cowslip, crocus, daffodil, dahlia, daisy, delphinium, echinacea, feverfew, fuchsia, gardenia, geranium, gerbera, hollyhock, honeysuckle, hydrangea, ipomoea, iris, jasmine, lavender, lotus, magnolia, marigold, narcissus, nigella, orchid, pampas, poppy, snapdragon, snowdrop, sunflower, sweetpea,tulip, verbena, wisteria, zinna
+# agapanthus, alyssum, amaranth, azalea, bluebell, buddleia, carnation, chrysanthemum, clover,  cowslip, crocus, daffodil, daisy, delphinium, echinacea, feverfew, fuchsia, gardenia, geranium, gerbera, hollyhock, honeysuckle, hydrangea, ipomoea, iris, jasmine, lavender, lotus, magnolia, marigold, narcissus, nigella, orchid, pampas, snapdragon, snowdrop, sunflower, sweetpea,tulip, verbena, wisteria, zinna
 
 ## ---- averages and totals ----
-H.aster <-     c("Name", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
+H.aster <-     c("Name",          "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
+H.asterA <-     c(                "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100")
 H.asterC <-     c("Name", "Club", "Runs", "Inns", "NO", "Avg", "HS", "SR", "50", "100", "Ct", "Std", "RO")
-H.buckthorn <- c("Name", "Runs", "Inns", "NO", "Avg", "HS", "6s", "4s")
-H.clematis <-  c("Name", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
-H.clematisC <-  c("Name", "Club", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+H.buckthorn <- c("Name",          "Runs", "Inns", "NO", "Avg", "HS", "6s", "4s")
+H.clematis <-  c("Name",          "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+H.clematisA <-  c(                "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
+#H.clematisC <-  c("Name", "Club", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
 H.petuina <- c("Name", "Runs", "BatAvg", "W", "BwlAvg", "Ct", "Std")
 H.rose <- c("Name", "Season",  "Runs",   "Wkts", "Dis", "Matches")
 H.crocosmia <-   c("Name", "M", "Ct", "Std", "RO", "Dis/Inns")
@@ -827,7 +903,7 @@ W.batting <- B.batting %>% select(all_of(H.begonia))
 W.bowling <- B.bowling %>% select(all_of(H.lilac))
 W.fielding <- B.fielding %>% select(all_of(H.foxglove))
 W.allround <- B.allround %>% select(all_of(H.waterlily))
-
+#W.fow <- B.fow
 
 # ==== filtered sets for the club of interest ====
 F.batting.us <- filter(B.batting, us_batting==TRUE)
@@ -843,7 +919,6 @@ F.fow.us <- filter(B.fow, us_batting==TRUE)
 F.fow.us.ty <- filter(B.fow, us_batting==TRUE, Yr == conf$year_of_interest)
 F.fow.circle <- filter(B.fow,is_circle==TRUE) 
 F.fow.sphere <- filter(B.fow,is_sphere==TRUE) 
-
 
 F.bowling.us <- filter(B.bowling, us_fielding==TRUE)
 F.bowling.circle <- filter(B.bowling,is_circle==TRUE) 
@@ -881,15 +956,23 @@ F.allround.circle.ty <- filter(B.allround, is_circle==TRUE, Yr == conf$year_of_i
 F.allround.sphere <- filter(B.allround, is_sphere==TRUE)
 F.allround.sphere.ty <- filter(B.allround, is_sphere==TRUE, Yr == conf$year_of_interest)
 
-
 F.matches.circle <- filter(B.matches,is_circle==TRUE) 
 F.matches.circle.ty <- filter(B.matches,is_circle==TRUE,  Yr == conf$year_of_interest)
 F.matches.sphere <- filter(B.matches,is_sphere==TRUE) 
 F.matches.sphere.ty <- filter(B.matches,is_sphere==TRUE, Yr == conf$year_of_interest) 
 
 # ==== Output data ====
-# zxc <- B.bowling %>% filter(Yr == conf$year_of_interest) 
-# write.csv(zxc, file="./data/allbowl23.csv")
+# ---- players and cap numbers ----
+Y.ourplayers <- Y.players %>% filter(player_club==conf$club_of_interest, !is.na(player_id))
+write.csv(Y.ourplayers, file="output/playerslist.csv", row.names = FALSE)
+Y.ourplayers %>% filter(RecentYear >= conf$last_year) %>% write.csv(file="output/players-recent.csv", row.names = FALSE)
+
+Y.capnumbers <- F.fielding.us %>% 
+  filter(!Name %in% c('Unsure', 'T.B.C')) %>%
+  group_by(player_id) %>% slice_min(actuallyDate, with_ties = FALSE) %>% ungroup() %>%
+  arrange(actuallyDate) %>%
+  select(Name, Date, `Debut Match` = `Match Summary`, `Debut Ground` = Ground) %>%
+  tibble::rowid_to_column("Cap Number")
 
 # ==== suggest-o-matic outputs ====
 # A are things on the fly
@@ -897,6 +980,7 @@ F.matches.sphere.ty <- filter(B.matches,is_sphere==TRUE, Yr == conf$year_of_inte
 # F are the FILTERED tables (this club, year)
 # G is archive, E is this year only
 # H are Headings
+# J is column widths
 # R is reference things
 # W are pretty lookuos, made in the Rmd
 # Y are lookups for grounds etc

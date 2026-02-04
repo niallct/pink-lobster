@@ -2,7 +2,7 @@
 document_title: Milton Stats
 club_of_interest: "4363"
 club_name: "Milton CC"
-year_of_interest: 2024
+year_of_interest: 2025
 start_year: 2005
 default_list_length: 12
 short_list_length: 6
@@ -15,18 +15,20 @@ opponents_of_interest:
 # - 4363 # Milton
 # - "14848"
 # - 12697 # Reach
-# - 8183 # Cambourne
-# - 1771 # Chatteris
+ - 8183 # Cambourne
+ - 1771 # Chatteris
 # - 23328 # Northstowe
 # - 4096 # Longstanton GH
- - 831 # Audley End
+# - 831 # Audley End
 
 player_to_plot: 
-  - 1878269
-  - 4453764
-  - 3716426
-#1878269 # WFD
-#5473720
+  - 1878269 #day
+  - 3682607 #day
+  - 3716426 #day
+  - 4453764 #day
+ # - 5490886 #jupp
+ # - 3945561
+ # - 3827941
 
 teams_of_interest:
     Firsts: 9865
@@ -35,43 +37,30 @@ teams_of_interest:
     Midweek: 161677
     Friendly: 9868
     #Friendly 2: 162507
-    #Beehive
 
 teams_formal_names:
   - "1st XI"
   - "2nd XI"
   - "3rd XI"
   - "Lambs - Midweek XI"
+  
+our_teams_names:
+    9865: "1st XI"
+    9866: "2nd XI"
+    9867: "3rd XI"
+    161677: "Midweek"
+    9868: "Friendly"
+    #162057: "Friendly 2"
     
-home_grounds:
- - 51122
- - 12581
- 
 home_ground_names:
    51122: "NLP"
    12581: "Sycamores"
  
-#use this to exclude youth sides:
-excluded_teams:
- - 9872 #colts
- - 82246 # u10
- - 9871 # u11
- - 82254 # u12
- - 9870 # u13
- - 134986 # another u13?
- - 9869 # u14
- - 24125 # u15
- 
-excluded_leagues:
- - 7321 # "Cambridgeshire Youth Cricket Association"
- - 357 # 'Ipswich and District Youth League'
- - 10172 # 'ECB U15 Club T20'
- 
 leagues_of_interest:
- - 7387 # "National Village Cup"
  - 269 # "Cambridgeshire & Huntingdonshire Premier League"
+ - 10270 # "Cambridge Business House League" 15 * 8 ball overs
  - 270 # "Cambridgeshire Cricket Association"
- - 10270 # "Cambridge Business House League"
+ - 7387 # "National Village Cup", which is 40 oves
 #- 25572 # 'University of Cambridge Inter Department Cricket League' 
  
 competitions_of_interest:
@@ -99,16 +88,35 @@ competitions_of_interest:
  - 92005
  - 92007
  - 97940
-#- 109169 #CCA Sen 1
  - 109170 #CCA Sen 2
-#- 109171 #CCA Sen 3
  - 109178 #CCA J3 W
  - 109181 #CCA J4 W
  - 60209 # 2023 Lower Junior Cup
  - 60210 # 2023 T20 Walker Cup
  - 114420 # 2023 CBHL Div 2
+ #- 109169 #CCA Sen 1
+ #- 109171 #CCA Sen 3
+ #- 8130 # this has two matches both with zero scores, so junk it
 
 competitions_of_interest_last_curated: "2023-08-25"
+
+#use this to exclude youth sides:
+excluded_teams:
+ - 9872 #colts
+ - 82246 # u10
+ - 9871 # u11
+ - 82254 # u12
+ - 9870 # u13
+ - 134986 # another u13?
+ - 9869 # u14
+ - 24125 # u15
+ 
+excluded_leagues:
+ - 7321 # "Cambridgeshire Youth Cricket Association"
+ - 357 # 'Ipswich and District Youth League'
+ - 10172 # 'ECB U15 Club T20'
+ - 467 # Pontefract, spurious overs? 
+ - 389 # Suffolk, only one youth match in set 
 
 # spurious matches -- found by unusual dismissals, initially
 excluded_matches:
@@ -128,9 +136,12 @@ excluded_matches:
  - 4512829
  - 4512934
  - 4512958
-# - 3933689 # a lot of missing data in this, but just about useful
  - 6592481 # dodgy March duplicate
+ - 7125221 # dodgy duplicate
  - 3211535 # this is nearly complete but still four hit ball twice
  - 515424 # duplicate batter
  - 440098 # duplicate batter
+ - 1002432 # a youth match unique in its competition, no data
+ - 490642 # badly incomplete and not interesting
+ # - 3933689 # a lot of missing data in this, but just about useful
 ---

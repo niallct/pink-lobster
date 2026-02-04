@@ -1,0 +1,103 @@
+---
+title: "Opposition Report"
+author: "~"
+date: "`r Sys.Date()`"
+toc: false
+toc_depth: 1
+classoption: a4paper
+#documentclass: cricalm
+documentclass: article
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+setwd("../") # the oppo report hides in a subdirectory of the main project
+source("parse-tidy.R")
+source("displayFuncs.R")
+
+## load the config
+library(yaml)
+conf <- yaml.load_file("./config/config.yaml")
+# load other packages
+library(kableExtra)
+library(lubridate)
+#library(dplR) # provides latexify, need this for club names containing \&
+# a standard font size
+dfsz <- 7
+
+## the main table-displaying function
+## nb the column widths get set by other functions now
+D.showtable <- function(x, this_caption) {x %>%  
+  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                font_size = dfsz) }
+
+```
+
+\setlength{\tabcolsep}{2pt}
+
+
+```{r opponents, results='asis'}
+
+for (i in 1:length(conf$opponents_of_interest)) {
+  cat( paste("## ",  Y.clubs[Y.clubs$club_id==conf$opponents_of_interest[i],"club_name"]  , " \n"))
+  
+  E.batAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>%
+    D.batavg.mostruns("Most runs this year") %>% print()
+  
+  cat ('\n\n')
+  
+  E.bowlAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% 
+    D.bowlavg.wkt("Most wickets this year") %>%  print()
+  
+  cat ('\n\n')
+  
+  F.batting.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
+                                fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
+    D.bat.fifties2("Fifties in our matches") %>%
+    print()
+  
+  cat ('\n\n')
+  
+  F.bowling.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
+                                fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
+    D.bowl.fourfors("Four-fors in our matches") %>%
+    print()
+  
+  cat ('\n\n')
+  
+  B.inningses %>% filter(batting_club_id == conf$opponents_of_interest[[i]]) %>%
+  D.inns.recentinns("Recent opponent innings") %>%   print()
+  
+  cat ('\n\n')
+  
+  F.matches.circle %>% 
+    filter(conf$opponents_of_interest[[i]] == home_club_id |
+             conf$opponents_of_interest[[i]] == away_club_id )%>%
+    D.match.matchview("Our matches") %>% print()
+  
+  cat ('\n\n')
+  
+    B.batAvg %>% D.batavg.nearms("Approaching milestones", conf$opponents_of_interest[[i]]) %>% print()
+  
+  cat ('\n\n')
+  
+    B.bowlAvg %>% D.bowlavg.nearbowlms("Career total wicket milestones", conf$opponents_of_interest[[i]]) %>% print()
+  
+}
+```
+
+# Setup
+
+## Date ranges
+Data collected from Play-Cricket. 
+For `r conf$club_name`, from `r B.dates$our_earliest` to `r B.dates$our_latest`,
+n=`r B.dates$count_us` innings.  For all matches, from `r B.dates$all_earliest` to
+`r B.dates$all_latest`, n=`r B.dates$count_all` innings.
+
+## R session information
+```{r session-info}
+sessionInfo()
+```

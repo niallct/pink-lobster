@@ -1,6 +1,6 @@
 ---
 title: "Milton Stats"
-#subtitle: "Season 2023"
+#subtitle: "Season 2025"
 author: "Niall Taylor"
 date: "`r Sys.Date()`"
 toc: true
@@ -35,112 +35,16 @@ library(lubridate)
 if (nrow(B.matches %>% filter(Yr == conf$year_of_interest)) == 0){
   stop("ERROR: No data in year of interest.")}
 
-# ---- define the output table column widths ----
-
 # a standard font size
 dfsz <- 7
 
-#H.hyacinth <- c("Match Summary", "Date", "Result")
-#H.phlox <- c("Match Summary", "Date", "Result", "Type", "Ground")
-H.F.hyacinthfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
-  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(1, width = "25em") %>%
-  column_spec(2, width = "6em") %>%
-  column_spec(3, width = "12em")
-
-H.F.phloxfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
-  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(1, width = "20em") %>%
-  column_spec(2, width = "6em") %>%
-  column_spec(3, width = "9em") %>%
-  column_spec(5, width = "9em")
-
-
-#H.freesia   <- c("Home Club", "Away Club", "Date", "Ground", "Match Aggregate", "Match Overs")
-H.F.freesia <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
-  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(1, width = "8em") %>%
-  column_spec(2, width = "8em") %>%
-  column_spec(4, width = "6em")
-
-# H.dianthus  <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res")
-# H.rudbeckia <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Extras")
-# H.wolfsbane <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Res", "Byes")
-# H.peony  <- c("Batting Side", "Score", "Ovs", "Date", "Fielding Side", "Ground", "Bowlers used")
-H.F.dianthusfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
-  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(1, width = "8em") %>%
-  column_spec(5, width = "8em") %>%
-  column_spec(6, width = "7em")
-
-# H.aspidistra <-  c("Name", "Runs", "Balls", "SR", "Date", "Type", "Fielding Club", "Ground", "Ven")
-# H.lily <-        c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground",       "Res")
-
-# H.hibiscus <-    c("Name", "Runs", "Balls", "SR", "Date", "Team", "Fielding Club", "Ground", "4", "6")
-# H.safflower <-   c("Name", "Runs", "Balls", "SR", "Date", "Batting Club", "Fielding Club", "Ground", "How Out") 
-# H.thistle <-     c("Name", "Runs", "Balls", "SR", "Date", "Fielding Club", "Opposition Score", "Contrib")
-
-
-H.F.lilyfam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>% 
-  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), 
-                font_size = dfsz)  %>% 
-  column_spec(1, width = "9em") %>%
-  column_spec(5, width = "6em") %>%
-    column_spec(6:8, width = "9em") 
-
-#H.cyclamen <-  c("Name", "O", "M", "R", "W",  "Date", "Fielding Side", "Batting Club", "Ground", "Res")
-#H.lupin <-  c("Name", "O", "M", "R", "W", "Date", "Fielding Side", "Batting Club", "Ground", "Wd", "NB")
-
-H.F.cyclamen <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
-  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(7, width = "6em") %>%
-  column_spec(8, width = "6em")  %>%
-  column_spec(9, width = "6em") 
-
-# H.violet <- c("Match Summary", "Date", "Ground",  "Name", "Runs", "Balls", 
-#               "O", "M", "R", "W", "Ct", "Std") 
-H.F.violetfam <- function(x, this_caption, flower) x %>%    select(all_of(flower)) %>% 
-  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(1, width = "8em") %>%
-  column_spec(2, width = "4em") %>%
-  column_spec(3, width = "4em") %>%
-  column_spec(4, width = "4em") %>%
-   column_spec(5, width = "1.5em") %>%
-  column_spec(6, width = "1.5em") 
-
-# H.primrose <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", "Ven")
-# H.periwinkle <- c("Date", "Batting Team", "Fielding Side", "Wkt", "Partnership", "Batter Out", "Batter Rem", 
-#                   "Score", "Oppo Score")
-H.F.primrosefam <- function(x, this_caption, flower) x %>% select(all_of(flower)) %>%
-  kbl(longtable = T, booktabs = T, row.names = F,   caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), font_size = dfsz) %>%
-  column_spec(1, width = "6em") %>%
-  column_spec(2:3, width = "9em") %>%
-  column_spec(6:7, width = "9em") 
-
-
-
-H.F.plain <- function(x, this_caption, flower) x %>%  
-  select(all_of(flower)) %>% 
+## the main table-displaying function
+## nb the column widths get set by other functions now
+D.showtable <- function(x, this_caption) {x %>%  
   kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
   kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
-                font_size = dfsz) 
-
-
-H.F.plainALL <- function(x, this_caption) x %>%  
-  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
-                font_size = dfsz) 
-
+                font_size = dfsz) }
 ```
-
 
 \newpage
 \setlength{\tabcolsep}{2pt}
@@ -167,10 +71,11 @@ F.batavg.us.ty %>%  D.batavg.mostruns("Runs scored, this year")
 ```
 
 ### Most runs by match type
-```{r mostruns-ty-type, message=FALSE, warning=FALSE, results='asis'}
 
-map(levels(F.batting.us$Type), D.bat.totalrunsbytype, cap=paste("Most runs by match type"),
-    df=F.batting.us.ty)
+```{r mostruns-ty-type, message=FALSE, warning=FALSE, results='asis'}
+map(levels(F.batting.us.ty$Type) , W.bat.totalrunsbytype,
+    df = F.batting.us.ty, min=35) %>% bind_rows() %>% 
+  D.showtable("Most runs, by match type")
 ```
 
 ### Fifties this year
@@ -201,8 +106,14 @@ Showing most recent `r conf$default_list_length`:
 
 ```{r fifties-byteam, results='asis'}
  #cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
-map(conf$teams_of_interest, D.bat.batmsteam, cap=paste("Recent fifties"), 
-    df=F.batting.us, ms=50)
+# map(conf$teams_of_interest, D.bat.batmsteam, cap=paste("Recent fifties"), 
+#     df=F.batting.us, ms=50)
+
+imap(conf$our_teams_names, W.bat.msteam , 
+    df=F.batting.us,
+    ms=50) %>%
+  bind_rows() %>%
+  D.showtable("Recent fifties, by team") %>% J.carrot
 ```
 
 
@@ -211,11 +122,11 @@ map(conf$teams_of_interest, D.bat.batmsteam, cap=paste("Recent fifties"),
 Showing scores over 35,
 
 ```{r high-inns-type-ty, results='asis'}
-
-map(levels(F.batting.us.ty$Type), D.bat.highestscorebytype , 
-    cap= "Highest innings this year in",
+map(levels(F.batting.us.ty$Type), W.bat.highestscorebytype , 
     min=35,
-    df=F.batting.us.ty )
+    df=F.batting.us.ty) %>%
+  bind_rows() %>%
+  D.showtable("Highest innings this year, by match type") %>% J.carrot2
 ```
 
 ### Primaries this season
@@ -252,6 +163,14 @@ F.batting.us.ty %>% D.bat.carriedbat("Carried bat, this year")
 F.batting.us.ty %>% D.bat.topscorercount("Count of times top scorer in an innings")
 ```
 
+### Highest strike rate in an innings
+```{r top-strike-rates-ty}
+F.batting.us.ty %>% D.bat.highSRinns("Highest SR in an innings", 20)
+```
+
+### Lowest score not made
+
+This year, the lowest score no batter made is `r F.batting.us.ty %>% select(Runs) %>% ltnm()`
 
 ## Partnerships
 
@@ -263,11 +182,13 @@ friendly is likely to be spurious.
 
 Showing the top few for each wicket, all club, where over 25
 ```{r top-pship-ty, results='asis'}
-map(1:10, D.fow.pshiptopwkt, cap=paste("Our top scores this year"), df=F.fow.us.ty)
+map(1:10, W.fow.pshiptopwkt,  df=F.fow.us.ty) %>%
+  bind_rows() %>% 
+  D.showtable("Our top scores, this year, for each wicket") %>%
+  J.battenberg()
 ```
 
 ## Bowling
-
 
 ### Bowling averages
 Qualification: `r conf$qualify_inns_avgs` innings.
@@ -283,11 +204,14 @@ F.bowlavg.us.ty %>% D.bowlavg.wkt("Most wickets, this season")
 ```
 
 ### Most wickets by match type
+Minimum: five,
 ```{r mostwickts-ty-type, message=FALSE, warning=FALSE, results='asis'}
-map(levels(F.bowling.us.ty$Type) , D.bowl.mostwktstype, cap="Most wickets",
-    df = F.bowling.us.ty)
+#map(levels(F.bowling.us.ty$Type) , D.bowl.mostwktstype, cap="Most wickets",
+#    df = F.bowling.us.ty)
+map(levels(F.bowling.us.ty$Type) , W.bowl.mostwktstype,
+    df = F.bowling.us.ty, min=5) %>% bind_rows() %>% 
+  D.showtable("Most wickets, by match type")
 ```
-
 
 
 ### Four-fors this year 
@@ -307,12 +231,14 @@ F.bowling.us.ty %>% D.bowl.consecbowlms("Consecutive four-fors", 4)
 
 
 ### Recent four-fors, for each team 
-Showing most recent `r conf$default_list_length`:
+Showing most recent `r conf$default_list_length` for each team:
 
-```{r fourfors-byteam, results='asis'}
-
-map(conf$teams_of_interest, D.bowl.msteam, cap=paste("Recent four-fors"), 
-    df=F.bowling.us, ms=4)
+```{r fourfors-byteam}
+imap(conf$our_teams_names, W.bowl.msteam , 
+    df=F.bowling.us,
+    ms=4) %>%
+  bind_rows() %>%
+  D.showtable("Recent four-fors, by team") %>% J.parkin
 ```
 
 
@@ -333,10 +259,13 @@ F.bowling.sphere.ty  %>%
 
 
 ### Best analysis by match type
-```{r best-analy-type-ty, results='asis'}
-map(levels(F.bowling.us.ty$Type), D.bowl.bestanalysistype, cap="Best analysis",
-    df = F.bowling.us.ty)
+```{r best-analy-type-ty}
+# map(levels(F.bowling.us.ty$Type), D.bowl.bestanalysistype, cap="Best analysis",
+#     df = F.bowling.us.ty)
 
+map(levels(F.bowling.us.ty$Type) , W.bowl.bestanalysistype,
+    df = F.bowling.us.ty) %>% bind_rows() %>% 
+  D.showtable("Best analysis, by match type") %>% J.parkin()
 ```
 
 
@@ -354,6 +283,10 @@ Bowling as designated wicketkeeper
 F.allround.us.ty %>% D.allround.keeperbowling("Bowling this year as keeper")
 
 ```
+
+### Lowest score not made
+
+This year, the lowest score no bowler conceded is `r F.bowling.us.ty %>% select(R) %>% ltnm()`
 
 ## Team
 
@@ -377,9 +310,11 @@ D.inns.quotients(F.inningses.us.ty,F.inningses.them.ty, "Quotients")
 ```
 
 By team, 
-```{r quotients-byteam, results='asis'}
-map(conf$teams_of_interest, D.inns.teamquotients, cap=paste("Quotients"), 
-    df=F.inningses.circle.ty)
+
+```{r quotients-byteam}
+imap(conf$our_teams_names, W.inns.allteamquotients, F.inningses.circle.ty) %>% 
+  bind_rows() %>%
+  D.showtable("Quotients, by team")
 ```
 
 ### Our recent innings
@@ -484,7 +419,7 @@ F.fielding.us.ty %>% D.fielding.mostblah("Most total WK dismissals, this year", 
 
 ### No byes conceded for total of 150 or more
 ```{r no-byes-100-total-cy}
-F.inningses.us.ty %>% D.inns.nobyes("No byes conceded for total of 150 runs or more, this season")
+F.inningses.them.ty %>% D.inns.nobyes("No byes conceded for total of 150 runs or more, this season")
 
 ```
 
@@ -510,27 +445,45 @@ Qualification: `r conf$qualify_inns_avgs` innings.
 F.batavg.us %>% D.batavg.bestbatavgs("Batting averages, all time")
 ```
 
+### Batting averages, by team
+Showing highest average first. 
+Qualification: `r conf$qualify_inns_avgs` innings.
+
+```{r bat-avgs-allt-team}
+imap(conf$our_teams_names, W.bat.avgsteam , 
+     df=F.batting.us) %>%
+  bind_rows() %>%
+  D.showtable("Batting averages, by team")
+```
+
 ### Most runs
+Qualification: `r conf$qualify_inns_avgs` innings.
 
 ```{r mostruns-allt}
-F.batavg.us %>%  D.batavg.mostruns("Career run totals")
+F.batavg.us %>%  D.batavg.mostruns("Career run totals", qual=conf$qualify_inns_avgs)
 ```
 
 
 ### Most runs by match type
 ```{r mostruns-allt-type, message=FALSE, warning=FALSE, results='asis'}
-
-map(levels(F.batting.us$Type), D.bat.totalrunsbytype, cap=paste("Most career runs by match type"),
-    df=F.batting.us)
+map(levels(F.batting.us$Type) , W.bat.totalrunsbytype,
+    df = F.batting.us, min=35) %>% bind_rows() %>% 
+  D.showtable("Most runs, by match type")
 ```
 
 
 ### Highest career strike rates
-Minimum qualification: `r conf$qualify_balls_faced` balls faced
+Minimum qualification: `r conf$qualify_balls_faced` balls faced. Srtike rate
+is calculated only with innings in which balls faced are recorded.
 ```{r bat-highSR-alltime}
 F.batavg.us %>% D.batavg.highSR("Highest strike-rates, all time") 
 ```
 
+### Lowest average with many runs
+Showing lowest averages for career run tally at least 1000,
+```{r lowavg-manyruns}
+F.batavg.us %>% D.bat.lowavgmanyruns("Low averages but many runs")
+```
 
 ### Most centuries
 ```{r centuries}
@@ -541,6 +494,17 @@ F.batavg.us %>% D.batavg.centurycount("Most centuries")
 <!-- ```{r primary-all} -->
 <!-- F.batting.us %>% D.bat.primarycount("Most primaries") -->
 <!-- ``` -->
+
+
+### Most fifties, by team
+Most overall runs where tied,
+
+```{r fifties-by-team}
+imap(conf$our_teams_names, W.bat.fiftiesteam , 
+     df=F.batting.us) %>%
+  bind_rows() %>%
+  D.showtable("Most fifties, by team")
+```
 
 ### Most ducks
 ```{r ducks-all, message=FALSE, warning=FALSE}
@@ -556,7 +520,6 @@ F.batting.us %>% D.bat.ducklength("Long ducks")
 ```{r mosttopscorer-alltime}
 F.batting.us %>% D.bat.topscorercount("Count of times top scorer in an innings")
 ```
-
 
 ### Fifty on debut
 'Debut' here means the first recorded innings in the dataset, which may have started
@@ -575,35 +538,33 @@ F.batting.us %>% D.bat.fiftieslosing("Centuries without team win", 100)
 
 Showing consecutive centuries
 ```{r consecutive-batmilestones}
-
 F.batting.us %>% D.bat.consecbatms("Consecutive centuries", 100)
-
 ```
 
 ### Top individual scores
 
 ```{r top-bat-performances}
 F.batting.us %>% D.bat.highestscore("All-time highest scores")
-
 ```
 
 ### Top individual scores for each team
 ```{r topbat-byteam, results='asis'}
-map(conf$teams_of_interest, D.bat.highestscorebyteam , 
-    cap= "Highest innings for",
+imap(conf$our_teams_names, W.bat.highestscorebyteam , 
     min=35,
-    df=F.batting.us)
+    df=F.batting.us) %>%
+  bind_rows() %>%
+  D.showtable("Top scoring, by team") %>% J.carrot
 ```
 
 ### Top individual scores, by match type
 Showing scores over 35
 
 ```{r high-inns-type-allt, results='asis'}
-
-map(levels(F.batting.us$Type), D.bat.highestscorebytype , 
-    cap= "Highest innings in",
+map(levels(F.batting.us$Type), W.bat.highestscorebytype , 
     min=35,
-    df=F.batting.us)
+    df=F.batting.us) %>%
+  bind_rows() %>%
+  D.showtable("Highest innings, by match type") %>% J.carrot2
 ```
 
 ### Approaching batting milestones
@@ -611,7 +572,7 @@ map(levels(F.batting.us$Type), D.bat.highestscorebytype ,
 Only showing players active in current or previous season.
 
 ```{r approaching-milestones-bat}
-B.batAvg %>% D.batavg.nearms(conf$club_of_interest)
+B.batAvg %>% D.batavg.nearms("Approaching milestones", conf$club_of_interest)
 ```
 
 ### 200 runs before the end of May
@@ -620,13 +581,16 @@ F.batting.us %>% D.bat.maybatms("200 runs in April and May")
 ```
 
 ### Highest strike rate in an innings
+Minimum 35 runs:
+
 ```{r top-strike-rates}
 F.batting.us %>% D.bat.highSRinns("Highest SR in an innings")
 ```
 
-
-
-
+### Highest strike rate for a centurion
+```{r top-strike-rate-cent}
+F.batting.us %>% D.bat.highSRcent("Highest SR by a centurion")
+```
 
 ### 500 runs in a season
 ```{r mostruns-season}
@@ -668,6 +632,14 @@ F.batting.us %>% D.bat.bannerman("Monopolised runs", 0.6, 10)
 F.batting.us %>% D.bat.outscoringoppo("Outscoring the opposition")
 ```
 
+### Batter outscoring another team
+Batters outscoring the innings total of another team in the club on the same day
+
+```{r outscore-otherclub}
+D.bat.outscoringotherteam(F.inningses.us, F.batting.us, "Outscoring another team")
+
+```
+
 ### Most balls faced in an innings
 ```{r most-balls}
 F.batting.us %>% D.bat.longinns("Longest innings")
@@ -676,6 +648,21 @@ F.batting.us %>% D.bat.longinns("Longest innings")
 ### Most balls faced for a score 10 or less
 ```{r most-balls-lowscore}
 F.batting.us %>% D.bat.longinns("Longest innings", 10)
+```
+
+### Most yet fewest
+In this section, only innings with complete balls faced data are included. 
+
+Lowest score by batters facing the most balls of the innings:
+
+```{r mostfewest}
+F.batting.us %>% D.bat.mostballsfewestruns("Most balls, fewest runs")
+
+```
+
+Highest score by batters facing the fewest balls of the innings:
+```{r fewestmost}
+F.batting.us %>% D.bat.fewestballsmostruns("Fewest balls, most runs")
 ```
 
 ### Most sixes in an innings
@@ -697,9 +684,11 @@ F.batavg.us %>% D.batavg.sixcount("Most career sixes")
 
 ### Most boundaries in an innings, for each team
 ```{r top4s-byteam, results='asis'}
-map(conf$teams_of_interest, D.bat.mostBryinnsteam , 
-    cap= "Most boundaries in an innings for",
-    df=F.batting.us)
+imap(conf$our_teams_names, W.bat.mostBryinnsteam , 
+    min=12,
+    df=F.batting.us) %>%
+  bind_rows() %>%
+  D.showtable("Most boundaries in an innings, by team") %>% J.carrot
 ```
 
 
@@ -710,6 +699,13 @@ Out handled the ball, hit the ball twice, obstructing the field, timed out or hi
 F.batting.circle %>% D.bat.unusualdiss("Unusual dismissals, our matches")
 
 #F.batting.sphere %>% D.unusualdiss("Unusual dismissals, our leagues")
+```
+
+### Same dismissals
+Many batters with the same mode of dismissal in an innings. In our matches,
+
+```{r common-dismissal}
+F.batting.circle %>% D.bat.samedismissal("Same mode of dismissal for many batters")
 ```
 
 ### Carried bat
@@ -734,6 +730,19 @@ Batting 9, 10 or 11.
 F.batting.us %>% D.bat.fiftiestailend("Fifties in the lower order")
 ```
 
+
+### Lowest score not made
+
+All time, the lowest score no batter made is `r F.batting.us %>% select(Runs) %>% ltnm()`
+
+### Shared names
+
+Showing our matches with many batters of the same last name,
+```{r sharednames}
+F.batting.us %>% D.inns.sharednames("Common names")
+
+```
+
 ## Partnerships
 
 In the partnerships section, retirements are not handled cleanly. Retirements
@@ -744,36 +753,32 @@ friendly is likely to be spurious.
 
 Showing the top few for each wicket, all club,
 ```{r top-pship-alltime, results='asis'}
-map(1:10, D.fow.pshiptopwkt, cap=paste("Our top scores"), df=F.fow.us)
+map(1:10, W.fow.pshiptopwkt,  df=F.fow.us) %>%
+  bind_rows() %>% 
+  D.showtable("Our top scores, all time, for each wicket") %>%
+  J.battenberg()
 ```
 
 ### Big partnerships
 ```{r big-pship}
 F.fow.us %>% D.fow.highpship("Partnerships over 150, all time", 150)
-
 ```
 
 ### Partnerships dominating the innings
 ```{r dompships}
-
 F.fow.us %>% D.fow.dompship("Partnership over 80\\% of the total")
-
 ```
-
 
 ### Partnerships outscoring the whole opposition
 ```{r pshipsoveropp}
-
 F.fow.us %>% D.fow.pshipoveropp("Partnership outscoring the opposition")
-
 ```
 
 ### Partnerships by XI
-
-Here, the friendly XIs are suppressed.
-```{r pshipsbyXIall, message=FALSE, results='asis'}
-
-map(conf$teams_formal_names, ~map(1:10,  D.fow.pshiptopwktXI, .x, cap=paste("Our top scores"), df=F.fow.us))
+```{r pshipsbyXIall}
+imap(conf$our_teams_names, W.fow.pshiptopwktXI, df=F.fow.us) %>%
+  bind_rows() %>%
+  D.showtable("Partnerships, by team") %>% J.battenberg()
 ```
 
 ## Bowling
@@ -785,6 +790,15 @@ Qualification: `r conf$qualify_inns_avgs` innings.
 F.bowlavg.us %>% D.bowlavg.best("Bowling averages, all time")
 ```
 
+### Best average by match type
+Minimum qualification: `r conf$qualify_balls_bowled` balls bowled in that type
+
+```{r bowl-avgs-type}
+map(levels(F.bowling.us$Type) , W.bowl.bestavgbytype,
+    df = F.bowling.us) %>% bind_rows() %>% 
+  D.showtable("Best average, by match type")
+```
+
 ### Most wickets
 Showing most wickets first
 ```{r mostwkts-alltime}
@@ -792,9 +806,10 @@ F.bowlavg.us %>% D.bowlavg.wkt("Most wickets, all time")
 ```
 
 ### Most wickets by match type
-```{r mostwickts-allt-type, message=FALSE, warning=FALSE, results='asis'}
-map(levels(F.bowling.us$Type) , D.bowl.mostwktstype, cap="Most wickets",
-    df = F.bowling.us)
+```{r mostwickts-allt-type}
+map(levels(F.bowling.us$Type) , W.bowl.mostwktstype,
+    df = F.bowling.us, min=5) %>% bind_rows() %>% 
+  D.showtable("Most wickets, by match type")
 ```
 
 ### Most wickets in a season
@@ -809,6 +824,12 @@ Qualification: bowled in `r conf$qualify_inns_avgs` innings.
 F.bowling.us %>% D.bowl.bestavgseason("Best average in a season") 
 ```
 
+### Many wickets but high average
+High averages but 100 career wickets
+
+```{r manywkts-100wkts}
+F.bowlavg.us %>% D.bowl.highavgmanywkts("Many wickets, high average", min=100)
+```
 
 ### Four-for on debut
 'Debut' here means the first recorded bowling instance in the dataset, which may
@@ -841,11 +862,34 @@ Qualification: two or more
 F.bowling.us %>% D.bowl.allmaidens("All maidens")
 ```
 
+### Most maidens in an innings
+
+Qualification: two or more, most recent where tied.
+
+```{r most-maidens}
+F.bowling.us %>% D.bowl.mostmaidens("Most maidens in an innings")
+```
+
+### Most career maidens
+
+```{r mostmaidens-alltime}
+F.bowlavg.us %>% D.bowlavg.mdn("Most maidens, all time", conf$default_list_length)
+```
 
 ### Outstanding analysis
 ```{r strong-analysis-us}
 F.bowling.us  %>%
   D.bowl.bestanalysis("Outstanding analysis, our club, all years")
+```
+
+### Best analysis by match type
+```{r best-analy-type}
+# map(levels(F.bowling.us.ty$Type), D.bowl.bestanalysistype, cap="Best analysis",
+#     df = F.bowling.us.ty)
+
+map(levels(F.bowling.us$Type) , W.bowl.bestanalysistype,
+    df = F.bowling.us) %>% bind_rows() %>% 
+  D.showtable("Best analysis, by match type") #%>% J.parkin()
 ```
 
 ### Cheapest five-for
@@ -875,7 +919,7 @@ F.allround.us %>% D.allround.keeperbowling("Bowling as keeper")
 Only showing players active in current or previous season.
 
 ```{r approaching-milestones-bowl}
-B.bowlAvg %>% D.bowlavg.nearbowlms(conf$club_of_interest)
+B.bowlAvg %>% D.bowlavg.nearbowlms("Career total wicket milestones", conf$club_of_interest)
 ```
 
 
@@ -913,7 +957,7 @@ F.bowling.us %>% D.bowl.fiveforlose("Five-fors without team win")
 
 ### Many bowlers used
 
-Ten or more bowlers in an innings
+Ten or more bowlers in an innings. Most recent `r conf$default_list_length`:
 
 ```{r ten-bowlers-used}
 F.inningses.them %>% D.inns.manybowlers("Many bowlers used", 10)
@@ -926,6 +970,16 @@ Seven bowlers taking wickets in the same innings
 ```{r seven-wicket-takers}
 F.inningses.them %>% D.inns.manywkttakers("Many bowlers taking wickets", 7)
 ```
+
+### All bowlers have a maiden
+
+All bowlers have a maiden. This includes, currently, a friendly which was 
+played under 100-ball rules in which dots are treated as maidens.
+
+```{r all-bowlers-maiden}
+F.inningses.them %>% D.inns.allbowlersmaiden("Every bowler has a maiden")
+```
+
 
 ### Bowlers with the same analysis
 
@@ -943,7 +997,23 @@ Showing bowling with 67% or more of runs conceded as wides or no-balls. Most rec
 F.bowling.us %>% D.bowl.manyextras("Mostly extras", 66.5)
 ```
 
+### Low order bowlers performing
 
+Bowling 8 or lower and taking three wickets:
+```{r lowbowl-3for}
+F.bowling.us %>% D.bowl.tailbowlwkt("Bowler 8 or lower with 3-for", ms=3, thresh=8)
+
+```
+
+Bowling 10 or lower and taking one wicket:
+```{r lowbowl-10-1}
+F.bowling.us %>% D.bowl.tailbowlwkt("Bowler 10 or lower with a wicket", ms=1, thresh=10)
+
+```
+
+### Lowest score not made
+
+All time, the lowest score no bowler conceded is `r F.bowling.us %>% select(R) %>% ltnm()`
 
 ## Team
 
@@ -966,18 +1036,17 @@ A.resultssummXI %>% D.resultsumm.mostwins("Most wins in a season")
 Computed only on complete match records.
 
 Overall,
-```{r quotients-allt}
-
-D.inns.quotients(F.inningses.us, F.inningses.them, "Quotients")
-
+```{r quotients-alltime}
+D.inns.quotients(F.inningses.us,F.inningses.them, "Quotients")
 ```
 
 By team, 
-```{r quotients-byteam-allt, results='asis'}
-map(conf$teams_of_interest, D.inns.teamquotients, cap=paste("Quotients"), 
-    df=F.inningses.circle)
-```
 
+```{r quotients-allteam-byteam}
+imap(conf$our_teams_names, W.inns.allteamquotients, F.inningses.circle) %>% 
+  bind_rows() %>%
+  D.showtable("Quotients, by team")
+```
 
 ### Highest innings totals
 
@@ -999,15 +1068,23 @@ F.inningses.circle %>% D.inns.high2ndinns("Our highest innings totals batting se
 #### Our matches at home grounds
 ```{r high-inns-home}
 F.inningses.circle %>% 
-  filter(ground_id %in% conf$home_grounds) %>%
+  filter(ground_id %in% names(conf$home_ground_names)) %>%
   D.inns.highinnstotal("Highest innings at home grounds")
 ```
 
 #### Our matches at away grounds
 ```{r high-inns-away}
 F.inningses.circle %>% 
-  filter(!ground_id %in% conf$home_grounds) %>%
+  filter(!ground_id %in% names(conf$home_ground_names)) %>%
   D.inns.highinnstotal("Highest innings at away grounds")
+```
+
+### Highest inns totals for each team
+```{r topinns-byteam}
+imap(conf$our_teams_names, W.inns.highinnstotalbyteam , 
+    df=F.inningses.us) %>%
+  bind_rows() %>%
+  D.showtable("Highest totals, by team") %>% J.madeira
 ```
 
 ### Highest innings totals losing one or no wickets
@@ -1022,15 +1099,34 @@ F.inningses.them %>% D.inns.highforone("Highest innings against us for one or no
 ```
 
 ### High successful chases
-In our matches
+In all our matches
 ```{r high-chase}
 F.inningses.circle %>% D.inns.highchase("Highest successful run chases")
 ```
 
+In 20-over matches
+```{r high-chase-20ov}
+F.inningses.circle %>% filter(no_of_overs > 0, no_of_overs <= 20) %>%
+  D.inns.highchase("Highest successful run chases")
+```
+
+
 ### High total but losing
 ```{r high-losing}
 F.inningses.us %>% D.inns.highlosing("Highest losing totals")
+```
 
+### Lowest total using all overs
+Innings in which overs allocation used but not all out
+
+```{r low-used-all}
+F.inningses.circle %>% D.inns.lowtotalallovs("Lowest totals using all overs")
+```
+
+### Lowest failed chases
+In our matches
+```{r lowfailchase}
+F.inningses.us %>% D.inns.lowfailchase("Lowest failed chases") 
 ```
 
 ### Lowest innings totals
@@ -1051,14 +1147,14 @@ F.inningses.them %>% D.inns.lowinnstotal("Opponents' lowest innings totals, all 
 #### Our matches at home grounds
 ```{r low-inns-home}
 F.inningses.circle %>% 
-  filter(ground_id %in% conf$home_grounds) %>%
+  filter(ground_id %in% names(conf$home_ground_names)) %>%
   D.inns.lowinnstotal("Lowest innings totals at home")
 ```
 
 #### Our matches at away grounds
 ```{r low-inns-away}
 F.inningses.circle %>% 
-  filter(!ground_id %in% conf$home_grounds) %>%
+  filter(!ground_id %in% names(conf$home_ground_names)) %>%
   D.inns.lowinnstotal("Lowest innings totals away")
 ```
 
@@ -1089,13 +1185,17 @@ F.inningses.them %>% D.inns.highquot("Highest runs/wkt, our bowling")
 
 ### Highest total without batting milestones
 In all of our matches
-```{r hightotal-nomilestone-us}
+```{r hightotal-nomilestone-circle}
 # TODO output a short scorecard here
 
 F.inningses.circle %>% D.inns.hightotalnocent("Highest totals without any individual century", 100)
 
 F.inningses.circle %>% D.inns.hightotalnocent("Highest totals without any individual fifty", 50)
+```
 
+In our batting
+```{r hightotal-nomilestone-us}
+F.inningses.us %>% D.inns.hightotalnocent("Highest totals without any individual fifty", 50)
 ```
 
 ### Multiple batting milestones 
@@ -1105,6 +1205,8 @@ F.inningses.circle %>% D.inns.hightotalnocent("Highest totals without any indivi
 F.inningses.circle %>% D.inns.manycentury("Innings with two or more centuries")
 
 F.inningses.circle %>% D.inns.manyfifty("Innings with three or more fifties")
+
+F.inningses.us %>% D.inns.manyfifty("Our innings with three or more fifties")
 
 ```
 
@@ -1154,16 +1256,18 @@ Showing recent instances:
 # TODO output a short scorecard here
 
 F.inningses.circle %>% D.inns.many4for("Innings with two four-fors",2)
+```
 
-F.inningses.circle %>% D.inns.allwkttakers("All bowlers taking at least two wickets")
-
+```{r multiple-wkt-takers}
+F.inningses.them %>% D.inns.all2for("All bowlers taking at least two wickets", 2)
 ```
 
 ### Conceding runs equitably
 
 ```{r equal-conceding-us}
 # TODO output a short scorecard here
-F.inningses.them %>% D.inns.equitbowl("Innings for 250+ with no bowler conceding 50", 250, 50)
+F.inningses.them %>% 
+  D.inns.equitbowl("Innings for 250+ with no bowler conceding 50", 250, 50)
 ```
 
 ### Highest total with few bowlers
@@ -1175,13 +1279,10 @@ In our matches. This appears vulnerable to missing data.
 F.inningses.circle %>% D.inns.hightotal4bowl("High total with four bowlers")
 ```
 
-
-
 ### Ties
 ```{r ties-us}
 F.matches.circle %>% D.match.ties("Tied matches")
 ```
-
 
 ### Most extras
 This section appears to contain spurious results.
@@ -1196,14 +1297,12 @@ F.inningses.us %>% D.inns.mostextras("Most extras in our innings, all time")
 F.inningses.them %>% D.inns.mostextras("Most extras in our innings, all time")
 ```
 
-
 ### No bowling extras
 With us bowling,
 
 ```{r no-bowl-extras}
 F.inningses.them %>% D.inns.nobowlextras("No bowling extras")
 ```
-
 
 ### Highest match aggregate
 This section appears to contain spurious results.
@@ -1221,6 +1320,12 @@ In completed matches:
 F.matches.circle %>% D.match.lowmatchagg("Lowest match aggregate")
 ```
 
+### Highest match aggregate extras
+This section appears to contain spurious results.
+
+```{r high-match-agg-exts-circle-allt}
+F.matches.circle %>% D.match.highmatchaggexts("Highest match aggregate extras")
+```
 
 ### Shortest completed matches
 This section appears to contain spurious results, and does not account for 
@@ -1254,6 +1359,7 @@ F.inningses.circle %>% D.inns.winmargin("Wins by 1 run or more", 1, 1, op=`==`)
 a.win1wktUs <- F.inningses.us %>% W.inns.winmargin(2, 1, op=`==`) %>% nrow()
 
 a.win1wktThem <- F.inningses.them %>% W.inns.winmargin(2, 1, op=`==`) %>% nrow()
+
 ```
 
 We have won `r a.win1wktUs` and lost `r a.win1wktThem ` matches by one wicket.
@@ -1268,8 +1374,7 @@ D.inns.dayagg(F.inningses.us, "Highest daily aggregate, this club")
 ```{r tossing-all}
 F.inningses.us %>% D.inns.tossresult("Our tossing and match results, all time")
 ```
-  
-  
+
 ## All-rounder
 
 ### Fifty runs and four wickets in same match
@@ -1295,6 +1400,11 @@ F.allround.us %>% D.allround.fielddouble("Fifty and three dismissals")
 F.allround.us %>% D.allround.consecms("Forty and four-for in consecutive innings")
 ```
 
+<!-- ### Four-for and duck on debut -->
+<!-- ```{r 4for-and-duck} -->
+<!-- F.allround.us %>% D.allround.5duckdebut("4-for and duck on debut") -->
+<!-- ``` -->
+
 ### Season double
 500 runs and 20 wickets in a season
 
@@ -1307,7 +1417,6 @@ D.ar.seasondouble(F.batting.us, F.bowling.us, F.fielding.us, "Season double", 50
 ```{r season-fldg-double}
 D.ar.seasondouble(F.batting.us, F.bowling.us, F.fielding.us, "Season double", 500, 0, 10)
 ```
-
 
 ### Career double
 2000 runs and 50 wickets
@@ -1357,9 +1466,10 @@ F.fieldsumm.us %>% D.fieldsumm.mostcatches("Most total catches, all time")
 
 ### Most catches by match type
 ```{r mostcatches-allt-type, message=FALSE, warning=FALSE, results='asis'}
+map(levels(F.fielding.us$Type) , W.fielding.totalcatchbytype,
+    df = F.fielding.us) %>% bind_rows() %>% 
+  D.showtable("Most career catches, by match type")
 
-map(levels(F.fielding.us$Type), D.fielding.totalcatchbytype, cap=paste("Most career catches by match type"),
-    df=F.fielding.us)
 ```
 
 ### Most catches in a season
@@ -1391,7 +1501,6 @@ F.fielding.us %>% D.fielding.mostblahseason("Most stumpings in a season", "Std")
 F.fielding.us %>% D.fielding.mostblahseason("Most WK dismissals in a season", "Dis")
 ```
 
-
 ### Tally of dismissals, all time
 Minimum: three
 
@@ -1402,15 +1511,13 @@ F.fielding.us %>% D.fielding.mostblah("Most total WK dismissals, all time", "Dis
 
 ```
 
-
-
-
 ### Most WK dismissals by match type
 ```{r mostdis-allt-type, message=FALSE, warning=FALSE, results='asis'}
-map(levels(F.fielding.us$Type),D.fielding.totalWKdisbytype, cap="Most WK dismissals by type",
-    df = F.fielding.us)
-```
+map(levels(F.fielding.us$Type) , W.fielding.totalWKdisbytype,
+    df = F.fielding.us) %>% bind_rows() %>% 
+  D.showtable("Most career WK dismissals, by match type")
 
+```
 
 ### Most appearances as wicket-keeper
 
@@ -1509,20 +1616,17 @@ team and year.
 
 Totals since 2018:
 ```{r subcapt-most}
-
-
 B.inningses %>% drop_na(`Batting Captain`, `Nominal Captain`) %>% 
   filter(`Batting Captain` != `Nominal Captain`, Yr > 2018) %>% 
   group_by(`Nominal Captain`) %>% tally() %>% 
   arrange(desc(n)) %>%
-  H.F.plainALL("Most times substituted as captain")
+  D.showtable("Most times substituted as captain")
 
 B.inningses %>% drop_na(`Batting Captain`, `Nominal Captain`) %>% 
   filter(`Batting Captain` != `Nominal Captain`, Yr > 2018) %>% 
   group_by(`Batting Captain`) %>% tally() %>% 
   slice_max(n, n=conf$default_list_length) %>%
-  H.F.plainALL("Most times acting as captain")
-
+  D.showtable("Most times acting as captain")
 ```
 
 Most recent:
@@ -1533,7 +1637,7 @@ B.inningses %>% drop_na(`Batting Captain`, `Nominal Captain`) %>%
   filter(`Batting Captain` != `Nominal Captain`, Yr > 2018) %>% 
   slice_max(actuallyDate, n=conf$default_list_length) %>%
   select(Date, `Match Summary`, `Batting Captain`, `Nominal Captain`) %>%
-  H.F.plainALL("Substitute captains")
+  D.showtable("Substitute captains")
 
 ```
 
@@ -1601,7 +1705,7 @@ rm(zxclr)
 ## Scorecard display
 ```{r scorecard, results="asis"}
 
-scd <- B.inningses %>% filter(match_id==6450904)
+scd <- B.inningses %>% filter(match_id==7122764)
 
 scdh <- slice_head(scd)
 
@@ -1657,8 +1761,8 @@ This includes all innings, with no minimum length.
 ```{r bowl-through}
 F.bowling.us  %>% 
   filter(O >= (decimal_overs %/% 2) & Yr == conf$year_of_interest) %>%
-  arrange(desc(W), R) %>%
-  H.F.cyclamen("Bowling all innings, our club, this year", H.cyclamen)
+  arrange(desc(W), R) %>% 
+  select(all_of(H.cyclamen)) %>% D.showtable("Bowling all innings, our club, this year")
 ```
 
 ## Catching performance
@@ -1769,6 +1873,7 @@ are removed, as if they had never happened.
 ```{r tossing, results='asis'}
 
 this_caption <- "Long runs of consecutive toss results"
+# use runs.test(as.factor(x)) to test whether x [0,1,1,0,0,0,1] is  random
 
 for (r in c('W', 'L')){
   hdg <- case_when(r == "W" ~ "wins", r=="L" ~ "losses")
@@ -1811,312 +1916,15 @@ rm(r)
 
 ```
 
-## Totals in our leagues
-```{r allclubsplot}
-plot1 <- B.inningses %>%
-  filter(league_id %in% conf$leagues_of_interest) %>%
-  ggplot(aes(Total, colour= as.factor(league_id), na.rm = TRUE)) + 
-  geom_density() +
-  labs(title = paste("All totals"),
-       colour="League ID",
-       x="Total",
-       y="Density")
-
-plot(plot1)
-
-```
-
-
-
-\newpage
-
-## Totals and winning, this club batting, all-time
-```{r totalan-config}
-#set the data source we are going to use
-data <- F.inningses.us %>% filter(!is.na(`Total`), Total >0) 
-```
-
-### All batting innings
-
-```{r p-totals-uty, echo=FALSE, message=FALSE, warning=FALSE}
-
-plot <- data %>%   ggplot(aes(y=Total, 
-                              na.rm = TRUE)) + geom_histogram(binwidth = 10) +
-  geom_boxplot() +
-  coord_flip() +
-  #theme(axis.title.y=element_blank(),axis.text.y=element_blank(),
-  #axis.ticks.y=element_blank() )+ 
-  labs(title = paste("Totals") )
-
-plot(plot)
-
-
-
-data %>% select(`Total`) %>% pull() %>%
-  summary()
-```
-
-### By venue or result
-
-```{r p-totalsbyven}
-plot1 <- data %>%
-  ggplot(aes(x=actuallyDate, y=Total, col = Ven, shape = Res,
-             na.rm = TRUE)) + geom_point() +
-  labs(title = paste("All innings"),
-       x="Date",
-       col = "Venue",
-       shape = "Result")
-
-plot(plot1)
-
-data %>%  select(`Total`, Ven) %>%
-  group_by(Ven) %>%
- # summarise(
- #  Total_Median = median(Total, na.rm = TRUE)) %>%
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats)
-
-t.test(data %>% filter(Ven=="H") %>% select(Total),
-       data %>% filter(Ven=="A") %>% select(Total))
-
-
-### By result
-data %>%  select(`Total`, Res) %>%
-  group_by(Res) %>%
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats)
-
-t.test(data %>% filter(Res=="W") %>% select(Total),
-       data %>% filter(Res=="L") %>% select(Total))
-
-```
-
-### By innings of match
-
-
-
-```{r p-totalsbyiom}
-plot2 <- data  %>%
-  ggplot(aes(x=`Inns of match`, y=Total, 
-             na.rm = TRUE)) + geom_boxplot() +
-  geom_dotplot(binaxis = "y", stackdir='center', dotsize=1,  binwidth = 1) +
-  labs(title = paste("Our totals"),
-       x="Innings of match")
-
-
-
-plot3 <- data  %>%
-  ggplot(aes(x=actuallyDate, y=Total, col = `Inns of match`, 
-             na.rm = TRUE)) + geom_point() +
-  labs(title = paste("All innings"),
-       x="Date",
-       col = "Innings of match")
-
-plot4 <- data %>%
-  ggplot(aes(Total, colour= `Inns of match`, na.rm = TRUE)) + 
-  geom_density() +
-  labs(title = paste("Our totals"),
-       colour="Inns of match",
-       x="Total",
-       y="Density")
-
-
-
-
-plot(plot2)
-
-plot(plot3)
-
-plot(plot4)
-
-### By innings of match
-data %>%  select(`Total`, `Inns of match`) %>%
-  group_by(`Inns of match`) %>%
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats)
-
-t.test(data %>% filter(`Inns of match`==1) %>% select(Total),
-       data %>% filter(`Inns of match`==2) %>% select(Total))
-
-
-```
-
-
-### Over time
-```{r totals-bytime}
-### By year
-data %>%  select(`Total`, Yr) %>%
-  group_by(Yr) %>%
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats) %>%
-  arrange(desc(Yr))
-
-### By month of the year
-data %>%  select(`Total`, actuallyDate) %>%
-  mutate(`Month` = format(actuallyDate, "%m")) %>% select(-actuallyDate) %>%
-  group_by(`Month`) %>% # look into using %b for month name like May
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats) 
-
-
-
-
-```
-
-### First innnings totals, by venue and result
-
-```{r p-batfirst-uty, echo=FALSE, message=FALSE, warning=FALSE}
-plot4 <- data %>%  filter(`Inns of match`==1) %>%
-  ggplot(aes(x=Res, y=Total, 
-             na.rm = TRUE)) + geom_boxplot() +
-  geom_dotplot(binaxis = "y", stackdir='center', dotsize=1,  binwidth = 1) +
-  labs(title = paste("Our first innings totals"),
-       x="Result")
-
-plot5 <- data %>%  filter(`Inns of match`==1) %>%
-  ggplot(aes(Total, colour= Res, na.rm = TRUE)) + 
-  geom_density() +
-  labs(title = paste("Our first innings totals"),
-       colour="Result",
-       x="Total",
-       y="Density")
-
-plot6 <- data %>%  filter(`Inns of match`==1) %>%
-  ggplot(aes(Total, colour= Ven, na.rm = TRUE)) + 
-  geom_density() +
-  labs(title = paste("Our first innings totals"),
-       colour="Venue",
-       x="Total",
-       y="Density")
-
-plot(plot4)
-
-plot(plot5)
-
-plot(plot6)
-
-### Batting first only, by venue
-data %>%  select(`Total`, `Inns of match`, Ven) %>%
-  filter(`Inns of match` == 1) %>%
-  group_by(Ven) %>%
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats)
-
-t.test(data %>% filter(`Inns of match`==1, Ven =='H') %>% select(Total),
-       data %>% filter(`Inns of match`==1, Ven =='A') %>% select(Total))
-
-### Batting first only, by result
-data %>%  select(`Total`, `Inns of match`, Res) %>%
-  filter(`Inns of match` == 1) %>%
-  group_by(Res) %>%
-  summarise(Stats = list(summary(Total))) %>% unnest_wider(Stats)
-
-t.test(data %>% filter(`Inns of match`==1, Res =='W') %>% select(Total),
-       data %>% filter(`Inns of match`==1, Res =='L') %>% select(Total))
-
-
-```
-### First innings totals by match type
-
-```{r firstinns-type}
-plot9 <- data %>%
-  filter(`Inns of match`==1) %>%
-  ggplot(aes(x=as.factor(no_of_overs), y=Total, 
-             na.rm = TRUE)) + geom_boxplot() +
-  geom_dotplot(binaxis = "y", stackdir='center', dotsize=1,  binwidth = 1) +
-  labs(title = paste("Our totals, first inns"),
-       x="Overs per inns")
-
-
-plotA <- data %>%
-  filter(`Inns of match`==1) %>%
-  ggplot(aes(Total, colour= as.factor(no_of_overs), na.rm = TRUE)) + 
-  geom_density() +
-  labs(title = paste("Our totals, first inns"),
-       colour="Overs per inns",
-       x="Total",
-       y="Density")
-
-plotB <- data %>%
-  filter(`Inns of match`==1) %>%
-  ggplot(aes(x=Type, y=Total, 
-             na.rm = TRUE)) + geom_boxplot() +
-  geom_dotplot(binaxis = "y", stackdir='center', dotsize=1,  binwidth = 1) +
-  labs(title = paste("Our totals, first inns"),
-       x="Competition")
-
-
-plotC <- data %>%
-  filter(`Inns of match`==1) %>%
-  ggplot(aes(Total, colour = Type, na.rm = TRUE)) + 
-  geom_density() +
-  labs(title = paste("Our totals, first inns"),
-       colour="Competition",
-       x="Total",
-       y="Density")
-
-plot(plot9)
-
-plot(plotA)
-
-plot(plotB)
-
-plot(plotC)
-
-
-
-```
-
-
-### Results proportions
-
-```{r propwin-uty}
-plot <- data %>% filter(Res %in% c("W", "L")) %>%
-  ggplot(aes(x=`Ven`, fill = `Res`,
-             na.rm = TRUE)) + geom_bar(position = "dodge") +
-  labs(title = paste("Results"),
-       x="Venue",
-       y="Count",
-       fill = "Result"
-  )
-
-plot(plot)
-
-plot <- data %>% filter(Res %in% c("W", "L")) %>%
-  ggplot(aes(x=bat_first, fill= Res,
-             na.rm = TRUE)) + geom_bar(position = "dodge") +
-  labs(title = paste("Results"),
-       x="Batting first",
-       y="Count",
-       fill="Result"
-  )
-
-plot(plot)
-
-```
-
-### Results proportion batting first
-
-```{r propwinbatfirst-uty}
-plot <- data %>% filter(`Inns of match`==1, Res %in% c("W", "L")) %>%
-  ggplot(aes(x=`Ven`, fill = `Res`,
-             na.rm = TRUE)) + geom_bar(position = "dodge") +
-  labs(title = paste("Results batting first"),
-       x="Venue",
-       y="Count"
-  )
-
-plot(plot)
-
-png('plot-winfirst.png')
-plot(plot)
-dev.off()
-
-
-
 ## Win proportion analysis
 
 ### Our matches, all time
 
-
+```{r propwinbatfirst-uty}
 # Logistic regression on batting first effect on result
 # y = result, x = other stuff
 
-A.innsres <- data %>% select(match_id, ground_id, Type, match_type,
+A.innsres <- F.inningses.circle %>% select(match_id, ground_id, Type, match_type,
                             bat_first,
                             innings_number, Total, Extras, W, Ovs, 
                             `Inns of match`,
@@ -2199,67 +2007,97 @@ plot2
 ## Batting for multiple sides
 ```{r bat-mult-sides}
 B.batAvg %>% group_by(batsman_id) %>% count() %>% ungroup() %>% filter(n>=5) %>%
-  left_join(B.batAvg) %>% H.F.plain("Batting for many sides", H.asterC)
+  left_join(B.batAvg) %>% 
+  select(all_of(H.asterC)) %>%
+  D.showtable("Batting for many sides")
 
 ```
   
-\newpage
+## Wicket-keeper performance
+```{r wk-perf-prep}
+A.keepers <- F.fielding.us %>%
+  filter(!Name %in% c("T.B.C", "Unsure"), !is.na(player_id)) %>%
+  group_by(player_id, Name) %>% 
+  summarise(`Keeper` = sum(`W-K`), `Appearances` = n(),
+            keepprop = Keeper/Appearances) %>% ungroup()
 
-# Opponents Report
+A.keepers <- A.keepers %>%
+  mutate(keeperclass = as.factor(case_when(
+    Keeper == 0 ~ 'Never',
+    Keeper < 3 ~ 'Seldom', # once or twice
+    keepprop < 0.5 ~ "Occasional",
+    TRUE ~ 'Usual'
+  )) %>%
+  fct_relevel("Never", "Seldom", "Occasional", "Often") )
 
+A.keepers %>% filter(Keeper > 0) %>% 
+  ggplot(aes(x=Keeper)) +  geom_histogram(binwidth = 2) +
+  labs(title="Appearances as keeper", y="Count", x="Appearances")
 
-```{r opponents, results='asis'}
-
-for (i in 1:length(conf$opponents_of_interest)) {
-  cat( paste("## ",  Y.clubs[Y.clubs$club_id==conf$opponents_of_interest[i],"club_name"]  , " \n"))
-  
-  E.batAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>%
-    D.batavg.mostruns("Most runs this year") %>% print()
-  
-  cat ('\n\n')
-  
-  E.bowlAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% 
-    D.bowlavg.wkt("Most wickets this year") %>%  print()
-  
-  cat ('\n\n')
-  
-  F.batting.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
-                                fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
-    D.bat.fifties("Fifties in our matches") %>%
-    print()
-  
-  cat ('\n\n')
-  
-  F.bowling.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
-                                fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
-    D.bowl.fourfors("Four-fors in our matches") %>%
-    print()
-  
-  cat ('\n\n')
-  
-  B.inningses %>% filter(batting_club_id == conf$opponents_of_interest[[i]]) %>%
-  D.inns.recentinns("Recent opponent innings") %>%   print()
-  
-  cat ('\n\n')
-  
-  F.matches.circle %>% 
-    filter(conf$opponents_of_interest[[i]] == home_club_id |
-             conf$opponents_of_interest[[i]] == away_club_id )%>%
-    D.match.matchview("Our matches") %>% print()
-  
-  cat ('\n\n')
-  
-    B.batAvg %>% D.batavg.nearms(conf$opponents_of_interest[[i]]) %>% print()
-  
-  cat ('\n\n')
-  
-    B.bowlAvg %>% D.bowlavg.nearbowlms(conf$opponents_of_interest[[i]]) %>% print()
-  
-}
 ```
 
-\newpage
+There are `r nrow(A.keepers)` fielders in our dataset, of 
+whom `r nrow(A.keepers %>% filter(Keeper>0))` have been designated keeper at
+least once.
 
+Classing fielders by keeping frequency into never, seldom (once or twice),
+occasional (half the time or less), usual (more than half the time).
+
+```{r keeper-analys}
+A.keepers %>% select(Class = keeperclass) %>% table() %>% D.showtable("Keeper classes")
+
+#B.fieldsumm %>% filter(Name =="Will Day")
+Z.ptwkperf <- B.fieldsumm %>% filter(fielding_club_id == conf$club_of_interest ) %>% inner_join(A.keepers, by = join_by(player_id, Name)) %>%
+ select(-Keeper, -Appearances, -keepprop, -player_id, -Name, -fielding_club_id)
+
+Z.ptwkperf %>%
+  group_by(keeperclass) %>%
+  summarise(across(where(is.numeric), \(x) avRn(mean(x, na.rm = TRUE)))) %>%
+  D.showtable("Keeper performance by class")
+
+
+df_long <- Z.ptwkperf %>%
+  pivot_longer(
+    cols = where(is.numeric), 
+    names_to = "outcome_variable", 
+    values_to = "value"
+  ) %>% filter(!outcome_variable %in% c("OFM", "WKM"))
+
+ggplot(df_long, aes(x = keeperclass, y = value, fill = keeperclass)) +
+  geom_boxplot() +
+  facet_wrap(~outcome_variable, scales = "free_y") +
+ # theme_minimal() +
+  labs(title = "Wicketkeeper inclination and fielding performance", 
+       fill = "Inclination",
+       x= "Inclination", y="Value")
+
+df_long_2 <- df_long %>% filter(keeperclass != "Never", 
+                                outcome_variable %in% c("OF Ct/M", "WK Ct/M", "Dis/Inns"))
+
+
+ggplot(df_long_2, aes(x = keeperclass, y = value, fill = keeperclass)) +
+  geom_boxplot() +
+  facet_wrap(~outcome_variable, scales = "free_y") +
+  # theme_minimal() +
+  labs(title = "Wicketkeeper inclination and fielding performance", 
+       fill = "Inclination",  x= "Inclination", y="Value")
+
+# library(broom)
+# 
+# df_long %>%
+#   group_by(outcome_variable) %>%
+#   do(tidy(aov(value ~keeperclass, data = .))) %>%
+#   filter(term != "(Intercept)") # We only care about the factor's effect
+
+rm(df_long)
+rm(df_long_2)
+rm(Z.ptwkperf)
+
+
+```
+
+
+\newpage
 
 # Setup
 
@@ -2267,13 +2105,10 @@ for (i in 1:length(conf$opponents_of_interest)) {
 This year we played in the following competitions:
 
 ```{r ourleagues}
-Y.compos %>% filter(ours==TRUE, current==TRUE) %>% select(id = competition_id,
-                                                          Name = competition_name, 
-                                                          league_id,
-                                                          `League Name` = league_name) %>%
-  kbl(longtable = T, booktabs = T, row.names = F) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
-                font_size = 7) 
+Y.compos %>% filter(ours==TRUE, current==TRUE) %>%
+  select(id = competition_id, Name = competition_name, 
+         league_id, `League Name` = league_name) %>%
+  D.showtable("Leagues")
 ```
 
 In the whole dataset, we have played in leagues with id 
@@ -2282,12 +2117,12 @@ in `r F.inningses.us %>% select(competition_id) %>% distinct() %>% drop_na() %>%
 <!-- in competitions with  -->
 <!-- ids `r F.inningses.us %>% select(competition_id) %>% distinct() %>% drop_na() %>%pull() %>% sort()`.   -->
 
-
 ## Players
 
-There are `r nrow(Y.currentplayers %>% filter(player_club==conf$club_of_interest))` recorded
-playing for the club this season or last season, and `r nrow(Y.players)` in the whole
-dataset.
+There are 
+`r nrow(Y.currentplayers %>% filter(player_club==conf$club_of_interest))` 
+recorded playing for the club this season or last season, and 
+`r nrow(Y.players)` in the whole dataset.
 
 ## Date ranges
 Data collected from Play-Cricket. 

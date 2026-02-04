@@ -6,6 +6,7 @@ library(tidyverse)
 ## load the config
 conf <- yaml.load_file("./config/config.yaml")
 conf$last_year <- as.character(as.integer(conf$year_of_interest) - 1)
+A.inferredovers <- read_tsv("./config/compo-to-over.tsv", col_types = list(competition_id="i", inferred_overs="i"))
 
 # ==== current clubs and their players ====
 # CURRENT > CLUBS
@@ -51,17 +52,18 @@ E.playersNC <- E.players %>%
 #cleanup
 rm(parent_directory, json_data, subdirectories, load_json_file)
 
-# ==== the match detail loading function  =====================================
+# ==== the match detail loading function  ====
 
 # define what we want as match headers -- drop umpire names and such
 H.morningglory <- c("match_id", "match_date", "ground_name", "ground_id", "competition_id","league_id",
-                   "competition_type", "match_type", "no_of_overs", "batted_first",
+                   "competition_type", "match_type", "no_of_overs", "batted_first", "no_of_players",
                    "home_team_name", "home_team_id", "home_club_name", "home_club_id",
                    "away_team_name", "away_team_id", "away_club_name", "away_club_id", 
                    "toss", "result_description", "result_applied_to", "toss_won_by_team_id")
 
 H.cornflower <- c("match_id", "match_date", "competition_id","league_id", "league_name",
-                    "competition_name", "competition_type", "match_type", "no_of_overs")
+                    "competition_name", "competition_type", "match_type", "no_of_overs",
+                    "home_team_id", "away_team_id")
 
 # Function to load and process a JSON file. Takes type c competition for a special mode
 load_json_file <- function(file, type) {
@@ -74,7 +76,7 @@ load_json_file <- function(file, type) {
     if ("league_name" %in% names(json_data) ){
       json_data["competition_name"] <- as.character(json_data["competition_name"])
       jdc <- json_data[H.cornflower]
-      
+      jdc$Yr <- as.integer(format(as.Date(jdc$match_date, "%Y-%m-%dT%H:%M:%S"), format = "%Y"))
       return(jdc)} else {return(NULL)}} # nb we return here 
   
   # make a nice subset of interesting headings 
@@ -86,7 +88,7 @@ load_json_file <- function(file, type) {
   foo$ovs.b <- str_split_i(json_data$innings$overs, "\\.", 2)
   foo$ovs.b[is.na(foo$ovs.b)] <- 0
   foo$ovs.bf <- as.numeric(foo$ovs.b) / 6
-  foo$ovs.bf[foo$ovs.b >= 6] <- 5
+  foo$ovs.bf[foo$ovs.b >= 6] <- 5 # TODO why this? 
   json_data$innings$decimal_overs <- as.numeric(foo$ovs.o) + as.numeric(foo$ovs.bf)
   
   if(!is.null(nrow(json_data$innings))){
@@ -101,9 +103,11 @@ load_json_file <- function(file, type) {
     jds$firstinnsbattid <- json_data$innings[1,]$team_batting_id
   #  jds$firstinnsbattname <- as.character(json_data$innings[1,]$team_batting_name) #
     jds$firstinnsscore <- paste( json_data$innings[1,]$runs, "/", json_data$innings[1,]$wickets, sep="" )
+    jds$firstinnstotal <- json_data$innings[1,]$runs
   #  jds$firstinnsniceovs <- paste( "(", json_data$innings[1,]$overs, ")", sep="" )
     jds$secondinnsbattid <- json_data$innings[2,]$team_batting_id
     jds$secondinnsscore <- paste( json_data$innings[2,]$runs, "/", json_data$innings[2,]$wickets, sep="" )
+    jds$secondinnstotal <- json_data$innings[2,]$runs
   #  jds$`Match Summary` <- paste(jds$firstinnsbattname, jds$firstinnsscore, jds$firstinnsniceovs, ";",                                 jds$secondinnsbattname, jds$secondinnsscore, jds$secondinnsniceovs)
     jds$`Match Summary` <- paste( as.character(json_data$innings[1,]$team_batting_name),
                                   jds$firstinnsscore,  paste( "(", json_data$innings[1,]$overs, ")", sep="" ), ";",
@@ -113,6 +117,7 @@ load_json_file <- function(file, type) {
     jds$firstinnsbattid <- NA
   #  jds$firstinnsbattname <- ""
     jds$firstinnsscore <- ""
+    jds$firstinnstotal <- NA
  #   jds$firstinnsniceovs <- ""
     jds$secondinnsbattid <- NA
     jds$secondinnsscore <- ""
@@ -120,12 +125,14 @@ load_json_file <- function(file, type) {
   }
   
   jds$`Match Aggregate` <- sum(json_data$innings$runs)
+  jds$`Match Aggregate Extras` <- sum(json_data$innings$total_extras)
   zxc <- sum(json_data$innings$decimal_overs)
   jds$matchAggDecOvs <- zxc
   jds$`Match Overs` <- paste(floor(zxc), round((zxc %% 1 ) * 6), sep=".")
   jds$actuallyDate <- as.Date(jds$match_date, "%Y-%m-%dT%H:%M:%S")
   jds$Date <- format(jds$actuallyDate, format = "%d %b %Y")
   jds$Yr <- as.integer(format(jds$actuallyDate, format = "%Y"))
+  jds$`Day of Year` <- yday(jds$actuallyDate)
   
   jds$is_circle <- FALSE
   jds$is_smallsphere <- FALSE
@@ -155,11 +162,28 @@ load_json_file <- function(file, type) {
   jds[["Type"]] <- as.factor(jds[["competition_type"]])
   #jds[["Winner"]] <- jds[["result_applied_to"]]
   
-  # interpolate missing no_of_overs data -- this seems to be friendlies
-
+  # interpolate missing no_of_overs data -- this seems to be friendlies and some incorrectly set old competitions
+  
   if (is.null(jds$no_of_overs)) {
+    jds$no_of_overs <- NA
+  }
+  
+  if (is.na(jds$no_of_overs) & !is.null(jds$competition_id)) {
+    if (jds$competition_id %in% A.inferredovers$competition_id ){
+    ino <- pull(A.inferredovers[A.inferredovers$competition_id==jds$competition_id,2])
+    } else ino <- NA
+   # if (is_null(ino)){ ino <- NA}
+    #print(ino)
     jds$no_of_overs = case_when(
-      jds$matchAggDecOvs == 0 ~ 0, # of 6694, about 100 have no overs recorded but runs; 80 are conceded etc
+    jds$competition_id %in% A.inferredovers$competition_id ~ ino,
+    TRUE ~ NA
+    )
+  }
+
+  if (is.na(jds$no_of_overs)) {
+    jds$no_of_overs = case_when(
+    #  !is.null(jds$competition_id) &    jds$competition_id %in% A.inferredovers$competition_id ~ 99,
+      jds$matchAggDecOvs == 0 ~ NA, # of 6694, about 100 have no overs recorded but runs; 80 are conceded etc
       jds$firstinnsdecovers > 60 ~ NA, # to clear any obvious errors
       jds$secondinnsdecovers > 60 ~ NA, # to clear any obvious errors
       jds$firstinnsdecovers > 0  | jds$secondinnsdecovers > 0
@@ -188,11 +212,14 @@ load_json_file <- function(file, type) {
   if (!is.null(jds$Result_) & !is.null(jds$result_applied_to) & jds$result_match == ""){
     jds$result_match <- case_when(
       is.null(jds[["result_applied_to"]]) ~ "?",
+      is.na(jds[["result_applied_to"]]) ~ "?",
       jds[["result_applied_to"]] == jds[["home_team_id"]] ~ "HW",
       jds[["result_applied_to"]] == jds[["away_team_id"]] ~ "AW",
     )
   }
-
+  
+  jds$result_match <- as.factor(jds$result_match)
+  
   #a result abbreviation for the club orientation
   if (!is.null(jds$Result_) ){ #& !is.null(jds$result_applied_to))
     
@@ -213,12 +240,32 @@ load_json_file <- function(file, type) {
     }
   }  
   
+  jds$result_club <- as.factor(jds$result_club)
+  
+  # result and batting first
+  if (!is.null(jds$result_applied_to)){
+    jds$bat_first_win <- case_when(
+      jds[["result_applied_to"]] == jds$firstinnsbattid ~ TRUE,
+      jds[["result_applied_to"]] == jds$secondinnsbattid ~ FALSE,
+      TRUE ~ NA
+    )
+  }
+  
   #a result of the toss for this club
   if (!is.null(jds$toss_won_by_team_id) ){ #& !is.null(jds$result_applied_to))
     jds$`Our toss result` <- case_when(
       jds[["is_circle"]] == FALSE ~ "n/a",
       jds[["toss_won_by_team_id"]]  %in% conf$teams_of_interest ~ "W",
       TRUE ~ "L")}  
+  
+  # result and toss winner
+  if (!is.null(jds$toss_won_by_team_id)  & (!is.null(jds$result_applied_to)) ){ #& !is.null(jds$result_applied_to))
+    jds$win_toss_win_match <- case_when(
+      jds[["result_applied_to"]] == jds[["toss_won_by_team_id"]] ~ TRUE,
+      jds[["result_applied_to"]] != jds[["toss_won_by_team_id"]]  ~ FALSE,
+      TRUE ~ NA
+    )
+  }
   
   # try to work out the winning margin
   # first we need to remove anything without a winner, and anything we can't pick
@@ -305,7 +352,7 @@ load_json_file <- function(file, type) {
 # == match details... CURRENT > SEASONS > YYYY > MATCH_DETAILS
 
 # Directory containing JSON files, one file per match
-directory <- "./newdata/current/seasons/2024/match_details"
+directory <- "./newdata/current/seasons/2025/match_details" #TODO fix this to take year from config file
 
 # Get list of JSON files in the directory TODO throw error if that current dir is empty
 json_files <- list.files(directory, pattern = "*.json", full.names = TRUE)
@@ -376,7 +423,7 @@ G.inningses <- json_dataI %>% bind_rows() %>% unnest(inns)
 G.matches <- json_dataM %>% bind_rows()
 G.matchplayers <- json_dataP %>% bind_rows() %>% unnest(players)
 
-# ---- unstack competiton data ----
+# ==== unstack competition data ====
 json_dataC <- map(json_files, load_json_file, "c")
 G.matchcompos <- json_dataC %>% bind_rows() 
 
@@ -407,6 +454,22 @@ B.inningsesX <- C.inningses %>%
          !Result %in% c("Cancelled", "Match In Progress"),
          Yr >= conf$start_year)
 
+B.matchplayers <- B.matchplayers %>% 
+  filter(!home_team_id %in% conf$excluded_teams, 
+         !away_team_id %in% conf$excluded_teams, 
+         !league_id %in% conf$excluded_leagues,
+         !match_id %in% conf$excluded_matches,
+         !Result %in% c("Cancelled", "Match In Progress"),
+         Yr >= conf$start_year)
+
+B.matchcompos <- B.matchcompos %>% 
+  filter(!home_team_id %in% conf$excluded_teams, 
+         !away_team_id %in% conf$excluded_teams, 
+         !league_id %in% conf$excluded_leagues,
+         !match_id %in% conf$excluded_matches,
+        # !Result %in% c("Cancelled", "Match In Progress"),
+         Yr >= conf$start_year)
+
 # ==== write out and tidy up====
 save(B.matches, file="./data/Bmatches")
 save(B.inningsesX, file="./data/BinningsesX")
@@ -415,5 +478,4 @@ save(B.matchcompos, file="./data/Bmatchcompos")
 save(E.players, file="./data/Eplayers")
 save(E.playersNC, file="./data/EplayersNC")
 rm(G.matches, G.inningses, G.matchcompos, G.matchplayers, C.matches, C.inningses)
-
 rm(E.matches, E.inningses, E.matchcompos, E.matchplayers)

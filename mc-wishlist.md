@@ -1,7 +1,19 @@
+= get all league data in loi
+= scorecard links in the multi-milestone/interesting innings lists
 - sort out filter vs display functions
 - tidy up column selection
 - tidy up column widths
+- Fewest games played by nominal captain
+- Longest wait for a captain to play in a season 
+- Longest run of losses, not wins, as captain 
+- Winning toss Vs winning match, by captain 
+- Captain playing not in their own XI
 - Handle 8-ball overs properly
+= fix cap numbers duplication
+= globally tidy up ground names to deduplicate
+- make the no partnerships display correctly, check all no incl rtd no
+- option to neaten up team names - use yaml to set
+- fix the oppo report
 
 ## acs123:
                 own team  O M R W                    Opp tot   Ct
@@ -9,24 +21,6 @@
  c Hallam b Gunn  29  122  9 5 11 2    T Simpson b    167  2
                                        Hemingway b Dennet
  b T G Wass       10  177                            135/2 1
- 
  (did not bat      - )
- 
-## extras
-All bowlers have a maiden 
-Best bowl avg by match type
-Worst average but many runs, wickets
-Highest run chase in 20 ovs game 
-Outfield catches, by pt WK Vs others 
-Bowling 8 or lower and taking a wicket 
-Fewest games played by nominal captain
-Longest wait for a captain to play in a season 
-Longest run of losses, not wins,  as captain 
-Five-for and golden duck on dayboo
-All bowled in an innings 
-Most maidens 
-all-time Fifties by XI
-for Jay:  runs, wkts per home game, and by month
-for Jay:  runs, wkts per season at home
-High totals with multiple, without any century, fifty; show scorecards
+
 
