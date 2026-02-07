@@ -23,9 +23,26 @@ conf <- yaml.load_file("./config/config.yaml")
 # load other packages
 library(kableExtra)
 library(lubridate)
-#library(dplR) # provides latexify, need this for club names containing \&
 # a standard font size
 dfsz <- 7
+
+# make some club-specific filtered datasets
+thisclubBatAvg <- B.batAvg %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubBatAvg.ty <- E.batAvg.TY %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubBowlAvg <- B.bowlAvg %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubBowlAvg.ty <- E.bowlAvg.TY %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubInns <- B.inningses %>% filter(batting_club_id %in% conf$opponents_of_interest)
+sharedMatches <- F.matches.circle %>% 
+                   filter(home_club_id %in% conf$opponents_of_interest |
+                          away_club_id %in% conf$opponents_of_interest )
+
+sharedBatting <- F.batting.circle %>% 
+                   filter(batting_club_id %in% conf$opponents_of_interest |
+                          fielding_club_id %in% conf$opponents_of_interest ) 
+
+sharedBowling <- F.bowling.circle %>% 
+                   filter(batting_club_id %in% conf$opponents_of_interest |
+                          fielding_club_id %in% conf$opponents_of_interest ) 
 
 ## the main table-displaying function
 ## nb the column widths get set by other functions now
@@ -38,55 +55,63 @@ D.showtable <- function(x, this_caption) {x %>%
 
 \setlength{\tabcolsep}{2pt}
 
-
-```{r opponents, results='asis'}
-
-for (i in 1:length(conf$opponents_of_interest)) {
-  cat( paste("## ",  Y.clubs[Y.clubs$club_id==conf$opponents_of_interest[i],"club_name"]  , " \n"))
-  
-  E.batAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>%
-    D.batavg.mostruns("Most runs this year") %>% print()
-  
-  cat ('\n\n')
-  
-  E.bowlAvg.TY %>% filter(club_id == conf$opponents_of_interest[[i]]) %>% 
-    D.bowlavg.wkt("Most wickets this year") %>%  print()
-  
-  cat ('\n\n')
-  
-  F.batting.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
-                                fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
-    D.bat.fifties2("Fifties in our matches") %>%
-    print()
-  
-  cat ('\n\n')
-  
-  F.bowling.circle %>% filter(batting_club_id == conf$opponents_of_interest[[i]] |
-                                fielding_club_id == conf$opponents_of_interest[[i]] ) %>% 
-    D.bowl.fourfors("Four-fors in our matches") %>%
-    print()
-  
-  cat ('\n\n')
-  
-  B.inningses %>% filter(batting_club_id == conf$opponents_of_interest[[i]]) %>%
-  D.inns.recentinns("Recent opponent innings") %>%   print()
-  
-  cat ('\n\n')
-  
-  F.matches.circle %>% 
-    filter(conf$opponents_of_interest[[i]] == home_club_id |
-             conf$opponents_of_interest[[i]] == away_club_id )%>%
-    D.match.matchview("Our matches") %>% print()
-  
-  cat ('\n\n')
-  
-    B.batAvg %>% D.batavg.nearms("Approaching milestones", conf$opponents_of_interest[[i]]) %>% print()
-  
-  cat ('\n\n')
-  
-    B.bowlAvg %>% D.bowlavg.nearbowlms("Career total wicket milestones", conf$opponents_of_interest[[i]]) %>% print()
-  
+```{r length, results='asis'}
+if(length(conf$opponents_of_interest) > 1){
+zxc <- Y.clubs %>% filter(club_id %in% conf$opponents_of_interest) %>% select(club_name) %>% pull()
+cat("There is more than one club id selected. Check this is right. Names 
+    associated are: ")
+cat(zxc, sep=", " )
+cat(".\n")
 }
+
+oppclub_name <- as.character(Y.clubs %>% filter(club_id == conf$opponents_of_interest[[1]]) %>% 
+                              slice_head(n=1) %>% select(club_name))
+```
+
+
+---
+subtitle: `r paste(oppclub_name)`
+---
+
+## Most runs
+```{r mostruns}
+thisclubBatAvg.ty%>%  D.batavg.mostruns("Runs scored, this year")
+```
+
+## Most wickets
+Showing most wickets first
+```{r mostwkts-thisyear}
+thisclubBowlAvg.ty %>% D.bowlavg.wkt("Most wickets, this season")
+```
+
+## Their recent innings
+```{r recent-inns}
+thisclubInns %>% D.inns.recentinns("Recent opponent innings")
+```
+
+## Fifties
+```{r fifties}
+sharedBatting %>% D.bat.fifties2("Fifties in our matches") 
+```
+
+## Approaching batting milestones
+```{r bat-ms}
+thisclubBatAvg %>% D.batavg.nearms2("Approaching batting milestones")
+```
+
+## Four-fors
+```{r four-fors}
+sharedBowling %>% D.bowl.fourfors("Four-fors in our matches") 
+```
+
+## Approaching bowling milestones
+```{r bowl-ms}
+thisclubBowlAvg %>% D.bowlavg.nearbowlms2("Approaching bowling milestones")
+```
+
+## Our matches
+```{r opponents}
+sharedMatches %>% D.match.matchview("Our matches")
 ```
 
 # Setup
@@ -94,8 +119,8 @@ for (i in 1:length(conf$opponents_of_interest)) {
 ## Date ranges
 Data collected from Play-Cricket. 
 For `r conf$club_name`, from `r B.dates$our_earliest` to `r B.dates$our_latest`,
-n=`r B.dates$count_us` innings.  For all matches, from `r B.dates$all_earliest` to
-`r B.dates$all_latest`, n=`r B.dates$count_all` innings.
+n=`r B.dates$count_us` innings.  For all matches, from `r B.dates$all_earliest`
+to `r B.dates$all_latest`, n=`r B.dates$count_all` innings.
 
 ## R session information
 ```{r session-info}

@@ -414,6 +414,15 @@ D.batavg.nearms <- function(df, cap, myclub) {df %>%
     select(all_of(H.aster)) %>%
     D.showtable(cap)}
 
+D.batavg.nearms2 <- function(df, cap) {df %>%
+    filter(!is.na(Name) &
+             batsman_id %in% Y.currentplayers$player_id) %>% 
+    filter((Runs >= 400 & Runs < 500) | (Runs >= 900 & Runs < 1000) |
+             (Runs >= 1900 & Runs < 2000)) %>%
+    arrange(desc(Runs)) %>%
+    select(all_of(H.aster)) %>%
+    D.showtable(cap)}
+
 D.bat.maybatms <- function(df, cap, ms=200){df %>%
   filter(months(actuallyDate) %in% c("April", "May") ) %>%
   group_by(batsman_id, Name, Yr) %>%
@@ -791,6 +800,15 @@ D.bowlavg.nearbowlms <- function(df, cap, myclub){ df %>%
     arrange(desc(W)) %>%
     select(all_of(H.clematis)) %>%
     D.showtable(cap)}
+
+D.bowlavg.nearbowlms2 <- function(df, cap){ df %>%
+    
+    filter(bowler_id %in% Y.currentplayers$player_id) %>% 
+    filter((W >= 45 & W < 50) |(W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
+    arrange(desc(W)) %>%
+    select(all_of(H.clematis)) %>%
+    D.showtable(cap)}
+
 
 D.bowl.mostwktseason <- function(df, cap){df %>%
     filter(!is.na(W)) %>%

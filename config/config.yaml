@@ -13,9 +13,9 @@ qualify_wkts_taken: 10
 
 opponents_of_interest: 
 # - 4363 # Milton
-# - "14848"
+# - 14848 #CUPA
 # - 12697 # Reach
- - 8183 # Cambourne
+# - 8183 # Cambourne
  - 1771 # Chatteris
 # - 23328 # Northstowe
 # - 4096 # Longstanton GH
@@ -26,6 +26,7 @@ player_to_plot:
   - 3682607 #day
   - 3716426 #day
   - 4453764 #day
+ # - 4203792 #sivvers
  # - 5490886 #jupp
  # - 3945561
  # - 3827941

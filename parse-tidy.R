@@ -984,3 +984,8 @@ Y.capnumbers <- F.fielding.us %>%
 # R is reference things
 # W are pretty lookuos, made in the Rmd
 # Y are lookups for grounds etc
+save(F.batting.circle, file="./data/FBC") # for the quiz, a temp thing probably
+save(F.matches.circle, file="./data/FMC") # for the quiz, a temp thing probably
+save(F.inningses.circle, file="./data/FIC") # for the quiz, a temp thing probably
+save(F.batavg.us, file="./data/batAv")
+save(F.bowlavg.us, file="./data/bowlAv")
