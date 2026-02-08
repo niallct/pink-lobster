@@ -1,16 +1,10 @@
 # ==== initialise ====
 library(yaml)
 library(tidyverse)
-
 conf <- yaml.load_file("./config/config.yaml") ## load the config
 
 ## load in the prepared R objects from the 'load.R' script
-load("./data/BinningsesX")
-load("./data/Bmatchcompos")
-load("./data/Bmatches")
-load("./data/Bmatchplayers")
-load("./data/Eplayers")
-load("./data/EplayersNC")
+load("./data/coredata.RData")
 
 # ==== some handy things to refer to ====
 R.dismissed <- c("b", "ct", "handled ball", "hit roof", "hit wicket", "lbw",
@@ -984,8 +978,5 @@ Y.capnumbers <- F.fielding.us %>%
 # R is reference things
 # W are pretty lookuos, made in the Rmd
 # Y are lookups for grounds etc
-save(F.batting.circle, file="./data/FBC") # for the quiz, a temp thing probably
-save(F.matches.circle, file="./data/FMC") # for the quiz, a temp thing probably
-save(F.inningses.circle, file="./data/FIC") # for the quiz, a temp thing probably
-save(F.batavg.us, file="./data/batAv")
-save(F.bowlavg.us, file="./data/bowlAv")
+save(F.batting.circle, F.bowling.circle, F.matches.circle, F.inningses.circle,
+     F.batavg.us, F.bowlavg.us, file="./data/parsed.RData") # for the quiz, a temp thing probably

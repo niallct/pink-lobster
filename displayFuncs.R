@@ -802,7 +802,6 @@ D.bowlavg.nearbowlms <- function(df, cap, myclub){ df %>%
     D.showtable(cap)}
 
 D.bowlavg.nearbowlms2 <- function(df, cap){ df %>%
-    
     filter(bowler_id %in% Y.currentplayers$player_id) %>% 
     filter((W >= 45 & W < 50) |(W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
     arrange(desc(W)) %>%
@@ -970,11 +969,10 @@ D.inns.quotients <- function(dfU, dfT, cap) {
  W.inns.quotients(dfU, dfT) %>%
     D.showtable(cap)  }
 
-
 D.inns.teamquotients <- function(df, cap, theteam){
   us <- df %>% dplyr::filter(batting_team_id==theteam)
   them <- df %>% filter(fielding_team_id==theteam)
-  D.inns.quotients(us, them, paste(cap, "for", names(which(conf$teams_of_interest == theteam))))}
+  D.inns.quotients(us, them, paste(cap, "for", conf$our_teams_names[[theteam]]))}
 #nb that one calls another D function
 
 W.inns.allteamquotients <- function(theteamname, theteam, df){

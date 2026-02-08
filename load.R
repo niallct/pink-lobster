@@ -140,14 +140,13 @@ load_json_file <- function(file, type) {
   
   jds$is_circle[jds$home_club_id == as.numeric(conf$club_of_interest)] <- TRUE
   jds$is_circle[jds$away_club_id == as.numeric(conf$club_of_interest)] <- TRUE
-  #jds$is_ourcomps[jds$competition_id %in% conf$competitions_of_interest] <- TRUE
   jds$is_smallsphere[jds$league_id %in% conf$leagues_of_interest] <- TRUE 
   jds$is_sphere[jds$is_circle == TRUE | jds$is_smallsphere == TRUE] <- TRUE
   
   if (jds$is_circle){
     jds[["Our Team"]] <- case_when(
-      jds[["home_team_id"]] %in% conf$teams_of_interest ~ jds$home_team_name,
-      jds[["away_team_id"]] %in% conf$teams_of_interest ~ jds$away_team_name,
+      jds[["home_team_id"]] %in% names(conf$our_teams_names) ~ jds$home_team_name,
+      jds[["away_team_id"]] %in% names(conf$our_teams_names) ~ jds$away_team_name,
       TRUE ~ "Other"
     )
   } else  jds[["Our Team"]] <- ""
@@ -197,7 +196,6 @@ load_json_file <- function(file, type) {
   jds <- jds[-which(names(jds) %in% c("ground_name", "home_club_name", "away_club_name", 
                                       "result_description", "competition_type", 
                                       "firstinnsdecovers", "secondinnsdecovers"))]
-  # browser()
   #a result abbreviation
   if (!is.null(jds$Result_) ){ #& !is.null(jds$result_applied_to))
     jds$result_match <- case_when(
@@ -234,7 +232,7 @@ load_json_file <- function(file, type) {
     
     if (!is.null(jds$result_applied_to) & jds$result_club == ""){
       jds$result_club <- case_when(
-        jds[["result_applied_to"]] %in% conf$teams_of_interest ~ "W",
+        jds[["result_applied_to"]] %in% names(conf$our_teams_names) ~ "W",
         TRUE ~ "L"
       )
     }
@@ -255,7 +253,7 @@ load_json_file <- function(file, type) {
   if (!is.null(jds$toss_won_by_team_id) ){ #& !is.null(jds$result_applied_to))
     jds$`Our toss result` <- case_when(
       jds[["is_circle"]] == FALSE ~ "n/a",
-      jds[["toss_won_by_team_id"]]  %in% conf$teams_of_interest ~ "W",
+      jds[["toss_won_by_team_id"]]  %in% names(conf$our_teams_names) ~ "W",
       TRUE ~ "L")}  
   
   # result and toss winner
@@ -471,11 +469,6 @@ B.matchcompos <- B.matchcompos %>%
          Yr >= conf$start_year)
 
 # ==== write out and tidy up====
-save(B.matches, file="./data/Bmatches")
-save(B.inningsesX, file="./data/BinningsesX")
-save(B.matchplayers, file="./data/Bmatchplayers")
-save(B.matchcompos, file="./data/Bmatchcompos")
-save(E.players, file="./data/Eplayers")
-save(E.playersNC, file="./data/EplayersNC")
+save(B.matches, B.inningsesX, B.matchplayers, B.matchcompos, E.players, E.playersNC, file="./data/coredata.RData")
 rm(G.matches, G.inningses, G.matchcompos, G.matchplayers, C.matches, C.inningses)
 rm(E.matches, E.inningses, E.matchcompos, E.matchplayers)

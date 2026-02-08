@@ -12,8 +12,6 @@
 = fix cap numbers duplication
 = globally tidy up ground names to deduplicate
 - make the no partnerships display correctly, check all no incl rtd no
-- option to neaten up team names - use yaml to set
-- fix the oppo report
 
 ## acs123:
                 own team  O M R W                    Opp tot   Ct
@@ -22,5 +20,3 @@
                                        Hemingway b Dennet
  b T G Wass       10  177                            135/2 1
  (did not bat      - )
-
-

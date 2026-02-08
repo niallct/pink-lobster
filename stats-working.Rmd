@@ -105,10 +105,6 @@ F.batting.us.ty %>% D.bat.consecbatms("Consecutive fifties, this year", 50)
 Showing most recent `r conf$default_list_length`:
 
 ```{r fifties-byteam, results='asis'}
- #cat( paste("#### ", names(conf$teams_of_interest)[i], " \n"))
-# map(conf$teams_of_interest, D.bat.batmsteam, cap=paste("Recent fifties"), 
-#     df=F.batting.us, ms=50)
-
 imap(conf$our_teams_names, W.bat.msteam , 
     df=F.batting.us,
     ms=50) %>%
@@ -1648,7 +1644,7 @@ B.inningses %>% drop_na(`Batting Captain`, `Nominal Captain`) %>%
 this_caption <- "Long runs of consecutive captaincy changes"
 
 A.subcaptrun <-  B.inningses %>%  drop_na(`Batting Captain`, `Nominal Captain`) %>% 
-  #filter(batting_team_id == conf$teams_of_interest[[3]]) %>% # filter fot the toi
+  #filter(batting_team_id == names(conf$our_teams_names)[[3]]) %>% # filter fot the toi
   group_by(batting_team_id) %>%
   arrange(actuallyDate) %>% select(actuallyDate,
                                    Date, `Match Summary`, `Batting Captain`, `Nominal Captain`,
@@ -1830,12 +1826,12 @@ this_caption <- "Long runs of consecutive results"
 for (r in c('W', 'L')){
   hdg <- case_when(r == "W" ~ "wins", r=="L" ~ "losses")
   cat(paste("### Longest run of consecutive", hdg, "\n"))
-for (i in 1:length(conf$teams_of_interest)) {
+for (i in 1:length(conf$our_teams_names)) {
   
   # Print team name as a header
-  cat(paste("#### ", names(conf$teams_of_interest)[i], " \n"))
+  cat(paste("#### ", conf$our_teams_names[[i]], " \n"))
 
-zxc2 <-  F.inningses.us %>% filter(batting_team_id == conf$teams_of_interest[[i]]) %>% # filter fot the toi
+zxc2 <-  F.inningses.us %>% filter(batting_team_id == names(conf$our_teams_names)[[i]]) %>% # filter fot the toi
                    arrange(actuallyDate) %>% select(actuallyDate, `Fielding Side`, Res,
                                                     Date, `Match Summary`, Result) %>%
   rename(Opposition = `Fielding Side`) %>%
@@ -1878,18 +1874,18 @@ this_caption <- "Long runs of consecutive toss results"
 for (r in c('W', 'L')){
   hdg <- case_when(r == "W" ~ "wins", r=="L" ~ "losses")
   cat(paste("### Longest run of consecutive toss", hdg, "\n"))
-  for (i in 1:length(conf$teams_of_interest)) {
+  for (i in 1:length(conf$our_teams_names)) {
     
     # Print team name as a header
-    cat(paste("#### ", names(conf$teams_of_interest)[i], " \n"))
+    cat(paste("#### ", conf$our_teams_names[[i]], " \n"))
     
-    zxc2 <-  B.matches %>% filter(home_team_id == conf$teams_of_interest[[i]] |
-                                    away_team_id == conf$teams_of_interest[[i]]) %>% # filter for the toi
+    zxc2 <-  B.matches %>% filter(home_team_id == names(conf$our_teams_names)[[i]] |
+                                    away_team_id == names(conf$our_teams_names)[[i]]) %>% # filter for the toi
       arrange(actuallyDate) %>% select(actuallyDate, Result, toss_won_by_team_id,
                                        Date, `Match Summary`) %>%
       mutate( `Toss result` = case_when(
-        toss_won_by_team_id == conf$teams_of_interest[[i]] ~ "W",
-        toss_won_by_team_id != conf$teams_of_interest[[i]] ~ "L"
+        toss_won_by_team_id == names(conf$our_teams_names)[[i]] ~ "W",
+        toss_won_by_team_id != names(conf$our_teams_names)[[i]] ~ "L"
       )) %>% drop_na(`Toss result`) %>%
      # filter(`Toss result` == "W") %>%
       mutate(
