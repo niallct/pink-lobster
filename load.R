@@ -147,7 +147,7 @@ load_json_file <- function(file, type) {
     jds[["Our Team"]] <- case_when(
       jds[["home_team_id"]] %in% names(conf$our_teams_names) ~ jds$home_team_name,
       jds[["away_team_id"]] %in% names(conf$our_teams_names) ~ jds$away_team_name,
-      TRUE ~ "Other"
+      TRUE ~ "Other" # other means a team of ours but not one set as interesting
     )
   } else  jds[["Our Team"]] <- ""
   

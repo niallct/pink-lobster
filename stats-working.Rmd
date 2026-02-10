@@ -14,9 +14,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-	echo = FALSE,
-	message = FALSE,
-	warning = FALSE
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
 )
 source("parse-tidy.R")
 source("displayFuncs.R")
@@ -41,9 +41,9 @@ dfsz <- 7
 ## the main table-displaying function
 ## nb the column widths get set by other functions now
 D.showtable <- function(x, this_caption) {x %>%  
-  kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
-  kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
-                font_size = dfsz) }
+    kbl(longtable = T, booktabs = T, row.names = F, caption = this_caption) %>%
+    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"),
+                  font_size = dfsz) }
 ```
 
 \newpage
@@ -106,8 +106,8 @@ Showing most recent `r conf$default_list_length`:
 
 ```{r fifties-byteam, results='asis'}
 imap(conf$our_teams_names, W.bat.msteam , 
-    df=F.batting.us,
-    ms=50) %>%
+     df=F.batting.us,
+     ms=50) %>%
   bind_rows() %>%
   D.showtable("Recent fifties, by team") %>% J.carrot
 ```
@@ -231,8 +231,8 @@ Showing most recent `r conf$default_list_length` for each team:
 
 ```{r fourfors-byteam}
 imap(conf$our_teams_names, W.bowl.msteam , 
-    df=F.bowling.us,
-    ms=4) %>%
+     df=F.bowling.us,
+     ms=4) %>%
   bind_rows() %>%
   D.showtable("Recent four-fors, by team") %>% J.parkin
 ```
@@ -351,7 +351,7 @@ F.inningses.us.ty %>% D.inns.mostextras("Most extras in our innings")
 ```{r tossing-ty}
 F.inningses.us.ty %>% D.inns.tossresult("Our tossing and match results this year")
 ```
-  
+
 ## All-rounder
 ### Thirty runs and three wickets in same match
 
@@ -546,8 +546,8 @@ F.batting.us %>% D.bat.highestscore("All-time highest scores")
 ### Top individual scores for each team
 ```{r topbat-byteam, results='asis'}
 imap(conf$our_teams_names, W.bat.highestscorebyteam , 
-    min=35,
-    df=F.batting.us) %>%
+     min=35,
+     df=F.batting.us) %>%
   bind_rows() %>%
   D.showtable("Top scoring, by team") %>% J.carrot
 ```
@@ -681,8 +681,8 @@ F.batavg.us %>% D.batavg.sixcount("Most career sixes")
 ### Most boundaries in an innings, for each team
 ```{r top4s-byteam, results='asis'}
 imap(conf$our_teams_names, W.bat.mostBryinnsteam , 
-    min=12,
-    df=F.batting.us) %>%
+     min=12,
+     df=F.batting.us) %>%
   bind_rows() %>%
   D.showtable("Most boundaries in an innings, by team") %>% J.carrot
 ```
@@ -1078,7 +1078,7 @@ F.inningses.circle %>%
 ### Highest inns totals for each team
 ```{r topinns-byteam}
 imap(conf$our_teams_names, W.inns.highinnstotalbyteam , 
-    df=F.inningses.us) %>%
+     df=F.inningses.us) %>%
   bind_rows() %>%
   D.showtable("Highest totals, by team") %>% J.madeira
 ```
@@ -1706,44 +1706,44 @@ scd <- B.inningses %>% filter(match_id==7122764)
 scdh <- slice_head(scd)
 
 cat(paste("### ", scdh$`Home Side`, "vs", scdh$`Away Side`, "\n\n",
-      "At", scdh$Ground, "," , scdh$Date,". \n\n",
-      scdh$Result, "\n\n")) #TODO add toss
+          "At", scdh$Ground, "," , scdh$Date,". \n\n",
+          scdh$Result, "\n\n")) #TODO add toss
 
 makeScorecard <- function(data){
-head <- paste("#### _",data$`Batting Club`,"_", sep="")
-
-makebattSC <- function(x){
-  if(is.na(x["runs"])){""} else{
-    
-    ballsshow <- if(is.na(x["balls"])){""} else {paste(" (", x["balls"], "b) ")}
-    
-  paste("+ ", x["batsman_name"], " \\dotfill ", makeHowOut(x["how_out"], x["bowler_name"], x["fielder_name"]), " ", x["runs"], ballsshow , sep="")}
+  head <- paste("#### _",data$`Batting Club`,"_", sep="")
   
-}
-batting <- str_trim(paste(apply(data$bat,1, makebattSC  ), 
-                          collapse = "\n "), side="right")
-
-#TODO hide if 0 
-#TODO penalties
-
-total <- paste(data$Byes,"b ", data$`Leg byes`,"lb ",data$Wides,"w ",data$`No-balls`,"nb. ",
-               "Total ", data$Total, "/", data$W, " (", data$Ovs, " ovs)", sep="")
-
-dnbnames <- paste(data$bat[which(data$bat[4]=="did not bat"),2], collapse = ", ")
-dnbnames <- str_flatten_comma(data$bat[which(data$bat[4]=="did not bat"),2], last = " and ")
-
-if(dnbnames==""){ dnb <- ""} else{ dnb <- paste(dnbnames, "did not bat.")} #TODO sort absent
-
-fow <- "fow"
-
-makeBowlSC <- function(x){
+  makebattSC <- function(x){
+    if(is.na(x["runs"])){""} else{
+      
+      ballsshow <- if(is.na(x["balls"])){""} else {paste(" (", x["balls"], "b) ")}
+      
+      paste("+ ", x["batsman_name"], " \\dotfill ", makeHowOut(x["how_out"], x["bowler_name"], x["fielder_name"]), " ", x["runs"], ballsshow , sep="")}
+    
+  }
+  batting <- str_trim(paste(apply(data$bat,1, makebattSC  ), 
+                            collapse = "\n "), side="right")
   
-  paste(x["bowler_name"], " ", x["overs"], "-", x["maidens"], "-", x["runs"], "-", x["wickets"], sep="")
-}
-bowling <- paste(apply(data$bowl,1, makeBowlSC  ), collapse = ", ")
-
-cat(paste(head, batting, total, dnb, fow, bowling, "\n", sep="\n\n "))
-#paste(batting)
+  #TODO hide if 0 
+  #TODO penalties
+  
+  total <- paste(data$Byes,"b ", data$`Leg byes`,"lb ",data$Wides,"w ",data$`No-balls`,"nb. ",
+                 "Total ", data$Total, "/", data$W, " (", data$Ovs, " ovs)", sep="")
+  
+  dnbnames <- paste(data$bat[which(data$bat[4]=="did not bat"),2], collapse = ", ")
+  dnbnames <- str_flatten_comma(data$bat[which(data$bat[4]=="did not bat"),2], last = " and ")
+  
+  if(dnbnames==""){ dnb <- ""} else{ dnb <- paste(dnbnames, "did not bat.")} #TODO sort absent
+  
+  fow <- "fow"
+  
+  makeBowlSC <- function(x){
+    
+    paste(x["bowler_name"], " ", x["overs"], "-", x["maidens"], "-", x["runs"], "-", x["wickets"], sep="")
+  }
+  bowling <- paste(apply(data$bowl,1, makeBowlSC  ), collapse = ", ")
+  
+  cat(paste(head, batting, total, dnb, fow, bowling, "\n", sep="\n\n "))
+  #paste(batting)
 }
 
 apply(scd, 1, makeScorecard)
@@ -1769,8 +1769,8 @@ not mandatory for a keeper to be designated.
 
 ```{r catchwk}
 B.fielding %>% filter(is_sphere) %>% select(Yr, player_id, Capt, `W-K`, 
-                                                actuallyDate, Ct, Std, RO, 
-                                                fielding_club_id) %>%
+                                            actuallyDate, Ct, Std, RO, 
+                                            fielding_club_id) %>%
   filter(fielding_club_id==conf$club_of_interest) %>%
   #select(`W-K`, Ct) %>% table()
   group_by(player_id, `W-K`) %>%
@@ -1778,7 +1778,7 @@ B.fielding %>% filter(is_sphere) %>% select(Yr, player_id, Capt, `W-K`,
             Ct = sum(Ct),
             Std= sum(Std),
             Inns = n()) %>% ungroup() %>% 
- # group_by(`W-K`) %>% summarise(avgci = mean(`Ct/Inns`))
+  # group_by(`W-K`) %>% summarise(avgci = mean(`Ct/Inns`))
   group_by(`W-K`) %>% summarise(Ct = sum(Ct),
                                 Std = sum(Std),
                                 I = sum(Inns),
@@ -1788,11 +1788,11 @@ B.fielding %>% filter(is_sphere) %>% select(Yr, player_id, Capt, `W-K`,
 A.playerswhokeep <- B.fielding %>% filter(`W-K`, !is.na(player_id)) %>% select(player_id) %>% unique() %>% pull()
 
 A.catchesWKOF <- B.fielding %>% filter(is_sphere) %>% select(Yr, player_id, Capt, `W-K`, 
-                                                actuallyDate, Ct, Std, RO, 
-                                                fielding_club_id) %>%
- # filter(fielding_club_id==conf$club_of_interest) %>%
+                                                             actuallyDate, Ct, Std, RO, 
+                                                             fielding_club_id) %>%
+  # filter(fielding_club_id==conf$club_of_interest) %>%
   #select(`W-K`, Ct) %>% table()
- filter(player_id %in% A.playerswhokeep) %>% 
+  filter(player_id %in% A.playerswhokeep) %>% 
   
   group_by(player_id, `W-K`) %>% 
   summarise(`Ct/Inns`= sum(Ct) / n(),
@@ -1826,37 +1826,37 @@ this_caption <- "Long runs of consecutive results"
 for (r in c('W', 'L')){
   hdg <- case_when(r == "W" ~ "wins", r=="L" ~ "losses")
   cat(paste("### Longest run of consecutive", hdg, "\n"))
-for (i in 1:length(conf$our_teams_names)) {
-  
-  # Print team name as a header
-  cat(paste("#### ", conf$our_teams_names[[i]], " \n"))
-
-zxc2 <-  F.inningses.us %>% filter(batting_team_id == names(conf$our_teams_names)[[i]]) %>% # filter fot the toi
-                   arrange(actuallyDate) %>% select(actuallyDate, `Fielding Side`, Res,
-                                                    Date, `Match Summary`, Result) %>%
-  rename(Opposition = `Fielding Side`) %>%
-                   mutate(#LastRes = lag(Res, default = 'A'),
-                         # ResRun = 1,
-                         # ResRun = case_when (
-                         #  (Res == LastRes) ~ lag(ResRun)+1,
-                         # TRUE ~ 1),
-                          streak_group = cumsum(Res != lag(Res, default = first(Res))),
-                          streak_length = 1 + row_number() - match(streak_group, streak_group)) 
-
-zxclr <-   zxc2 %>% filter(Res == r) %>% slice_max(streak_length) %>% select(streak_group) %>% pull()
-
-for (i in 1:length(zxclr)) {
-zxc2 %>% filter(streak_group == zxclr[i]) %>% select(Date, `Opposition`, Result) %>%
-    kbl(longtable = TRUE, booktabs = TRUE, row.names = FALSE, caption = this_caption) %>%
-    kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), 
-                  font_size = 7) %>%
-    print()
-  
-  cat('\n\n') }
-
-# Remove unnecessary objects
-rm(zxc2, zxclr)
-}
+  for (i in 1:length(conf$our_teams_names)) {
+    
+    # Print team name as a header
+    cat(paste("#### ", conf$our_teams_names[[i]], " \n"))
+    
+    zxc2 <-  F.inningses.us %>% filter(batting_team_id == names(conf$our_teams_names)[[i]]) %>% # filter fot the toi
+      arrange(actuallyDate) %>% select(actuallyDate, `Fielding Side`, Res,
+                                       Date, `Match Summary`, Result) %>%
+      rename(Opposition = `Fielding Side`) %>%
+      mutate(#LastRes = lag(Res, default = 'A'),
+        # ResRun = 1,
+        # ResRun = case_when (
+        #  (Res == LastRes) ~ lag(ResRun)+1,
+        # TRUE ~ 1),
+        streak_group = cumsum(Res != lag(Res, default = first(Res))),
+        streak_length = 1 + row_number() - match(streak_group, streak_group)) 
+    
+    zxclr <-   zxc2 %>% filter(Res == r) %>% slice_max(streak_length) %>% select(streak_group) %>% pull()
+    
+    for (i in 1:length(zxclr)) {
+      zxc2 %>% filter(streak_group == zxclr[i]) %>% select(Date, `Opposition`, Result) %>%
+        kbl(longtable = TRUE, booktabs = TRUE, row.names = FALSE, caption = this_caption) %>%
+        kable_styling(latex_options = c("repeat_header", "striped", "hold_position"), 
+                      font_size = 7) %>%
+        print()
+      
+      cat('\n\n') }
+    
+    # Remove unnecessary objects
+    rm(zxc2, zxclr)
+  }
 }
 rm(r, i)
 ```
@@ -1887,7 +1887,7 @@ for (r in c('W', 'L')){
         toss_won_by_team_id == names(conf$our_teams_names)[[i]] ~ "W",
         toss_won_by_team_id != names(conf$our_teams_names)[[i]] ~ "L"
       )) %>% drop_na(`Toss result`) %>%
-     # filter(`Toss result` == "W") %>%
+      # filter(`Toss result` == "W") %>%
       mutate(
         streak_group = cumsum(`Toss result` != lag(`Toss result`, default = first(`Toss result`))),
         streak_length = 1 + row_number() - match(streak_group, streak_group)) 
@@ -1921,10 +1921,10 @@ rm(r)
 # y = result, x = other stuff
 
 A.innsres <- F.inningses.circle %>% select(match_id, ground_id, Type, match_type,
-                            bat_first,
-                            innings_number, Total, Extras, W, Ovs, 
-                            `Inns of match`,
-                            actuallyDate, no_of_overs, Res, Ven)
+                                           bat_first,
+                                           innings_number, Total, Extras, W, Ovs, 
+                                           `Inns of match`,
+                                           actuallyDate, no_of_overs, Res, Ven)
 A.innsres$is_win <- A.innsres$Res == "W"
 
 model <- glm(is_win ~ Ven * bat_first,family=binomial(link='logit'),data=A.innsres)
@@ -1941,14 +1941,14 @@ anova(model, test="Chisq")
 zxc <- B.inningses %>% filter(is_sphere, decimal_overs > 0) %>% 
   drop_na(Total, decimal_overs) %>%
   select(batting_club_id, Yr, Res, Total, decimal_overs, `Inns of match`,
-                       actuallyDate, us_batting, us_fielding) %>%
+         actuallyDate, us_batting, us_fielding) %>%
   mutate(`Run rate` = Total / decimal_overs,
          Role = case_when(  # friendly way to show our role
-    us_batting == TRUE ~ 'Batting',
-    us_fielding == TRUE ~ 'Bowling',
-    us_batting == FALSE & us_fielding == FALSE ~ 'Neither',
-    TRUE ~ NA
-  ))
+           us_batting == TRUE ~ 'Batting',
+           us_fielding == TRUE ~ 'Bowling',
+           us_batting == FALSE & us_fielding == FALSE ~ 'Neither',
+           TRUE ~ NA
+         ))
 
 print(paste('After removing incomplete records,', nrow(zxc), 'remain.'))
 
@@ -1962,8 +1962,8 @@ zxc %>% select(us_batting, `Run rate`) %>%
   summarise(Stats = list(summary(`Run rate`))) %>% unnest_wider(Stats)
 
 wilcox.test(zxc %>% filter(us_batting == TRUE) %>% select(`Run rate`) %>% pull(),
-       zxc %>% filter(us_batting == FALSE) %>% select(`Run rate`) %>% pull())
-  
+            zxc %>% filter(us_batting == FALSE) %>% select(`Run rate`) %>% pull())
+
 
 plot1 <- zxc  %>%
   ggplot(aes(y=`Role`, x=`Run rate`, 
@@ -1984,7 +1984,7 @@ zxc %>% select(us_batting, `Run rate`) %>%
   summarise(Stats = list(summary(`Run rate`))) %>% unnest_wider(Stats)
 
 wilcox.test(zxc %>% filter(`Inns of match`==1) %>% select(`Run rate`) %>% pull(),
-       zxc %>% filter(`Inns of match`==2) %>% select(`Run rate`) %>% pull())
+            zxc %>% filter(`Inns of match`==2) %>% select(`Run rate`) %>% pull())
 
 plot2 <- zxc  %>%
   ggplot(aes(y=`Inns of match`, x=`Run rate`, 
@@ -2008,7 +2008,7 @@ B.batAvg %>% group_by(batsman_id) %>% count() %>% ungroup() %>% filter(n>=5) %>%
   D.showtable("Batting for many sides")
 
 ```
-  
+
 ## Wicket-keeper performance
 ```{r wk-perf-prep}
 A.keepers <- F.fielding.us %>%
@@ -2024,7 +2024,7 @@ A.keepers <- A.keepers %>%
     keepprop < 0.5 ~ "Occasional",
     TRUE ~ 'Usual'
   )) %>%
-  fct_relevel("Never", "Seldom", "Occasional", "Often") )
+    fct_relevel("Never", "Seldom", "Occasional", "Often") )
 
 A.keepers %>% filter(Keeper > 0) %>% 
   ggplot(aes(x=Keeper)) +  geom_histogram(binwidth = 2) +
@@ -2044,7 +2044,7 @@ A.keepers %>% select(Class = keeperclass) %>% table() %>% D.showtable("Keeper cl
 
 #B.fieldsumm %>% filter(Name =="Will Day")
 Z.ptwkperf <- B.fieldsumm %>% filter(fielding_club_id == conf$club_of_interest ) %>% inner_join(A.keepers, by = join_by(player_id, Name)) %>%
- select(-Keeper, -Appearances, -keepprop, -player_id, -Name, -fielding_club_id)
+  select(-Keeper, -Appearances, -keepprop, -player_id, -Name, -fielding_club_id)
 
 Z.ptwkperf %>%
   group_by(keeperclass) %>%
@@ -2062,7 +2062,7 @@ df_long <- Z.ptwkperf %>%
 ggplot(df_long, aes(x = keeperclass, y = value, fill = keeperclass)) +
   geom_boxplot() +
   facet_wrap(~outcome_variable, scales = "free_y") +
- # theme_minimal() +
+  # theme_minimal() +
   labs(title = "Wicketkeeper inclination and fielding performance", 
        fill = "Inclination",
        x= "Inclination", y="Value")
