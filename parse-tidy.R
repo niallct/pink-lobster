@@ -474,7 +474,10 @@ zxc <- B.inningses %>% filter(W==0) %>% #select(match_id, , `Inns of match`, bat
   rename(`Batter Out` = bat1,
          `Batter Rem` = bat2) # TODO prolly check there's no duplictates when we rbind
 
-B.fow <- B.fow %>% rbind(zxc)
+B.fow <- B.fow %>% rbind(zxc) %>% mutate(
+  PartnershipRaw = Partnership, 
+  Partnership = as.character(ifelse(is_no == TRUE, paste(PartnershipRaw, "*", sep=""), PartnershipRaw))
+)
 rm(zxc)
 
 # ---- allrounder -----

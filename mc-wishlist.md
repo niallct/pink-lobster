@@ -11,7 +11,6 @@
 - Handle 8-ball overs properly
 = fix cap numbers duplication
 = globally tidy up ground names to deduplicate
-- make the no partnerships display correctly, check all no incl rtd no
 
 ## acs123:
                 own team  O M R W                    Opp tot   Ct
