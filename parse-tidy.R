@@ -978,6 +978,7 @@ Y.capnumbers <- F.fielding.us %>%
 # G is archive, E is this year only
 # H are Headings
 # J is column widths
+# K are the new bigdata tables
 # R is reference things
 # W are pretty lookuos, made in the Rmd
 # Y are lookups for grounds etc
