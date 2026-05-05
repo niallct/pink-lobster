@@ -722,14 +722,25 @@ W.bowl.msteam <- function(theteamname, theteam, df, ms = 4) {  df %>%
     mutate(Team = theteamname, .before = `Name`)
 }
 
-D.bowl.msdebut <- function(df, cap, ms = 4) {  df %>%
+# D.bowl.msdebut <- function(df, cap, ms = 4) {  df %>%
+#     filter(!is.na(W)) %>%
+#     group_by(bowler_id, Name) %>%  slice_min(actuallyDate, n = 1) %>% ungroup() %>%
+#     filter(W >= ms) %>%
+#     arrange(desc(actuallyDate)) %>%
+#     select(all_of(H.cyclamen)) %>%
+#     D.showtable(cap) %>% J.parkin
+# }
+
+W.bowl.msdebut <- function(df, ms = 4) {  df %>%
     filter(!is.na(W)) %>%
     group_by(bowler_id, Name) %>%  slice_min(actuallyDate, n = 1) %>% ungroup() %>%
     filter(W >= ms) %>%
     arrange(desc(actuallyDate)) %>%
-    select(all_of(H.cyclamen)) %>%
-    D.showtable(cap) %>% J.parkin
+    select(all_of(H.cyclamen)) 
 }
+
+D.bowl.msdebut <- function(df, cap, ms = 4) {  df %>%
+    W.bowl.msdebut %>% D.showtable(cap) %>%  J.parkin}
 
 D.bowl.nowkts <- function(df, cap) {  df %>%
     filter(W == 0) %>%
