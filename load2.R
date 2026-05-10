@@ -356,21 +356,6 @@ Y.leagues2 <- K.matches %>% select(league_id, league_name, is_circle, Yr) %>%
             current = RecentYear==conf$year_of_interest,
             ours = as.logical(max(is_circle))) #TODO add currentlyours
 
-# ---- dataset size, start, end --------------------
-
-K.dates <- list(
-  our_latest = K.inningses %>% filter(is_circle == TRUE) %>%
-    slice_max(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  our_earliest = K.inningses %>% filter(is_circle == TRUE) %>% 
-    slice_min(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  all_latest = K.inningses  %>% 
-    slice_max(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  all_earliest = K.inningses %>%
-    slice_min(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
-  count_all = nrow(K.inningses),
-  count_us = nrow(K.inningses %>% filter(is_circle==TRUE))
-)
-
 # ==== make tables of players from the matches they appear in ====
 
 # a thing to check for duplicate names on one id -- this should return empty tibble
@@ -662,6 +647,29 @@ K.matchfielders <- K.matchplayers %>% #nb this was .fielding; field dis are per 
     us_fielding = fielding_club_id == as.numeric(conf$club_of_interest),
   ) %>% select(-catches, -stumpings, -runouts)
 
+# ---- allrounder -----
+# TODO figure out what to do in two-inns matches
+# TODO explore full join to the fielding table, capture TFC
+
+K.allround <- full_join(K.batting %>% filter(innings_number==1),
+                        K.bowling%>% filter(innings_number==1),
+                        by = c("match_id" = "match_id", "batsman_id" = "bowler_id",
+                               "Match Summary", "Date", "Full Result", "Type", "Name", "actuallyDate" ),
+                        keep = F, na_matches = "never", multiple = "first") %>%
+  left_join(K.matchfielders %>% select(match_id, player_id, Ct, Std, Capt, "W-K"),
+            by=c("match_id", "batsman_id" = "player_id"), keep=F, na_matches= "never" , multiple = "first") %>%
+  select("Match Summary", "Date", "Full Result", "Type", "Name",
+         player_id = batsman_id,
+         "Ground" = "Ground.x", "Club" = "Batting Club.x", "Team" = "Team.x",
+         "Res" = "Res.x",  "Oppo" = "Batting Club.y",
+         "Runs", "Balls", "BatSR" = "SR.x", "How Out", "4", "6", "Contrib",
+         "O", "M", "R", "W" = "W.y", "Avg", "BowlSR" = "SR.y", "Econ", "Analy",
+         "Ct", "Std", "Capt", "W-K", "is_us" = "us_batting.x",
+         "is_circle" = "is_circle.x", "is_sphere" = "is_sphere.x", 
+         "batting_club_id" = "batting_club_id.x", "Ven" = "Ven.x",
+         # "fielding_club_id" = "fielding_club_id.y", 
+         "Yr" = "Yr.x", "actuallyDate")
+
 # ---- fall-of-wicket --------------
 #runs, wickets, batsman_out_name, batsman_out_id, batsman_in_name, batsman_in_id, batsman_in_runs
 
@@ -784,24 +792,24 @@ K.fieldsumm <-  K.matchfielders %>% drop_na(Name) %>%
   makefieldsumm()  
 
 # ==== make batting averages ====
-# the function #TODO tidy this up
+# the function #TODO tidy this up ' #TODO fix why so many rows K.batting %>% select(batsman_id, batting_club_id) %>%  distinct( ) %>%  drop_na(batsman_id) %>%  nrow()
 makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club, p player only, a no grouping
   
   # batting avg table also includes fielding:
-  if(mode=='c'){ adF <- batdata %>% group_by(fielder_id, fielding_club_id) }
-  else  if(mode=='a'){adF <- batdata}
-  else {adF <- batdata %>% group_by(fielder_id) }
+  if(mode=='c'){ adF <- batdata %>% drop_na(fielder_id, fielding_club_id) %>% group_by(fielder_id, fielding_club_id) 
+  }  else  if(mode=='a'){adF <- batdata
+  }  else {adF <- batdata %>% drop_na(fielder_id) %>% group_by(fielder_id) }
   
   adamField <- adF %>% summarise(
     Ct = sum(`How Out` == "ct"),
     Std = sum(`How Out` == "st"),
     RO = sum(`How Out` == "run out")) %>%  ungroup()
   
-  zxc <- batdata %>%  filter(!is.na(Runs)) %>%  mutate(RunsO = Runs) 
+  zxc <- batdata %>% drop_na(Runs) %>%  mutate(RunsO = Runs) 
   
-  if(mode=='c'){ zxc <- zxc %>% group_by(batsman_id, batting_club_id) }
-  else  if(mode=='a'){zxc <- zxc}
-  else {zxc <- zxc %>% group_by(batsman_id) }
+  if(mode=='c'){ zxc <- zxc %>% drop_na(batsman_id, batting_club_id) %>% group_by(batsman_id, batting_club_id) 
+  }  else  if(mode=='a'){zxc <- zxc
+  }  else {zxc <- zxc %>% drop_na(batsman_id) %>% group_by(batsman_id) }
   
   xcv <- zxc %>%  summarise(
     Runs = sum(Runs),
@@ -825,9 +833,9 @@ makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club,
     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
       club_id != conf$club_of_interest ~ FALSE)) %>% 
-    left_join(Y.clubs) %>% rename(`Club` = club_name)}
-  else if(mode=='a'){xcv <- xcv}
-  else {xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id"))}
+    left_join(Y.clubs2) %>% rename(`Club` = club_name)
+  }  else if(mode=='a'){xcv <- xcv
+  }  else {xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id"))}
   
   if(mode!="a"){outputBatAvgs <- xcv %>%
     left_join(Y.plrs, by = c("batsman_id" = "player_id")) %>%
@@ -847,18 +855,16 @@ K.batavg <- K.batting %>% drop_na(Name) %>% makeBatAvgs()
 # the function #TODO tidy this
 makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and club, *p player only, a no grouping
   
-  if(mode=='c'){ zxc <- bowldata %>% group_by(bowler_id, fielding_club_id) %>%
-    filter(!is.na(bowler_id))  }
-  else  if(mode=='a'){zxc <- bowldata }
-  else {zxc <- bowldata %>% group_by(bowler_id) %>%
-    filter(!is.na(bowler_id)) }
+  if(mode=='c'){ zxc <- bowldata %>% drop_na(bowler_id, fielding_club_id) %>% group_by(bowler_id, fielding_club_id)
+  }  else  if(mode=='a'){zxc <- bowldata 
+  }  else {zxc <- bowldata %>% drop_na(bowler_id) %>% group_by(bowler_id)  }
   
   foo <- zxc %>%  slice_max(W) %>% 
     slice_min(R, n=1, with_ties = F) %>% ungroup()
   
-  if(mode=='a'){adamBestBowl  <- foo %>% select(Analy)}
-  else if(mode=='c'){adamBestBowl  <- foo %>% select(c(bowler_id, Analy, fielding_club_id))}
-  else {adamBestBowl  <- foo %>% select(c(bowler_id, Analy))}
+  if(mode=='a'){BestBowl  <- foo %>% select(Analy)
+  } else if(mode=='c'){BestBowl  <- foo %>% select(c(bowler_id, Analy, fielding_club_id))
+  } else {BestBowl  <- foo %>% select(c(bowler_id, Analy))}
   
   xcv <- zxc %>%
     summarise(
@@ -875,17 +881,17 @@ makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and clu
     ungroup()
   
   if(mode=='c'){ outputbowlAvg <- xcv %>%
-    left_join(adamBestBowl, by = join_by(bowler_id, fielding_club_id)) %>%
+    left_join(BestBowl, by = join_by(bowler_id, fielding_club_id)) %>%
     rename(Best = Analy) %>%
     left_join(Y.plrs, by = c("bowler_id" = "player_id")) %>%
     rename(club_id=fielding_club_id) %>%
     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
       club_id != conf$club_of_interest ~ FALSE
-    )) %>% left_join(Y.clubs) %>% rename(`Club` = club_name) }
-  else {if(mode=='a'){outputbowlAvg <- xcv %>% cbind(adamBestBowl) %>% rename(Best = Analy)}
+    )) %>% left_join(Y.clubs2) %>% rename(`Club` = club_name) }
+  else {if(mode=='a'){outputbowlAvg <- xcv %>% cbind(BestBowl) %>% rename(Best = Analy)}
     else {outputbowlAvg <- xcv %>%
-      left_join(adamBestBowl, by = join_by(bowler_id)) %>%
+      left_join(BestBowl, by = join_by(bowler_id)) %>%
       rename(Best = Analy) %>%
       left_join(Y.plrs, by = c("bowler_id" = "player_id") ) } }
   
@@ -895,9 +901,35 @@ makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and clu
 K.bowlavg.ty <- K.bowling %>% filter(Yr == conf$year_of_interest) %>% drop_na(Name) %>% makeBowlAvgs()
 K.bowlavg <- K.bowling %>% drop_na(Name) %>% makeBowlAvgs()
 
+# ---- a joined avgs table ----
+
+K.joinAvgs <- full_join(K.batavg, K.bowlavg, by = c("club_id", "batsman_id"="bowler_id"),
+                        keep = F, na_matches = "never", relationship = "many-to-many") %>%
+  mutate_all(~replace(., is.na(.), 0)) %>%
+  select(Name= Name.x, 
+         Runs, Inns = Inns.x, NO, BatAvg = Avg.x, HS, BatSR = SR.x, `50`, `100`, BF, `4s`, `6s`,
+         Ct, Std, RO,
+         O, M, R, W, BB, BwlAvg = Avg.y, `5wi`, Econ, BwlSR = SR.y, Best,
+         club_id, is_us=is_us.x)
+
 # ==== make the matches table to have match headers only ====
 
 K.matches <- K.matches %>% select(-players, -innings) 
+
+# ---- dataset size, start, end --------------------
+
+K.dates <- list(
+  our_latest = K.inningses %>% filter(is_circle == TRUE) %>%
+    slice_max(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
+  our_earliest = K.inningses %>% filter(is_circle == TRUE) %>% 
+    slice_min(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
+  all_latest = K.inningses  %>% 
+    slice_max(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
+  all_earliest = K.inningses %>%
+    slice_min(actuallyDate, n = 1, with_ties = FALSE) %>% select(Date) %>% pull(Date),
+  count_all = nrow(K.inningses),
+  count_us = nrow(K.inningses %>% filter(is_circle==TRUE))
+)
 
 # ==== filtered sets for the club of interest ====
 F.batting.us <- filter(K.batting, us_batting==TRUE)
@@ -941,12 +973,12 @@ F.fieldsumm.us <- filter(K.fieldsumm, fielding_club_id == conf$club_of_interest)
 
 #F.joinavgs.us <- filter(B.joinAvgs, is_us==TRUE)
 
-# F.allround.us <- filter(B.allround, is_us==TRUE)
-# F.allround.us.ty <- filter(B.allround, is_us==TRUE, Yr == conf$year_of_interest)
-# F.allround.circle <- filter(B.allround, is_circle==TRUE)
-# F.allround.circle.ty <- filter(B.allround, is_circle==TRUE, Yr == conf$year_of_interest)
-# F.allround.sphere <- filter(B.allround, is_sphere==TRUE)
-# F.allround.sphere.ty <- filter(B.allround, is_sphere==TRUE, Yr == conf$year_of_interest)
+F.allround.us <- filter(K.allround, is_us==TRUE)
+F.allround.us.ty <- filter(K.allround, is_us==TRUE, Yr == conf$year_of_interest)
+F.allround.circle <- filter(K.allround, is_circle==TRUE)
+F.allround.circle.ty <- filter(K.allround, is_circle==TRUE, Yr == conf$year_of_interest)
+F.allround.sphere <- filter(K.allround, is_sphere==TRUE)
+F.allround.sphere.ty <- filter(K.allround, is_sphere==TRUE, Yr == conf$year_of_interest)
 
 F.matches.circle <- filter(K.matches,is_circle==TRUE) 
 F.matches.circle.ty <- filter(K.matches,is_circle==TRUE,  Yr == conf$year_of_interest)
