@@ -122,6 +122,7 @@ H.foxglove <- c("Match Summary", "Date", "Result",
 H.plum <-   c("Name", "Ct", "Std", "RO", "Date", "Fielding Club", "Batting Club", "Ground") 
 H.poppy <-   c("Name", "Ct", "Std", "RO", "Date", "Fielding Team", "Batting Club", "Ground") 
 
+
 ## ---- allrounder ----
 H.waterlily <- c("Match Summary", "Date", "Result",
                  "Type", "Ground", 
@@ -153,7 +154,7 @@ H.clematisA <-  c(                "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR"
 #H.clematisC <-  c("Name", "Club", "O", "M", "R", "W", "5wi", "Avg", "Econ", "SR", "Best")
 H.petuina <- c("Name", "Runs", "BatAvg", "W", "BwlAvg", "Ct", "Std")
 H.rose <- c("Name", "Season",  "Runs",   "Wkts", "Dis", "Matches")
-H.crocosmia <-   c("Name", "M", "Ct", "Std", "RO", "Dis/Inns")
+H.crocosmia <-   c("Name", "M", "Ct", "Std", "RO", "Dis/M")
 H.mugwort <- c("Name", "n")
 H.mimosa <- c("Name", "n", "Innings")
 H.yarrow <- c("Season", "Name", "Matches")

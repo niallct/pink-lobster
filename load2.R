@@ -12,53 +12,7 @@ A.inferredovers <- read_tsv("./config/compo-to-over.tsv", comment = "#",
                             col_types = list(competition_id="i", inferred_overs="i", infer_balls_per_over="i"))
 A.captains <- read_tsv("./config/captains.tsv", col_type = list(year = "i", team_id = "i", `Nominal Captain` = "c"))
 source("headers-def.R")
-
-# over translation functions 
-
-getBallsFromOv <- function(x, bpo=6){ #TODO check input
-  o <- as.numeric(str_split_i(x, "\\.", 1))
-  b <- as.numeric(str_split_i(x, "\\.", 2))
-  # if(b >= bpo) {warning("Balls component is greater than or equal to balls per over", immediate. = T)}
-  b <- ifelse(is.na(b),0,b)
-  balls = (o * bpo) + b
-  return(balls)
-}
-
-getDecOvsFromOv <- function(x, bpo=6){
-  return(as.numeric(getBallsFromOv(x,bpo) / bpo))
-}
-
-getOvsFromDecOvs <- function(x, bpo=6){
-  paste(floor(x), round((x %% 1 ) * bpo), sep=".")
-}
-
-# a function to concatenate the how out lines
-makeHowOut <- function(ho, bname="Unsure", fname="Unsure" ){
-  case_when( #TODO implement ct & b
-    ho %in% c("b") ~ paste(ho, bname),
-    ho %in% c("lbw", "hit roof", "hit wicket") ~ paste(ho, "b", bname),
-    ho %in% c("ct", "st") ~ paste(ho, fname, "b", bname),
-    ho == "run out" ~ paste("run out", fname),
-    ho %in% c("not out", "did not bat", "absent", "handled ball", "obstructing the field",
-              "retired not out", "retired out", "timed out" ) ~ ho,
-    TRUE ~ "" )
-}
-
-# some reference things
-R.dismissed <- c("b", "ct", "handled ball", "hit roof", "hit wicket", "lbw",
-                 "obstructing the field", "retired out", "run out", "st",
-                 "timed out") # use this to filter how out into yes/no
-
-R.nths <- c("first", "second", "third", "fourth", "fifth", "sixth",
-            "seventh", "eighth","ninth", "tenth")
-
-R.unusual_dismissals <- c("handled ball", "hit ball twice", "obstructing the field", "timed out", "hit wicket")
-
-# a function to round averages
-avRn <- function(x) floor(x*100)/100
-
-# function for lowest x never made
-ltnm <- function(foo, start=1) {min(setdiff(seq(start:max(foo, na.rm = TRUE)+1), pull(foo)))}
+source("avgFuncs.R")
 
 # ==== the big-all seasons data ====
 # say where the data sits
@@ -128,7 +82,8 @@ K.matches.all <- K.matches.all %>% mutate(
   mutate(
    `Home Side` = paste(`Home Club`, home_team_name, sep= " - "),
    `Away Side` = paste(`Away Club`, away_team_name, sep= " - "),
-   no_of_players = ifelse(is.na(no_of_players), 11, no_of_players)
+   no_of_players = ifelse(is.na(no_of_players), 11, no_of_players),
+   Type = as.factor(Type)
   )
     
 # filter out uninteresting matches
@@ -198,6 +153,7 @@ K.matches <- K.matches %>% mutate(
     TRUE ~ NA  ),
   `Our toss result` = as.factor(case_when(
     is_circle == FALSE ~ "n/a",
+    is.na(toss_won_by_team_id) ~ "n/a",
     toss_won_by_team_id %in% names(conf$our_teams_names) ~ "W",
     TRUE ~ "L")) , #TODO this breaks for hidden teams 162507, 198440
   bat_first_win = case_when(
@@ -240,7 +196,7 @@ K.matches <- K.matches %>% mutate(
       paste(team_batting_name_2 ,"win by", Margin, "wickets"),
     TRUE ~ NA
   )),
-  `Result Text` = ifelse(is.na(`Full Result`), Result_, `Full Result`))  
+  Result = ifelse(is.na(`Full Result`), Result_, `Full Result`))  # aka `Result Text`
   #select(match_id, `Match Summary`, `Full Result`, Margin, BatInnsWinner, Result_, result, `Result Text`)
 
 # ==== try to complete the no_of_overs data ====
@@ -285,7 +241,7 @@ K.matchplayers <- K.matches %>% #select(-innings)
          `Home Club`, `Away Club`,
          `Home Side`, `Away Side`,
          home_team_name, away_team_name,
-         Date, Type, Ground, `Result Text`,
+         Date, Type, Ground, Result,
          `Nominal Captain`, our_team_id, `Our Team`,
          home_club_id, away_club_id, actuallyDate, Yr,
          is_circle, is_sphere)  %>%
@@ -363,7 +319,7 @@ K.matchplayers %>% select(player_id, Name) %>% distinct() %>%
   group_by(player_id) %>% add_count(Name) %>% filter(n>1)
 
 # make a lookup for players without and with link to club ids
-Y.plrs <- K.matchplayers %>% select(player_id, Name) %>% distinct()
+Y.plrs <- K.matchplayers %>% select(player_id, Name) %>% distinct() %>% drop_na(player_id)
 
 Y.players2 <- K.matchplayers %>% select(player_id, Name, Yr) %>% distinct() %>% 
   summarise( .by =c(player_id, Name) , RecentYear = max(Yr))
@@ -388,7 +344,7 @@ write.csv(A.duplicates, "output/dupes.csv")
 Y.players.ours2 <- Y.players.club2 %>% filter(club_id==conf$club_of_interest, !is.na(player_id))
 write.csv(Y.players.ours2, file="output/playerslist.csv", row.names = FALSE)
 
-Y.players.ourcurrent2 <- Y.ourplayers2 %>% filter(RecentYear >= conf$last_year)
+Y.players.ourcurrent2 <- Y.players.ours2 %>% filter(RecentYear >= conf$last_year)
 write.csv(Y.players.ourcurrent2, file="output/players-recent.csv", row.names = FALSE)
 
 Y.capnumbers2 <- K.matchplayers %>%  #F.fielding.us
@@ -417,7 +373,6 @@ Y.teams2 <-  rbind(K.matches %>% select(home_team_id, home_team_name, home_club_
                            team_name = away_team_name,
                            club_id = away_club_id,
                            club_name = `Away Club`)) %>%  distinct() %>% drop_na()
-
 
 # ==== unnest and format innings data ====
 
@@ -509,7 +464,13 @@ K.inningses <- K.matches %>% select(-players) %>% unnest(innings) %>%
          `Runs/Wkt` = Total / W,
          Score = paste(Total, W, sep="/"),
          opptotal = as.integer(str_split_i(`Oppo Score`, "/", 1)) ,
-         extras_proportion = Extras / Total,
+         decimal_overs = getDecOvsFromOv(Ovs),
+         extras_proportion = 
+           case_when(
+             is.na(Extras) ~ 0,
+             Total == 0 ~ 0,
+            TRUE ~ Extras / Total
+           ),
          `% Extras` = paste(format(Extras * 100 / Total, digits = 1),"%"),
          Ven = as.factor(case_when(
            home_team_id == batting_team_id ~ "H",
@@ -763,27 +724,6 @@ A.matchfeatures <- left_join(intf1, intf2, by=c("match_id", "Inns of match")) %>
 rm(xcv, intf1, intf2) # tidy up
 
 # ==== make fielding averages ====
-makefieldsumm <- function(fielddata) {
-  x <- fielddata %>%
-    summarise(.by=c(player_id, Name, fielding_club_id),
-              WKCt = sum(Ct[`W-K`]),
-              OFCt = sum(Ct[`W-K`==F]),
-              Ct = sum(Ct),
-              Std = sum(Std), 
-              RO = sum(RO), 
-              WKM = sum(`W-K`),
-              OFM = sum(`W-K`==F),
-              M = n()) %>%
-    mutate(dispermatch = (Ct + Std  + RO)/M,
-           ctpermoutf = OFCt/OFM,
-           ctpermwk = WKCt/WKM,
-           `Dis/M` = avRn(dispermatch),
-           `OF Ct/M` = avRn(ctpermoutf),
-           `WK Ct/M` = avRn(ctpermwk)
-    )
-  
-  return(x)
-}
 
 K.fieldsumm.ty <- K.matchfielders %>% filter(Yr == conf$year_of_interest) %>% 
   drop_na(Name)%>% makefieldsumm() 
@@ -792,111 +732,11 @@ K.fieldsumm <-  K.matchfielders %>% drop_na(Name) %>%
   makefieldsumm()  
 
 # ==== make batting averages ====
-# the function #TODO tidy this up ' #TODO fix why so many rows K.batting %>% select(batsman_id, batting_club_id) %>%  distinct( ) %>%  drop_na(batsman_id) %>%  nrow()
-makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club, p player only, a no grouping
-  
-  # batting avg table also includes fielding:
-  if(mode=='c'){ adF <- batdata %>% drop_na(fielder_id, fielding_club_id) %>% group_by(fielder_id, fielding_club_id) 
-  }  else  if(mode=='a'){adF <- batdata
-  }  else {adF <- batdata %>% drop_na(fielder_id) %>% group_by(fielder_id) }
-  
-  adamField <- adF %>% summarise(
-    Ct = sum(`How Out` == "ct"),
-    Std = sum(`How Out` == "st"),
-    RO = sum(`How Out` == "run out")) %>%  ungroup()
-  
-  zxc <- batdata %>% drop_na(Runs) %>%  mutate(RunsO = Runs) 
-  
-  if(mode=='c'){ zxc <- zxc %>% drop_na(batsman_id, batting_club_id) %>% group_by(batsman_id, batting_club_id) 
-  }  else  if(mode=='a'){zxc <- zxc
-  }  else {zxc <- zxc %>% drop_na(batsman_id) %>% group_by(batsman_id) }
-  
-  xcv <- zxc %>%  summarise(
-    Runs = sum(Runs),
-    Inns = sum(!is.na(RunsO)),
-    NO = sum((`How Out` == "not out" | `How Out` == "retired not out") & !is.na(`How Out`)),
-    Avg = avRn(Runs / (Inns - NO)),
-    HSraw = max(RunsO),
-    adsN = sum(RunsO == HSraw & `How Out` %in% c("not out", "retired not out")) ,
-    HS = as.character(ifelse(adsN == 0, HSraw, paste(HSraw, "*", sep=""))),
-    SR = avRn(sum(RunsWBF, na.rm = TRUE) * 100 / sum(Balls, na.rm = TRUE)),
-    `50` = sum(RunsO >= 50 & RunsO < 100),
-    `100` = sum(RunsO >= 100),
-    BF = sum(Balls, na.rm = TRUE),
-    `4s` = sum(`4`, na.rm = TRUE),
-    `6s` = sum(`6`, na.rm = TRUE)  ) %>%
-    ungroup() 
-  
-  if(mode=='c'){ xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id", 
-                                                              "batting_club_id" = "fielding_club_id"))  %>%
-    rename(club_id=batting_club_id) %>% 
-    mutate( is_us = case_when(
-      club_id == conf$club_of_interest ~ TRUE,
-      club_id != conf$club_of_interest ~ FALSE)) %>% 
-    left_join(Y.clubs2) %>% rename(`Club` = club_name)
-  }  else if(mode=='a'){xcv <- xcv
-  }  else {xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id"))}
-  
-  if(mode!="a"){outputBatAvgs <- xcv %>%
-    left_join(Y.plrs, by = c("batsman_id" = "player_id")) %>%
-    mutate(
-      Ct = replace_na(Ct, 0),
-      Std = replace_na(Std, 0),
-      RO = replace_na(RO,0)
-    ) } else {outputBatAvgs <- xcv}
-  
-  return(outputBatAvgs)
-}
 
 K.batavg.ty <- K.batting %>% filter(Yr == conf$year_of_interest) %>% drop_na(Name) %>% makeBatAvgs()
 K.batavg <- K.batting %>% drop_na(Name) %>% makeBatAvgs()
 
 # ==== make bowling averages ====
-# the function #TODO tidy this
-makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and club, *p player only, a no grouping
-  
-  if(mode=='c'){ zxc <- bowldata %>% drop_na(bowler_id, fielding_club_id) %>% group_by(bowler_id, fielding_club_id)
-  }  else  if(mode=='a'){zxc <- bowldata 
-  }  else {zxc <- bowldata %>% drop_na(bowler_id) %>% group_by(bowler_id)  }
-  
-  foo <- zxc %>%  slice_max(W) %>% 
-    slice_min(R, n=1, with_ties = F) %>% ungroup()
-  
-  if(mode=='a'){BestBowl  <- foo %>% select(Analy)
-  } else if(mode=='c'){BestBowl  <- foo %>% select(c(bowler_id, Analy, fielding_club_id))
-  } else {BestBowl  <- foo %>% select(c(bowler_id, Analy))}
-  
-  xcv <- zxc %>%
-    summarise(
-      `5wi` = sum(W>=5),
-      M = sum(M),
-      R = sum(R),
-      W = sum(W),
-      BB = sum(BB, na.rm = TRUE),
-      Avg = as.numeric(format(round(R / W, 2), nsmall = 2)),
-      Econ = avRn((R * 6 / BB)),
-      SR = avRn(BB / W),
-      Inns = sum(!is.na(O)),
-      O = paste(BB %/% 6, BB %% 6, sep=".")  ) %>%
-    ungroup()
-  
-  if(mode=='c'){ outputbowlAvg <- xcv %>%
-    left_join(BestBowl, by = join_by(bowler_id, fielding_club_id)) %>%
-    rename(Best = Analy) %>%
-    left_join(Y.plrs, by = c("bowler_id" = "player_id")) %>%
-    rename(club_id=fielding_club_id) %>%
-    mutate( is_us = case_when(
-      club_id == conf$club_of_interest ~ TRUE,
-      club_id != conf$club_of_interest ~ FALSE
-    )) %>% left_join(Y.clubs2) %>% rename(`Club` = club_name) }
-  else {if(mode=='a'){outputbowlAvg <- xcv %>% cbind(BestBowl) %>% rename(Best = Analy)}
-    else {outputbowlAvg <- xcv %>%
-      left_join(BestBowl, by = join_by(bowler_id)) %>%
-      rename(Best = Analy) %>%
-      left_join(Y.plrs, by = c("bowler_id" = "player_id") ) } }
-  
-  return(outputbowlAvg)
-}
 
 K.bowlavg.ty <- K.bowling %>% filter(Yr == conf$year_of_interest) %>% drop_na(Name) %>% makeBowlAvgs()
 K.bowlavg <- K.bowling %>% drop_na(Name) %>% makeBowlAvgs()
@@ -971,7 +811,7 @@ F.fielding.sphere <- filter(K.matchfielders,is_sphere==TRUE)
 F.fieldsumm.us.ty <- filter(K.fieldsumm.ty, fielding_club_id == conf$club_of_interest) 
 F.fieldsumm.us <- filter(K.fieldsumm, fielding_club_id == conf$club_of_interest) 
 
-#F.joinavgs.us <- filter(B.joinAvgs, is_us==TRUE)
+F.joinavgs.us <- filter(K.joinAvgs, is_us==TRUE)
 
 F.allround.us <- filter(K.allround, is_us==TRUE)
 F.allround.us.ty <- filter(K.allround, is_us==TRUE, Yr == conf$year_of_interest)
@@ -986,6 +826,10 @@ F.matches.sphere <- filter(K.matches,is_sphere==TRUE)
 F.matches.sphere.ty <- filter(K.matches,is_sphere==TRUE, Yr == conf$year_of_interest) 
 
 # ==== write out useful tables ==== 
-save(K.matches, K.inningses, K.matchplayers, K.batting, K.bowling, K.matchfielders, A.matchfeatures, file="./data/newcoredata.RData")
-save(F.batting.circle, F.bowling.circle, F.matches.circle, F.inningses.circle, F.batavg.us, F.bowlavg.us, file="./data/parsed.RData") # for the quiz, a temp thing probably
+save(K.matches, K.inningses, K.matchplayers, K.batting, K.batavg, K.batavg.ty, K.fow,
+     K.bowling, K.bowlavg, K.bowlavg.ty, K.matchfielders, 
+     K.fieldsumm, K.fieldsumm.ty, K.allround, A.matchfeatures, K.dates, file="./data/newcoredata.RData")
+save(F.batting.circle, F.bowling.circle, F.matches.circle, F.inningses.circle, F.batavg.us, F.batavg.us.ty,
+     F.bowlavg.us, F.joinavgs.us, A.resultssumm, A.resultssummXI, file="./data/parsed.RData") # for the quiz, a temp thing probably
+save(Y.clubs2, Y.plrs, Y.players.ourcurrent2, Y.players.current2, Y.players2, Y.compos2, file="./data/lookups.RData")
 # load("./data/coredata.RData")

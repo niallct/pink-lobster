@@ -410,7 +410,7 @@ D.bat.topscorercount <- function(df, cap) {  df %>%
 
 D.batavg.nearms <- function(df, cap, myclub) {  df %>%
     filter(club_id == myclub & !is.na(Name) &
-             batsman_id %in% Y.currentplayers$player_id) %>%
+             batsman_id %in% Y.players.current2$player_id) %>%
     filter((Runs >= 400 & Runs < 500) | (Runs >= 900 & Runs < 1000) |
              (Runs >= 1900 & Runs < 2000)) %>%
     arrange(desc(Runs)) %>%
@@ -420,7 +420,7 @@ D.batavg.nearms <- function(df, cap, myclub) {  df %>%
 
 D.batavg.nearms2 <- function(df, cap) {  df %>%
     filter(!is.na(Name) &
-             batsman_id %in% Y.currentplayers$player_id) %>%
+             batsman_id %in% Y.players.current2$player_id) %>%
     filter((Runs >= 400 &
               Runs < 500) | (Runs >= 900 & Runs < 1000) |
              (Runs >= 1900 & Runs < 2000)) %>%
@@ -819,7 +819,7 @@ D.allround.keeperbowling <- function(df, cap) {  df %>%
 
 D.bowlavg.nearbowlms <- function(df, cap, myclub) {  df %>%
     filter(club_id == myclub & !is.na(Name) &
-             bowler_id %in% Y.currentplayers$player_id) %>%
+             bowler_id %in% Y.players.current2$player_id) %>%
     filter((W >= 45 &
               W < 50) | (W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
     arrange(desc(W)) %>%
@@ -828,7 +828,7 @@ D.bowlavg.nearbowlms <- function(df, cap, myclub) {  df %>%
 }
 
 D.bowlavg.nearbowlms2 <- function(df, cap) {  df %>%
-    filter(bowler_id %in% Y.currentplayers$player_id) %>%
+    filter(bowler_id %in% Y.players.current2$player_id) %>%
     filter((W >= 45 &
               W < 50) | (W >= 90 & W < 100) | (W >= 240 & W < 250)) %>%
     arrange(desc(W)) %>%
@@ -895,14 +895,14 @@ D.bowl.tailbowlwkt <- function(df, cap, ms = 2, thresh = 9) {  df %>%
 
 # ==== match level ====
 
-W.inns.winmargin <- function(df, whowon = 1, marg = 250, op = `>=`) {  df %>%
-    filter(BatInnsWinner == whowon, Res == "W", op(Margin, .env$marg)) %>%
+W.match.winmargin <- function(df, whowon = 1, marg = 250, op = `>=`) {  df %>%
+    filter(BatInnsWinner == whowon, result == "W", op(Margin, .env$marg)) %>%
     arrange(desc(actuallyDate)) %>% select(all_of(H.phlox))
 }
 
-D.inns.winmargin <- function(df, cap = "Innings winning margins",
+D.match.winmargin <- function(df, cap = "Innings winning margins",
                              whowon = 1, marg = 250, op = `>=`) {
-  W.inns.winmargin(df, whowon, marg, op) %>%
+  W.match.winmargin(df, whowon, marg, op) %>%
     D.showtable(cap) %>% J.angel
 }
 
@@ -937,7 +937,7 @@ D.resultsumm.mostwins <- function(df, cap) {  df %>%
 }
 
 D.match.ties <- function(df, cap) {  df %>%
-    filter(Result == "Tied") %>% arrange(desc(actuallyDate)) %>%
+    filter(result == "T") %>% arrange(desc(actuallyDate)) %>%
     select(all_of(H.phlox)) %>%
     D.showtable(cap) %>% J.angel
 }
@@ -949,12 +949,14 @@ D.match.matchview <- function(df, cap) {  df %>%
 }
 
 D.match.highmatchagg <- function(df, cap) {  df %>%
+    drop_na(`Match Aggregate`) %>% 
     slice_max(`Match Aggregate`, n = conf$default_list_length) %>%
     select(all_of(H.freesia)) %>%
     D.showtable(cap) %>% J.lamington
 }
 
 D.match.lowmatchagg <- function(df, cap) {  df %>%
+    drop_na(`Match Aggregate`) %>% 
     filter(!is.na(result_applied_to)
            & `Match Aggregate` > 0) %>%
     slice_min(`Match Aggregate`, n = conf$default_list_length) %>%
@@ -963,15 +965,16 @@ D.match.lowmatchagg <- function(df, cap) {  df %>%
 }
 
 D.match.highmatchaggexts <- function(df, cap) {  df %>%
+    drop_na(`Match Aggregate Extras`) %>% 
     slice_max(`Match Aggregate Extras`, n = conf$default_list_length) %>%
     select(all_of(H.freesia), `Match Aggregate Extras`, -`Match Overs`) %>%
     D.showtable(cap) %>% J.lamington
 }
 
 D.match.short <- function(df, cap) {  df %>%
-    filter(!is.na(result_applied_to) &
-             `Match Aggregate` > 0 & matchAggDecOvs > 0) %>%
-    slice_min(`matchAggDecOvs`, n = conf$default_list_length) %>%
+    drop_na(result_applied_to, match_agg_dec_ovs) %>% 
+    filter(match_agg_dec_ovs > 0) %>%
+    slice_min(match_agg_dec_ovs, n = conf$default_list_length) %>%
     select(all_of(H.freesia)) %>%
     D.showtable(cap) %>% J.lamington
 }
@@ -1295,7 +1298,7 @@ D.inns.nobowlextras <- function(df, cap) {  df %>%
 
 D.inns.lowfailchase <- function(df, cap) {  df %>%
     filter(`Inns of match` == 2, Res == "L", Total > 0) %>%
-    slice_min(firstinnstotal, n = conf$default_list_length) %>%
+    slice_min(runs_1, n = conf$default_list_length) %>%
     select(`Match Summary`, Date, Score, `Oppo Score`) %>%
     D.showtable(cap)
 }
@@ -1465,7 +1468,7 @@ W.fielding.totalcatchbytype <- function(df, thistype = "League") {  df %>%
 D.fieldsumm.mostdisperinns <- function(df, cap, 
                                        min = conf$qualify_inns_avgs) {  df %>%
     filter(M >= min, Ct > 0) %>%
-    arrange(desc(`Dis/Inns`)) %>%
+    arrange(desc(`Dis/M`)) %>%
     slice_head(n = conf$default_list_length) %>%
     select(all_of(H.crocosmia)) %>%
     D.showtable(cap)
