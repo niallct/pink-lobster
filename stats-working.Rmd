@@ -89,9 +89,6 @@ F.matches.circle.ty <- filter(K.matches,is_circle==TRUE,  Yr == conf$year_of_int
 F.matches.sphere <- filter(K.matches,is_sphere==TRUE) 
 F.matches.sphere.ty <- filter(K.matches,is_sphere==TRUE, Yr == conf$year_of_interest) 
 
-
-
-
 # check the year of interest is sensible
 if (nrow(K.matches %>% filter(Yr == conf$year_of_interest)) == 0){
   stop("ERROR: No data in year of interest.")}
@@ -112,7 +109,7 @@ D.showtable <- function(x, this_caption) {x %>%
 
 # Almanack: `r conf$club_name`
 
-Season `r conf$year_of_interest`. Latest match in dataset: `r K.dates$all_latest`.
+Season `r conf$year_of_interest`. Our latest match in dataset: `r K.dates$our_latest`.
 
 ## Batting
 Strike rates calculated using only innings in which balls faced are recorded. 
@@ -122,21 +119,23 @@ Showing highest average first.
 Qualification: `r conf$qualify_inns_avgs` innings.
 
 ```{r bat-avgs-thisyear}
-F.batavg.us.ty %>% D.batavg.bestbatavgs("Batting averages, this year")
+F.batavg.us.ty %>% D.batavg.bestbatavgs("Batting averages, this season")
 ```
 
 ### Most runs
+Showing all players, most runs first.
 
 ```{r mostruns-thisyear}
-F.batavg.us.ty %>%  D.batavg.mostruns("Runs scored, this year")
+F.batavg.us.ty %>%  D.batavg.mostruns("Runs scored, this season")
 ```
 
 ### Most runs by match type
+This season, minimum 35.
 
 ```{r mostruns-ty-type, message=FALSE, warning=FALSE, results='asis'}
 map(levels(F.batting.us.ty$Type) , W.bat.totalrunsbytype,
     df = F.batting.us.ty, min=35) %>% bind_rows() %>% 
-  D.showtable("Most runs, by match type")
+  D.showtable("Most runs, by match type, this season")
 ```
 
 ### Fifties this year
@@ -150,20 +149,21 @@ F.batting.us.ty %>% D.bat.fifties("Fifties this season")
 ```
 
 ### Fifties without a team win
-Showing most recent `r conf$default_list_length`:
+Showing most recent `r conf$default_list_length` in this season.
 ```{r fifties-no-win}
-F.batting.us.ty %>% D.bat.fiftieslosing("Fifties without team win")
+F.batting.us.ty %>% D.bat.fiftieslosing("Fifties without team win, this season")
 ```
 
 ### Consecutive fifties
 
-Showing consecutive fifties
+Showing consecutive fifties this season.
+
 ```{r consecutive-batmilestones-ty}
-F.batting.us.ty %>% D.bat.consecbatms("Consecutive fifties, this year", 50)
+F.batting.us.ty %>% D.bat.consecbatms("Consecutive fifties, this season", 50)
 ```
 
 ### Recent fifties, for each team
-Showing most recent `r conf$default_list_length`:
+Showing most recent `r conf$default_list_length`, all years.
 
 ```{r fifties-byteam, results='asis'}
 imap(conf$our_teams_names, W.bat.msteam , 
@@ -176,14 +176,14 @@ imap(conf$our_teams_names, W.bat.msteam ,
 
 ### Top individual scores, by match type
 
-Showing scores over 35,
+Minimum 35, this season.
 
 ```{r high-inns-type-ty, results='asis'}
 map(levels(F.batting.us.ty$Type), W.bat.highestscorebytype , 
     min=35,
     df=F.batting.us.ty) %>%
   bind_rows() %>%
-  D.showtable("Highest innings this year, by match type") %>% J.carrot2
+  D.showtable("Highest innings this season, by match type") %>% J.carrot2
 ```
 
 ### Primaries this season
@@ -212,23 +212,23 @@ F.batavg.us.ty %>% D.batavg.sixcount("Most sixes this season")
 Position 1 or 2 and not out. Care! May not be accurate if retirements involved.
 
 ```{r carried-bat}
-F.batting.us.ty %>% D.bat.carriedbat("Carried bat, this year")
+F.batting.us.ty %>% D.bat.carriedbat("Carried bat, this season")
 ```
 
 ### Most times top scorer
 ```{r mosttopscorer}
 F.batting.us.ty %>% left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>% 
-  D.bat.topscorercount("Count of times top scorer in an innings")
+  D.bat.topscorercount("Count of times top scorer in an innings, this season")
 ```
 
 ### Highest strike rate in an innings
 ```{r top-strike-rates-ty}
-F.batting.us.ty %>% D.bat.highSRinns("Highest SR in an innings", 20)
+F.batting.us.ty %>% D.bat.highSRinns("Highest SR in an innings, this season", 20)
 ```
 
 ### Lowest score not made
 
-This year, the lowest score no batter made is `r F.batting.us.ty %>% select(Runs) %>% ltnm()`
+This year, the lowest score no batter made is `r F.batting.us.ty %>% select(Runs) %>% ltnm()`.
 
 ## Partnerships
 
@@ -236,13 +236,13 @@ In the partnerships section, retirements are not handled cleanly. Retirements
 are common in friendly games, any appearance here of a high partnership in a
 friendly is likely to be spurious.
 
-### Top scores for each wicket, this year
+### Top scores for each wicket, this season
 
 Showing the top few for each wicket, all club, where over 25
 ```{r top-pship-ty, results='asis'}
 map(1:10, W.fow.pshiptopwkt,  df=F.fow.us.ty) %>%
   bind_rows() %>% 
-  D.showtable("Our top scores, this year, for each wicket") %>%
+  D.showtable("Our top scores, this season, for each wicket") %>%
   J.battenberg()
 ```
 
@@ -262,13 +262,14 @@ F.bowlavg.us.ty %>% D.bowlavg.wkt("Most wickets, this season")
 ```
 
 ### Most wickets by match type
-Minimum: five,
+Minimum 35, this season.
+
 ```{r mostwickts-ty-type, message=FALSE, warning=FALSE, results='asis'}
 #map(levels(F.bowling.us.ty$Type) , D.bowl.mostwktstype, cap="Most wickets",
 #    df = F.bowling.us.ty)
 map(levels(F.bowling.us.ty$Type) , W.bowl.mostwktstype,
     df = F.bowling.us.ty, min=5) %>% bind_rows() %>% 
-  D.showtable("Most wickets, by match type")
+  D.showtable("Most wickets, by match type, this season")
 ```
 
 
@@ -284,12 +285,12 @@ F.bowling.us.ty %>% D.bowl.fourfors("Four-fors this season")
 ### Consecutive four-fors
 
 ```{r consec-4for-ty}
-F.bowling.us.ty %>% D.bowl.consecbowlms("Consecutive four-fors", 4)
+F.bowling.us.ty %>% D.bowl.consecbowlms("Consecutive four-fors, this season", 4)
 ```
 
 
 ### Recent four-fors, for each team 
-Showing most recent `r conf$default_list_length` for each team:
+Showing most recent `r conf$default_list_length` for each team, all years.
 
 ```{r fourfors-byteam}
 imap(conf$our_teams_names, W.bowl.msteam , 
@@ -302,62 +303,74 @@ imap(conf$our_teams_names, W.bowl.msteam ,
 
 
 ### Dry days
+Showing the `r conf$default_list_length` wicketless innings with most runs
+conceded.
+
 ```{r no-wickets}
-F.bowling.us.ty %>% D.bowl.nowkts("No wickets, highest runs conceded")
+F.bowling.us.ty %>% D.bowl.nowkts("No wickets, highest runs conceded, this season")
 ```
 
 ### Outstanding analysis
 
-In our matches and competitions
+Our bowling:
+
+```{r strong-analysis-ty-us}
+F.bowling.us.ty  %>%
+  D.bowl.bestanalysis("Outstanding analysis, this season")
+```
+
+
+In our matches and competitions:
 
 ```{r strong-analysis-sph}
 F.bowling.sphere.ty  %>%
-  D.bowl.bestanalysis("Outstanding analysis, our competitions, this year")
+  D.bowl.bestanalysis("Outstanding analysis, our competitions, this season")
 ```
 
 
-### Best analysis by match type
-```{r best-analy-type-ty}
-# map(levels(F.bowling.us.ty$Type), D.bowl.bestanalysistype, cap="Best analysis",
-#     df = F.bowling.us.ty)
+<!-- ### Best analysis by match type --> 
+<!-- ```{r best-analy-type-ty} -->
+<!-- # map(levels(F.bowling.us.ty$Type), D.bowl.bestanalysistype, cap="Best analysis", -->
+<!-- #     df = F.bowling.us.ty) -->
 
-map(levels(F.bowling.us.ty$Type) , W.bowl.bestanalysistype,
-    df = F.bowling.us.ty) %>% bind_rows() %>% 
-  D.showtable("Best analysis, by match type") %>% J.parkin()
-```
+<!-- map(levels(F.bowling.us.ty$Type) , W.bowl.bestanalysistype, -->
+<!--     df = F.bowling.us.ty) %>% bind_rows() %>%  -->
+<!--   D.showtable("Best analysis, by match type") %>% J.parkin() -->
+<!-- ``` -->
 
 
-### Highest average with a five-for
+### Highest season average with a five-for
 
 ```{r bowl-avgs-with-5for}
-F.bowlavg.us.ty %>% D.bowlavg.highavgwith5for("Highest averages including a five-for, this year")
+F.bowlavg.us.ty %>%
+  D.bowlavg.highavgwith5for("Highest averages including a five-for, this season")
 ```
 
 ### Gloves off
 
-Bowling as designated wicketkeeper
+Bowling as designated wicketkeeper.
 
 ```{r keeperbowl-ty}
-F.allround.us.ty %>% D.allround.keeperbowling("Bowling this year as keeper")
+F.allround.us.ty %>% D.allround.keeperbowling("Bowling this season as keeper")
 
 ```
 
 ### Lowest score not made
 
-This year, the lowest score no bowler conceded is `r F.bowling.us.ty %>% select(R) %>% ltnm()`
+This year, the lowest score no bowler conceded is `r F.bowling.us.ty %>% select(R) %>% ltnm()`.
 
 ## Team
 
 ### Results
 ```{r results-ty}
-A.resultssummXI %>% D.resultsumm.resultsty("Our results this year")
+A.resultssummXI %>% D.resultsumm.resultsty("Our results this season")
 
 ```
 
 ### Matches this year
 
 ```{r matches-ty}
-F.matches.circle.ty %>% D.match.matchview("Our matches this year")
+F.matches.circle.ty %>% D.match.matchview("Our matches this season")
 ```
 
 ### Quotients
@@ -375,10 +388,10 @@ imap(conf$our_teams_names, W.inns.allteamquotients, F.inningses.circle.ty) %>%
   D.showtable("Quotients, by team")
 ```
 
-### Our recent innings
-```{r recent-inns}
-F.inningses.us %>% D.inns.recentinns("Our recent club inns")
-```
+<!-- ### Our recent innings -->
+<!-- ```{r recent-inns} -->
+<!-- F.inningses.us %>% D.inns.recentinns("Our recent club inns") -->
+<!-- ``` -->
 
 ### Highest innings total
 ```{r high-inns-us-ty}
@@ -389,7 +402,6 @@ F.inningses.us.ty %>% D.inns.highinnstotal("Our highest innings totals, this sea
 ```{r high-inns-us-2-ty}
 F.inningses.us.ty %>% D.inns.high2ndinns("Our highest innings totals batting second, this season")
 ```
-
 
 ### Highest match aggregate
 
@@ -404,20 +416,24 @@ F.inningses.us.ty %>% D.inns.lowinnstotal("Our lowest innings totals, this seaso
 
 ### Most extras
 ```{r most-extras-us}
-F.inningses.us.ty %>% D.inns.mostextras("Most extras in our innings")
+F.inningses.us.ty %>% D.inns.mostextras("Most extras in our batting innings, this season")
+```
+
+```{r most-extras-them}
+F.inningses.them.ty %>% D.inns.mostextras("Most extras in our bowling innings, this season")
 ```
 
 ### Tossing performance
 
 ```{r tossing-ty}
-F.inningses.us.ty %>% D.inns.tossresult("Our tossing and match results this year")
+F.inningses.us.ty %>% D.inns.tossresult("Our tossing and match results this season")
 ```
 
 ## All-rounder
 ### Thirty runs and three wickets in same match
 
 ```{r double-us-ty}
-F.allround.us.ty %>% D.allround.matchdouble("Thirty and three-for", 30,3)
+F.allround.us.ty %>% D.allround.matchdouble("Thirty and three-for, this season", 30,3)
 
 ```
 
@@ -427,59 +443,70 @@ F.allround.us.ty %>% D.allround.matchdouble("Thirty and three-for", 30,3)
 
 Showing most first, including as wicket-keeper; most recent where tied.
 
+```{r catches-inns-thisyear}
+F.fielding.us.ty %>% D.fielding.mostcatchesinns("Most catches in an innings, this season")
+```
+
 ```{r catches-thisyear}
-F.fielding.us.ty %>% D.fielding.mostcatchesinns("Most catches in an innings, this year")
 
-
-F.fieldsumm.us.ty %>% D.fieldsumm.mostcatches("Most total catches, this year")
+F.fieldsumm.us.ty %>% D.fieldsumm.mostcatches("Most total catches, this season")
 
 ```
 
-### Victims per innings
+### Victims per match
 
-Showing highest rate per innings, including as wicket-keeper. Qualification: four matches.
+Showing highest rate per match, including as wicket-keeper. Qualification: four matches.
 
 ```{r victims-thisyear}
-F.fieldsumm.us.ty %>% D.fieldsumm.mostdisperinns("Most dismissals per innings, this year")
+F.fieldsumm.us.ty %>% D.fieldsumm.mostdisperinns("Most dismissals per match, this season")
 
 ```
 
 
 ## Wicket-keeping
 
-### Dismissals this year, per innings
+### Dismissals this season, per innings
 
 Showing most first; most recent where tied.
 
 Excludes run-outs, because data are too flaky to be reliable.
 
+```{r wkdiss-ct-thisyear}
+F.fielding.us.ty %>% D.fielding.mostblahinns( "Most WK catches in an innings, this season", "Ct")
+```
+
+```{r wkdiss-st-thisyear}
+F.fielding.us.ty %>% D.fielding.mostblahinns( "Most stumpings in an innings, this season", "Std")
+```
+
 ```{r wkdiss-thisyear}
-F.fielding.us.ty %>% D.fielding.mostblahinns( "Most WK catches in an innings, this year", "Ct")
-
-F.fielding.us.ty %>% D.fielding.mostblahinns( "Most stumpings in an innings, this year", "Std")
-
-F.fielding.us.ty %>% D.fielding.mostblahinns( "Most WK dismissals in an innings, this year", "Dis")
+F.fielding.us.ty %>% D.fielding.mostblahinns( "Most WK dismissals in an innings, this season", "Dis")
 
 ```
 
-### Tally of dismissals, this year
+### Tally of dismissals, this season
 
 Minimum: three.
 
+```{r wkdiss-ct-total-ty}
+F.fielding.us.ty %>% D.fielding.mostblah("Most total WK catches, this season", "Ct")
+```
+```{r wkdiss-st-total-ty}
+F.fielding.us.ty %>% D.fielding.mostblah("Most total stumpings, this season", "Std")
+```
 ```{r wkdiss-total-ty}
-F.fielding.us.ty %>% D.fielding.mostblah("Most total WK catches, this year", "Ct")
-F.fielding.us.ty %>% D.fielding.mostblah("Most total stumpings, this year", "Std")
-F.fielding.us.ty %>% D.fielding.mostblah("Most total WK dismissals, this year", "Dis")
+F.fielding.us.ty %>% D.fielding.mostblah("Most total WK dismissals, this season", "Dis")
 
 ```
 
 
 ### No byes conceded for total of 150 or more
 ```{r no-byes-100-total-cy}
-F.inningses.them.ty %>% D.inns.nobyes("No byes conceded for total of 150 runs or more, this season")
+F.inningses.them.ty %>% D.inns.nobyes("No byes conceded for total of 150 runs or more, this season", ms=150)
 
 ```
 
+\newpage
 
 <!--
 # Almanack: all clubs
@@ -503,7 +530,7 @@ F.batavg.us %>% D.batavg.bestbatavgs("Batting averages, all time")
 ```
 
 ### Batting averages, by team
-Showing highest average first. 
+Showing highest average first, top `r 0.5 * conf$default_list_length` per team.
 Qualification: `r conf$qualify_inns_avgs` innings.
 
 ```{r bat-avgs-allt-team}
@@ -514,10 +541,11 @@ imap(conf$our_teams_names, W.bat.avgsteam ,
 ```
 
 ### Most runs
-Qualification: `r conf$qualify_inns_avgs` innings.
+Qualification: 500 runs.
 
 ```{r mostruns-allt}
-F.batavg.us %>%  D.batavg.mostruns("Career run totals", qual=conf$qualify_inns_avgs)
+F.batavg.us %>%  D.batavg.mostruns("Career run totals", qual=1 , qualR=500)
+#TODO tidied filters etx down to here
 ```
 
 
@@ -728,7 +756,10 @@ F.batting.us %>% left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of matc
 ### Most sixes in an innings
 ```{r most-sixes}
 F.batting.us %>% D.bat.most6inns( "Most sixes in an innings")
+```
 
+### Most boundaries in an innings
+```{r most-boundaries}
 F.batting.us %>% D.bat.mostBryinns("Most boundaries in an innings")
 ```
 
@@ -1253,20 +1284,22 @@ F.inningses.them %>% D.inns.highquot("Highest runs/wkt, our bowling")
 ```
 
 ### Highest total without batting milestones
-In all of our matches
-```{r hightotal-nomilestone-circle}
+In all of our matches and leagues:
+```{r hightotal-nocentury-circle}
 # TODO output a short scorecard here
 
 F.inningses.circle %>% 
   left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
   D.inns.hightotalnocent("Highest totals without any individual century", 100)
+```
 
+```{r hightotal-nofifty-circle}
 F.inningses.circle %>% 
    left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
   D.inns.hightotalnocent("Highest totals without any individual fifty", 50)
 ```
 
-In our batting
+In our batting:
 ```{r hightotal-nomilestone-us}
 F.inningses.us %>% 
    left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
@@ -1274,17 +1307,25 @@ F.inningses.us %>%
 ```
 
 ### Multiple batting milestones 
-```{r multiplebat-milestones}
+In all of our matches and leagues:
+```{r multiplebat-milestones-sph-cent}
 # TODO output a short scorecard here
 
 F.inningses.circle %>% 
    left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
   D.inns.manycentury("Innings with two or more centuries")
+```
+
+```{r multiplebat-milestones-sph-fifty}
 
 F.inningses.circle %>% 
    left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
   D.inns.manyfifty("Innings with three or more fifties")
 
+```
+
+In our batting:
+```{r multiplebat-milestones-us}
 F.inningses.us %>% 
    left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
   D.inns.manyfifty("Our innings with three or more fifties")
@@ -1529,10 +1570,11 @@ F.joinavgs.us %>% D.joinav.careerdouble("2000 runs and 50 dismissals", 2000, 0, 
 
 ### Most appearances
 
-```{r most-apps}
-
+```{r most-apps-season}
 F.fielding.us %>% D.fielding.mostappsseason("Most appearances in a season")
+```
 
+```{r most-apps-alltime}
 F.fielding.us %>% D.fielding.appsalltime("Most appearances, all time")
 ```
 
@@ -2102,8 +2144,10 @@ plot2
 
 
 ## Batting for multiple sides
+Appearing in batting records of nine clubs or more
+
 ```{r bat-mult-sides}
-K.batavg %>% group_by(batsman_id) %>% count() %>% ungroup() %>% filter(n>=5) %>%
+K.batavg %>% group_by(batsman_id) %>% count() %>% ungroup() %>% filter(n>=9) %>%
   left_join(K.batavg) %>% 
   select(all_of(H.asterC)) %>%
   D.showtable("Batting for many sides")
@@ -2140,7 +2184,7 @@ least once.
 Classing fielders by keeping frequency into never, seldom (once or twice),
 occasional (half the time or less), usual (more than half the time).
 
-```{r keeper-analys}
+```{r keeper-analys-classing}
 A.keepers %>% select(Class = keeperclass) %>% table() %>% D.showtable("Keeper classes")
 
 #B.fieldsumm %>% filter(Name =="Will Day")
@@ -2153,7 +2197,9 @@ Z.ptwkperf %>%
   summarise(across(where(is.numeric), \(x) avRn(mean(x, na.rm = TRUE)))) %>%
   D.showtable("Keeper performance by class")
 
+```
 
+```{r keeper-analys-perf}
 df_long <- Z.ptwkperf %>%
   pivot_longer(
     cols = where(is.numeric), 

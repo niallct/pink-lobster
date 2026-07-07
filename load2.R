@@ -161,8 +161,8 @@ K.matches <- K.matches %>% mutate(
     result_applied_to == team_batting_id_2 ~ FALSE,
     TRUE ~ NA))
 
-K.matches$result_match <- fct_relevel(K.matches$result_match, c("HW", "AW", "D", "T", "A", "C", "?", ""))
-K.matches$result_club <- fct_relevel(K.matches$result_club, c("W", "L", "D", "T", "A", "C", "?", "n/a"))
+K.matches$result_match <- fct_relevel(K.matches$result_match, c("HW", "AW", "T", "A")) # nb no D, so goes last
+K.matches$result_club <- fct_relevel(K.matches$result_club, c("W", "L", "T", "A", )) # nb no D, so goes last
 
 # ---- results summarising ----
 A.resultssumm <- as_tibble(K.matches %>% filter(is_circle) %>% select(Yr, result_club) %>% table()) %>%
@@ -216,12 +216,12 @@ K.matches <- K.matches %>% rowwise() %>%
 # ==== tidy ground names ====
 
 # make lookup from the config file
-our_ground_lookup <- stack(conf$home_ground_names) %>% 
+A.our_ground_lookup <- stack(conf$home_ground_names) %>% 
   rename(ground_nickname = values, ground_id = ind) %>%
   mutate(ground_id = as.numeric(as.character(ground_id)))
 
 K.matches <- K.matches %>%
-  left_join(our_ground_lookup, by = "ground_id") %>%
+  left_join(A.our_ground_lookup, by = "ground_id") %>%
   mutate(Ground = coalesce(ground_nickname, Ground),
          Place = case_when(
            is.na(ground_id) ~ NA_character_,
@@ -314,10 +314,6 @@ Y.leagues2 <- K.matches %>% select(league_id, league_name, is_circle, Yr) %>%
 
 # ==== make tables of players from the matches they appear in ====
 
-# a thing to check for duplicate names on one id -- this should return empty tibble
-K.matchplayers %>% select(player_id, Name) %>% distinct() %>% 
-  group_by(player_id) %>% add_count(Name) %>% filter(n>1)
-
 # make a lookup for players without and with link to club ids
 Y.plrs <- K.matchplayers %>% select(player_id, Name) %>% distinct() %>% drop_na(player_id)
 
@@ -329,6 +325,11 @@ Y.players.club2 <- K.matchplayers %>% select(player_id, Name, playing_club, Yr) 
   summarise( .by =c(player_id, club_id, Name) , RecentYear = max(Yr))
 
 Y.players.current2 <- Y.players2 %>% filter(RecentYear >= conf$last_year)
+
+# a thing to find variant names
+variantnameids <- Y.plrs |> select(-Name) |> add_count(player_id)  |> filter(n>1) |> pull(player_id)
+A.variantnames <- Y.plrs |> filter(player_id %in% variantnameids)
+rm(variantnameids)
 
 # Identify possible cases of our duplicate people
 A.duplicates <- Y.players.club2 %>%
@@ -459,11 +460,14 @@ K.inningses <- K.matches %>% select(-players) %>% unnest(innings) %>%
     `Oppo Score` = case_when( #TODO sort this for 4-inns matches
       batting_team_id == team_batting_id_1 ~ score_2,
       batting_team_id == team_batting_id_2 ~ score_1
-    )) %>% 
+    ),
+    opptotal = case_when( #TODO sort this for 4-inns matches
+      batting_team_id == team_batting_id_1 ~ runs_2,
+      batting_team_id == team_batting_id_2 ~ runs_1
+    )    ) %>% 
   mutate(
          `Runs/Wkt` = Total / W,
          Score = paste(Total, W, sep="/"),
-         opptotal = as.integer(str_split_i(`Oppo Score`, "/", 1)) ,
          decimal_overs = getDecOvsFromOv(Ovs),
          extras_proportion = 
            case_when(
@@ -687,8 +691,8 @@ rm(zxc)
 # ---- interesting things, count them ----
 
 intf1 <- K.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`) %>%
-  group_by(match_id, `Inns of match`) %>% 
-  summarise(topscore = ifelse(sum(!is.na(Runs))==0, 0, max(Runs, na.rm = TRUE)),
+  summarise(.by = c(match_id, `Inns of match`),
+            topscore = ifelse(sum(!is.na(Runs))==0, 0, max(Runs, na.rm = TRUE)),
             botscore = ifelse(sum(!is.na(Runs))==0, 0, min(Runs, na.rm = TRUE)),
             numvalidbf = sum( !is.na(Balls) & 
                                 (Balls > 0 |  (Balls == 0 & Runs == 0 & !`How Out` %in%  c("b", "ct", "lbw")) )  ),
@@ -698,11 +702,11 @@ intf1 <- K.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`)
             numtens = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=10, na.rm = TRUE)),
             numcenturies = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=100, na.rm = TRUE)),
             numfifties = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=50, na.rm = TRUE))
-            )%>%  ungroup() # previously rj this back to batting, innings tables
+            ) # previously rj this back to batting, innings tables
 
 intf2 <- K.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
-  group_by(match_id, `Inns of match`) %>% 
-  summarise(minwkts = ifelse(sum(!is.na(W)) < 2, 0, min(W, na.rm = TRUE)), # if one bowler, is dubious
+  summarise(.by = c(match_id, `Inns of match`),
+            minwkts = ifelse(sum(!is.na(W)) < 2, 0, min(W, na.rm = TRUE)), # if one bowler, is dubious
             numfourfs = ifelse(sum(!is.na(W))==0, 0, sum(W>=4, na.rm = TRUE)),
             numfivefs = ifelse(sum(!is.na(W))==0, 0, sum(W>=5, na.rm = TRUE)),
             `Wicket-takers` = ifelse(sum(!is.na(W))==0, 0, sum(W>=1, na.rm = TRUE)),
@@ -711,7 +715,7 @@ intf2 <- K.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
             numbowlsmdn =  ifelse(sum(!is.na(M))==0, 0, sum(M>=1, na.rm = TRUE)),
             `Bowlers used` = n(),
             tbr = sum(R) # total bowlers runs, use this to remove partial scorecards
-            )%>%   ungroup() 
+            )
 
 xcv <- K.bowling %>% filter (O !="0") %>% 
   summarise(.by = c(match_id, `Inns of match`, Analy), BWIA = n()) %>%  

@@ -121,9 +121,9 @@ D.batavg.bestbatavgs <- function(df, cap, qual = conf$qualify_inns_avgs) {  df %
     D.showtable(cap)
 }
 
-D.batavg.mostruns <- function(df, cap, howmany = 10000, qual = 1) {  df %>%
-    filter(Inns >= qual) %>%
-    arrange(desc(Runs)) %>%
+D.batavg.mostruns <- function(df, cap, howmany = 10000, qual = 1, qualR=1) {  df %>%
+    filter(Inns >= qual, Runs>=qualR) %>%
+    arrange(desc(Runs), desc(Avg)) %>%
     slice_max(Runs, n = howmany, with_ties = FALSE) %>%
     select(all_of(H.aster)) %>%
     D.showtable(cap)
@@ -357,7 +357,7 @@ D.batavg.centurycount <- function(df, cap, min = 1) {  df %>%
 D.bat.primaries <- function(df, cap) {  df %>%
     filter(Runs == 0  & Balls <= 1 & `How Out` %in% R.dismissed) %>%
     arrange(desc(actuallyDate)) %>%
-    select(all_of(H.lily)) %>%
+    select(all_of(H.lily), `How Out`) %>%
     D.showtable(cap) %>% J.carrot
 }
 
@@ -1047,8 +1047,8 @@ W.inns.allteamquotients <- function(theteamname, theteam, df) {
 
 D.inns.recentinns <- function(df, cap) {  df %>%
     slice_max(actuallyDate, n = conf$default_list_length) %>%
-    select(all_of(H.hyacinth)) %>%
-    D.showtable(cap) %>% J.honey
+    select(all_of(H.dahlia)) %>%
+    D.showtable(cap) %>% J.madeira
 }
 
 D.inns.highinnstotal <- function(df, cap) {  df %>%

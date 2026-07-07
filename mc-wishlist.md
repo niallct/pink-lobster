@@ -6,6 +6,7 @@
 - tidy up column selection
 - tidy up column widths
 - add rectangle geom to curator plots
+- fix the name variants, to deal with m-m warnings on the avgs lookups
 - Fewest games played by nominal captain
 - Longest wait for a captain to play in a season 
 - Longest run of losses, not wins, as captain 
