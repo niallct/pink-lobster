@@ -48,7 +48,9 @@ K.matches.all <- K.matches.all %>% mutate(
   actuallyDate = as.Date(match_date, "%Y-%m-%dT%H:%M:%S"),
   Date = format(actuallyDate, format = "%d %b %Y"),
   Yr = as.integer(format(actuallyDate, format = "%Y")), 
-  `Day of Year` = yday(actuallyDate)
+  Month = month(actuallyDate, label = TRUE),
+  `Day of Year` = yday(actuallyDate),
+  `Day of Week` = wday(actuallyDate, label=TRUE)
 ) %>% mutate(
   our_team_id = case_when(
     home_team_id %in% names(conf$our_teams_names) ~ home_team_id,
@@ -135,7 +137,30 @@ K.matches <- K.matches.scores %>%
          `Match Summary`) %>%
   right_join(K.matches, by = "match_id")
 
+# ==== lookups for clubs and teams ====
+
+Y.clubs2 <- bind_rows(K.matches %>% select(home_club_id, `Home Club`) %>% 
+                        rename(club_id = home_club_id, 
+                               club_name = `Home Club`), 
+                      K.matches %>% select(away_club_id, `Away Club`) %>%
+                        rename(club_id = away_club_id, 
+                               club_name = `Away Club`)) %>% distinct() %>% drop_na()
+
+Y.teams2 <-  rbind(K.matches %>% select(home_team_id, home_team_name, home_club_id, `Home Club`) %>% 
+                     rename(team_id = home_team_id, 
+                            team_name = home_team_name,
+                            club_id = home_club_id,
+                            club_name = `Home Club`), 
+                   K.matches %>% select(away_team_id, away_team_name, away_club_id, `Away Club`) %>%
+                     rename(team_id = away_team_id, 
+                            team_name = away_team_name,
+                            club_id = away_club_id,
+                            club_name = `Away Club`)) %>%  distinct() %>% drop_na()
+
 # ==== result wrangling ====
+K.matches <- K.matches |> left_join(Y.teams2 |> select(team_id, club_id) |> distinct(), by=join_by(result_applied_to==team_id)) |> 
+  rename(result_applied_to_club = club_id)
+
 K.matches <- K.matches %>% mutate(
   result = as.factor(result),
   result_match = as.factor(case_when(
@@ -144,8 +169,8 @@ K.matches <- K.matches %>% mutate(
     TRUE ~ result) ), # nb this includes conceded as wins -- may need to change that
   result_club = as.factor(case_when(
     is_circle == FALSE ~ "n/a",
-    result_applied_to %in% names(conf$our_teams_names) ~ "W",
-    result=="W" ~ "L", #TODO this breaks for hidden teams 162507, 198440
+    result_applied_to_club == conf$club_of_interest ~ "W",
+    result=="W" ~ "L", 
     TRUE ~ result_match)),
   win_toss_win_match = case_when(
     result_applied_to == toss_won_by_team_id ~ TRUE,
@@ -162,7 +187,7 @@ K.matches <- K.matches %>% mutate(
     TRUE ~ NA))
 
 K.matches$result_match <- fct_relevel(K.matches$result_match, c("HW", "AW", "T", "A")) # nb no D, so goes last
-K.matches$result_club <- fct_relevel(K.matches$result_club, c("W", "L", "T", "A", )) # nb no D, so goes last
+K.matches$result_club <- fct_relevel(K.matches$result_club, c("W", "L", "T", "A" )) # nb no D, so goes last
 
 # ---- results summarising ----
 A.resultssumm <- as_tibble(K.matches %>% filter(is_circle) %>% select(Yr, result_club) %>% table()) %>%
@@ -213,8 +238,21 @@ K.matches <- K.matches %>% rowwise() %>%
                                 TRUE ~ no_of_overs), 
         no_of_overs = replace_values(no_of_overs, 0 ~ NA))
 
-# ==== tidy ground names ====
+#find things where this didn't work: interesting matches with blank no_of_overs
+A.compsnoover <- K.matches %>% drop_na(competition_id) %>%
+  filter(result!="A", is_sphere, !is.na(score_1), 
+         ( is.na(no_of_overs) | no_of_overs==0)) %>% 
+  filter_out(competition_id %in% A.inferredovers$competition_id) %>% 
+  select(competition_id, league_id, no_of_overs) %>% distinct()
 
+A.suggestovers <- K.matches %>% filter(competition_id %in% A.compsnoover$competition_id) %>% 
+  group_by(competition_id) %>% mutate(
+    suggest_overs = max(decimal_overs_1)) %>% ungroup() %>% 
+  select(competition_id, suggest_overs) %>% distinct()
+
+write_csv(A.suggestovers, file="output/suggestovers.csv")
+
+# ==== tidy ground names ====
 # make lookup from the config file
 A.our_ground_lookup <- stack(conf$home_ground_names) %>% 
   rename(ground_nickname = values, ground_id = ind) %>%
@@ -277,17 +315,21 @@ K.matchroles <- K.matchplayers %>%
   pivot_wider(
     id_cols = match_id,
     names_from = c(team, role_name),
-    values_from = Name,
+    values_from = c(Name, player_id),
     values_fn = first
   ) %>% 
-  rename(homecapt = home_Capt,
-         homekeeper = `home_W-K`,
-         awaycapt = away_Capt,
-         awaykeeper = `away_W-K`
+  rename(homecapt = Name_home_Capt,
+         homekeeper = `Name_home_W-K`,
+         awaycapt = Name_away_Capt,
+         awaykeeper = `Name_away_W-K`,
+         homecaptid = player_id_home_Capt,
+         homekeeperid = `player_id_home_W-K`,
+         awaycaptid = player_id_away_Capt,
+         awaykeeperid = `player_id_away_W-K`
          )
 
 K.matches <- K.matches %>% 
-  left_join(K.matchroles, by = "match_id")
+  left_join(K.matchroles, by = "match_id") %>% ungroup()
 
 K.matchplayers <- K.matchplayers %>% 
   left_join(K.matchroles, by = "match_id")
@@ -326,10 +368,12 @@ Y.players.club2 <- K.matchplayers %>% select(player_id, Name, playing_club, Yr) 
 
 Y.players.current2 <- Y.players2 %>% filter(RecentYear >= conf$last_year)
 
-# a thing to find variant names
+# a thing to find variant names, then drop duplicates
 variantnameids <- Y.plrs |> select(-Name) |> add_count(player_id)  |> filter(n>1) |> pull(player_id)
 A.variantnames <- Y.plrs |> filter(player_id %in% variantnameids)
+A.variantnames %>%  filter(player_id %in% Y.players.ours2$player_id) %>% write_csv(file="output/ourvariantnames.csv")
 rm(variantnameids)
+Y.plrs <- Y.plrs |> slice_max(by=player_id, player_id, n=1, with_ties = F)
 
 # Identify possible cases of our duplicate people
 A.duplicates <- Y.players.club2 %>%
@@ -354,26 +398,6 @@ Y.capnumbers2 <- K.matchplayers %>%  #F.fielding.us
   arrange(actuallyDate) %>%
   select(Name, Date, `Debut Match` = `Match Summary`, `Debut Ground` = Ground) %>%
   tibble::rowid_to_column("Cap Number")
-
-# ==== lookups for clubs and teams ====
-
-Y.clubs2 <- bind_rows(K.matches %>% select(home_club_id, `Home Club`) %>% 
-                   rename(club_id = home_club_id, 
-                          club_name = `Home Club`), 
-                 K.matches %>% select(away_club_id, `Away Club`) %>%
-                   rename(club_id = away_club_id, 
-                          club_name = `Away Club`)) %>% distinct() %>% drop_na()
-
-Y.teams2 <-  rbind(K.matches %>% select(home_team_id, home_team_name, home_club_id, `Home Club`) %>% 
-                    rename(team_id = home_team_id, 
-                           team_name = home_team_name,
-                           club_id = home_club_id,
-                           club_name = `Home Club`), 
-                  K.matches %>% select(away_team_id, away_team_name, away_club_id, `Away Club`) %>%
-                    rename(team_id = away_team_id, 
-                           team_name = away_team_name,
-                           club_id = away_club_id,
-                           club_name = `Away Club`)) %>%  distinct() %>% drop_na()
 
 # ==== unnest and format innings data ====
 
@@ -451,6 +475,11 @@ K.inningses <- K.matches %>% select(-players) %>% unnest(innings) %>%
     `Keeper` = case_when(
       batting_team_id == home_team_id ~ awaykeeper,
       batting_team_id == away_team_id ~ homekeeper,
+      TRUE ~ NA
+    ),
+    keeper_id = case_when(
+      batting_team_id == home_team_id ~ awaykeeperid,
+      batting_team_id == away_team_id ~ homekeeperid,
       TRUE ~ NA
     ),
     bat_first = case_when( #TODO do this better, somehow
@@ -697,6 +726,7 @@ intf1 <- K.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`)
             numvalidbf = sum( !is.na(Balls) & 
                                 (Balls > 0 |  (Balls == 0 & Runs == 0 & !`How Out` %in%  c("b", "ct", "lbw")) )  ),
             numbats = sum(!is.na(Runs)),
+            numbowled = sum(`How Out`=="b", na.rm=TRUE),
             numcaught = sum(`How Out`=="ct", na.rm=TRUE),
             numfielddis = sum(`How Out` %in% c('ct', 'st','run out'), na.rm=TRUE),
             numtens = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=10, na.rm = TRUE)),
@@ -704,7 +734,7 @@ intf1 <- K.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`)
             numfifties = ifelse(sum(!is.na(Runs))==0, 0, sum(Runs>=50, na.rm = TRUE))
             ) # previously rj this back to batting, innings tables
 
-intf2 <- K.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
+intf2 <- K.bowling %>% select(match_id, `Inns of match`, O, W, R, M) %>%
   summarise(.by = c(match_id, `Inns of match`),
             minwkts = ifelse(sum(!is.na(W)) < 2, 0, min(W, na.rm = TRUE)), # if one bowler, is dubious
             numfourfs = ifelse(sum(!is.na(W))==0, 0, sum(W>=4, na.rm = TRUE)),
@@ -712,6 +742,8 @@ intf2 <- K.bowling %>% select(match_id, `Inns of match`, W, R, M) %>%
             `Wicket-takers` = ifelse(sum(!is.na(W))==0, 0, sum(W>=1, na.rm = TRUE)),
             maxrunsccd = ifelse(sum(!is.na(R))==0, 0, max(R, na.rm = TRUE)),
             nummdns = sum(M),
+            numovsbwld = sum(O),
+            numbadanaly = sum(M==O & R>0),
             numbowlsmdn =  ifelse(sum(!is.na(M))==0, 0, sum(M>=1, na.rm = TRUE)),
             `Bowlers used` = n(),
             tbr = sum(R) # total bowlers runs, use this to remove partial scorecards
@@ -734,6 +766,19 @@ K.fieldsumm.ty <- K.matchfielders %>% filter(Yr == conf$year_of_interest) %>%
 
 K.fieldsumm <-  K.matchfielders %>% drop_na(Name) %>% 
   makefieldsumm()  
+
+# ==== make appearances table ====
+
+A.appearances <- K.matchplayers %>%
+  filter(!Name %in% R.bad_names) %>%
+  summarise(.by=c(player_id, Name, playing_club),
+    `Appearances` = n(),
+    `As captain` = sum(Capt),
+    `As keeper` = sum(`W-K`),
+    `As capt/w-k` = sum(Capt & `W-K`)
+  )
+
+A.appearances.us <- A.appearances |>  filter(playing_club==conf$club_of_interest)
 
 # ==== make batting averages ====
 
@@ -829,6 +874,14 @@ F.matches.circle.ty <- filter(K.matches,is_circle==TRUE,  Yr == conf$year_of_int
 F.matches.sphere <- filter(K.matches,is_sphere==TRUE) 
 F.matches.sphere.ty <- filter(K.matches,is_sphere==TRUE, Yr == conf$year_of_interest) 
 
+# ==== find some spurious data ====
+A.bad.batbdry <- K.batting %>% filter(Runs < (`6`*6 + `4`*4)) %>% select(Name, Runs, `4`, `6`, Date, `Batting Club`, match_id, is_circle)
+A.bad.batscore <- K.batting %>% filter(Runs >= Total, Total != 0) %>%  select(Name, Runs, Total, Date, `Batting Club`, match_id, is_circle)
+A.bad.pship <- K.fow %>% filter(PartnershipRaw <0 | PartnershipRaw >300) %>%  select(match_id, `Inns of match`, PartnershipRaw, Fall, runs, Total, Wkt, is_no) # miskeyed manual entry
+A.bad.overs <- K.matches |> filter(decimal_overs_1 > no_of_overs | decimal_overs_2 > no_of_overs) |> 
+  select(no_of_overs, decimal_overs_1, decimal_overs_2, match_id, is_circle, Date)
+write.csv(A.bad.overs, file="output/badovers.csv")
+
 # ==== write out useful tables ==== 
 save(K.matches, K.inningses, K.matchplayers, K.batting, K.batavg, K.batavg.ty, K.fow,
      K.bowling, K.bowlavg, K.bowlavg.ty, K.matchfielders, 
@@ -836,4 +889,11 @@ save(K.matches, K.inningses, K.matchplayers, K.batting, K.batavg, K.batavg.ty, K
 save(F.batting.circle, F.bowling.circle, F.matches.circle, F.inningses.circle, F.batavg.us, F.batavg.us.ty,
      F.bowlavg.us, F.joinavgs.us, A.resultssumm, A.resultssummXI, file="./data/parsed.RData") # for the quiz, a temp thing probably
 save(Y.clubs2, Y.plrs, Y.players.ourcurrent2, Y.players.current2, Y.players2, Y.compos2, file="./data/lookups.RData")
+
+F.matches.circle.ty %>% filter(ground_id %in% c(12581, 51122)) %>%
+  arrange(actuallyDate) %>%
+  select(`Home Side`, `Away Side`, no_of_overs,
+         `Match Summary`, Date, Type, Ground, Result) %>%
+  write_csv(file="output/ty-home-matches.csv")
+
 # load("./data/coredata.RData")

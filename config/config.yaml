@@ -16,20 +16,27 @@ opponents_of_interest:
 # - 14848 #CUPA
 # - 12697 # Reach
 # - 8183 # Cambourne
- - 1771 # Chatteris
+# - 1771 # Chatteris
 # - 23328 # Northstowe
 # - 4096 # Longstanton GH
 # - 831 # Audley End
+# - 6927 # Wilbraham
+ - 2769 # Fordham
 
 player_to_plot: 
   - 1878269 #day
   - 3682607 #day
   - 3716426 #day
   - 4453764 #day
- # - 4203792 #sivvers
- # - 5490886 #jupp
- # - 3945561
- # - 3827941
+  - 6863279 #day
+#  - 4203792 #sivvers
+# -  5473720 #pinches
+#  - 5490886 #jupp
+#  - 5147629 #taylor 5028307 4952911
+#  - 4453753 #JD-
+#  - 3945561
+#  - 3827941
+#  - 3936342 # race
 
 our_teams_names:
     9865: "1st XI"

@@ -1,5 +1,10 @@
+- lowesst aggregate by top six, all of whom out
+- last wicket for both sides falling on the same score
 = sort new loader: compos, leagues, summary, teams, matches!; bring in good bits from parse-tidy
 - do something with data last updated?
+- take the jimmy analysis place futzing into core
+- same name tool: filter away the same id used twice
+- some sort of 'is the balls faced data any good' assessment
 = scorecard links in the multi-milestone/interesting innings lists
 = improve the match result predictor, use recorded result_applied_to
 - sort out filter vs display functions
@@ -16,6 +21,9 @@
 = fix cap numbers duplication
 = globally tidy up ground names to deduplicate
 - work out excluding teams from reports but include, so the result_club tool works
+
+- longest run wins but no fifty
+-
 
 ## acs123:
                 own team  O M R W                    Opp tot   Ct

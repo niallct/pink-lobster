@@ -30,3 +30,14 @@ Your working directory should contain: (in rough order of use)
 * Tables often overrun the page width, this need manual twiddling
   * cake-themed column_width functions sort of solve this, messily
 * Lots of new outputs to make!
+
+## Object naming
+ * A are things on the fly
+ * K are the major tables
+ * F are the FILTERED tables (this club, year)
+ * H are Headings
+ * J is column widths
+ * R is reference things
+ * W are main stats filters
+ * Y are lookups 
+

@@ -14,24 +14,29 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 setwd("../") # the oppo report hides in a subdirectory of the main project
-source("parse-tidy.R")
 source("displayFuncs.R")
+source("headers-def.R")
+source("avgFuncs.R")
+load("./data/newcoredata.RData")
+load("./data/parsed.RData")
+load("./data/lookups.RData")
 
 ## load the config
 library(yaml)
 conf <- yaml.load_file("./config/config.yaml")
 # load other packages
+library(tidyverse)
 library(kableExtra)
 library(lubridate)
 # a standard font size
 dfsz <- 7
 
 # make some club-specific filtered datasets
-thisclubBatAvg <- B.batAvg %>% filter(club_id %in% conf$opponents_of_interest)
-thisclubBatAvg.ty <- E.batAvg.TY %>% filter(club_id %in% conf$opponents_of_interest)
-thisclubBowlAvg <- B.bowlAvg %>% filter(club_id %in% conf$opponents_of_interest)
-thisclubBowlAvg.ty <- E.bowlAvg.TY %>% filter(club_id %in% conf$opponents_of_interest)
-thisclubInns <- B.inningses %>% filter(batting_club_id %in% conf$opponents_of_interest)
+thisclubBatAvg <- K.batavg %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubBatAvg.ty <- K.batavg.ty %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubBowlAvg <- K.bowlavg %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubBowlAvg.ty <- K.bowlavg.ty %>% filter(club_id %in% conf$opponents_of_interest)
+thisclubInns <- K.inningses %>% filter(batting_club_id %in% conf$opponents_of_interest)
 sharedMatches <- F.matches.circle %>% 
                    filter(home_club_id %in% conf$opponents_of_interest |
                           away_club_id %in% conf$opponents_of_interest )
@@ -57,14 +62,14 @@ D.showtable <- function(x, this_caption) {x %>%
 
 ```{r length, results='asis'}
 if(length(conf$opponents_of_interest) > 1){
-zxc <- Y.clubs %>% filter(club_id %in% conf$opponents_of_interest) %>% select(club_name) %>% pull()
+zxc <- Y.clubs2 %>% filter(club_id %in% conf$opponents_of_interest) %>% select(club_name) %>% pull()
 cat("There is more than one club id selected. Check this is right. Names 
     associated are: ")
 cat(zxc, sep=", " )
 cat(".\n")
 }
 
-oppclub_name <- as.character(Y.clubs %>% filter(club_id == conf$opponents_of_interest[[1]]) %>% 
+oppclub_name <- as.character(Y.clubs2 %>% filter(club_id == conf$opponents_of_interest[[1]]) %>% 
                               slice_head(n=1) %>% select(club_name))
 ```
 
@@ -118,9 +123,9 @@ sharedMatches %>% D.match.matchview("Our matches")
 
 ## Date ranges
 Data collected from Play-Cricket. 
-For `r conf$club_name`, from `r B.dates$our_earliest` to `r B.dates$our_latest`,
-n=`r B.dates$count_us` innings.  For all matches, from `r B.dates$all_earliest`
-to `r B.dates$all_latest`, n=`r B.dates$count_all` innings.
+For `r conf$club_name`, from `r K.dates$our_earliest` to `r K.dates$our_latest`,
+n=`r K.dates$count_us` innings.  For all matches, from `r K.dates$all_earliest`
+to `r K.dates$all_latest`, n=`r K.dates$count_all` innings.
 
 ## R session information
 ```{r session-info}

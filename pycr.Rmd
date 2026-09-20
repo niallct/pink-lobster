@@ -1,0 +1,168 @@
+---
+title: "Quiz"
+#output: beamer_presentation
+classoption: a4paper
+documentclass: article
+output:
+  pdf_document: default
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(kableExtra)
+library(scales)
+source("displayFuncs.R")
+source("headers-def.R")
+source("avgFuncs.R")
+
+load("./data/parsed.RData") #load in prepared data
+
+```
+
+## Premise
+
+- All drawn from play-cricket in mid-September
+- Individual stats only for Milton games, not other clubs by our players
+- Inclusion of non-Milton games is patchy
+
+```{r individstats}
+#generate a table of individuals' averages etc
+
+#some names of interesting people
+#this is kludged on names not ids #TODO fix
+
+R.interesting_people <- c("JOhn Xavier", "Nicholas Widdowson", "David Gibson",
+                          "Jay Dann", "Nathan Sivajoti","Mark Barton", 
+                          "Alex McPherson", "Joe Jones", "William Jupp",
+                          "Chris Day", "Will Day", "Edward Pinches",
+                          "Thomas Holroyd", "Adam Roberts", "Philip Allen")
+# batting averages etc
+Z.nicebatavgs <- F.batavg.us |> filter(Name %in% R.interesting_people) |> 
+  select(Name, Runs, `Ìnnings batted`= Inns, `Batting average`= Avg, 
+         `Highest score` = HSraw, `Batting SR` = SR, `Catches` = Ct)
+
+# bowling avgs
+Z.nicebowlavgs <- F.bowlavg.us |> filter(Name %in% R.interesting_people) |> 
+  select(Name, `Wickets` = W, `Bowling average`= Avg, `Economy` = Econ, 
+         `Bowling SR` = SR, `5wi`)
+
+#lengthen, bind, drop zero values
+Z.batavgslong <- Z.nicebatavgs |> pivot_longer(!Name, names_to="Stat", values_to = "Value")
+Z.bowlavglong <- Z.nicebowlavgs |> pivot_longer(!Name, names_to="Stat", values_to = "Value")
+
+Z.playerstats <- bind_rows(Z.batavgslong, Z.bowlavglong) |> 
+  filter_out(Value == 0)
+
+# bin into similar-values ##TODO consider whether automate generting of breaks
+Z.playerstats <- Z.playerstats |> mutate(
+  bin = cut(Value, breaks= c(-Inf,10,30,50,250,Inf), 
+            labels=c("XS", "S", "M", "L", "XL"))
+) 
+
+#TODO tidy formatting esp for integer values
+#TODO pretty beamer slides with suitable reveals
+
+```
+
+## Samples of player data
+```{r sampling-def}
+# define a function to pull a sample
+
+samplepull <- function(df, size="M", number=6) {df %>%
+    filter(bin==size) |> slice_sample(n=number) |> select(-bin)
+}
+
+```
+
+### Very small numbers
+```{r xs-samples}
+Z.roundi <- Z.playerstats |> samplepull(size="XS") 
+
+Z.roundi |> kable()
+
+```
+
+### Small numbers
+```{r s-samples}
+Z.roundii <- Z.playerstats |> samplepull(size="S") 
+
+Z.roundii |> kable()
+
+```
+
+### Medium numbers
+
+```{r m-samples}
+Z.roundiii <- Z.playerstats |> samplepull(size="M") 
+
+Z.roundiii |> kable()
+
+```
+
+### Large numbers
+
+```{r l-samples}
+Z.roundiv <- Z.playerstats |> samplepull(size="L") 
+
+Z.roundiv |> kable()
+
+```
+
+### Very large numbers
+```{r xl-samples}
+Z.roundv <- Z.playerstats |> samplepull(size="XL") 
+
+Z.roundv |> kable()
+
+```
+
+## Whole table of player data
+```{r all-player-data}
+Z.playerstats %>% arrange(Value) %>% kable()
+
+```
+
+```{r clubstats}
+# ideas:
+#career:
+# Most runs
+# Highest batting average
+# Highest batting strike rate
+# Most wickets
+# Lowest bowling strike rate
+# Lowest bowling average
+# Lowest bowling economy
+
+#% wins in a year
+# count of days with three league wins
+# record totals: for, against, not-out, at each ground
+
+```
+
+## Club totals
+
+Record highest, record lowest, and median totals; by:
+ *  whether we bat or field,
+ *  venue: Sycamores, North Lodge, or other,
+ *  whether or not we win
+ 
+```{r record-totals}
+
+  F.inningses.circle |> 
+  drop_na(Total, us_batting, Place) |> 
+  filter(result_club %in% c('W', 'L'), Total > 0, `Inns of match`==1) |>
+  summarise(.by= c(us_batting, Place, result_club),
+            Highest = max(Total),
+            Lowest = min(Total),
+            Avg = as.integer(floor(median(Total)))) |> 
+  arrange(desc(Avg)) |> 
+  mutate(
+    us_batting = us_batting |> 
+      recode_values( TRUE ~ "Milton batting",
+                     FALSE ~ "Milton fielding")) |> 
+  rename(`Our Result` = result_club,
+         `Our Role` = us_batting) |> kable()
+```
+

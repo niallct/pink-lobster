@@ -161,3 +161,13 @@ H.yarrow <- c("Season", "Name", "Matches")
 H.heather <- c("Season", "Name", "Total", "Matches")
 H.heatherAv <- c("Season", "Name", "Avg", "Matches", "Wkts")
 H.gladiolus <- c('Date', 'Batting Side', 'Fielding Side', 'Name', "Mode")
+
+# ==== Pretty output header sets ====
+H.W.matches <- H.mallow
+H.W.matchplayers <- H.pansy
+H.W.inningses <- H.impatiens
+H.W.batting <- H.begonia
+H.W.bowling <- H.lilac
+H.W.fielding <- H.foxglove
+H.W.allround <- H.waterlily
+H.W.fow <- H.primrose

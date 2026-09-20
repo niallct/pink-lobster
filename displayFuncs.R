@@ -354,12 +354,42 @@ D.batavg.centurycount <- function(df, cap, min = 1) {  df %>%
     D.showtable(cap)
 }
 
+D.bat.mostballsthisyear <- function(df, cap) { df %>%
+    drop_na(Balls) %>% #filter(`Our Team`=='1st XI') %>%
+    summarise(.by=c(batsman_id, Name), Total = sum(Balls), `Matches` = n()) %>% 
+    select(-batsman_id) %>%
+    slice_max(Total, n = conf$default_list_length) %>%
+    D.showtable(cap) 
+}
+
 D.bat.primaries <- function(df, cap) {  df %>%
     filter(Runs == 0  & Balls <= 1 & `How Out` %in% R.dismissed) %>%
     arrange(desc(actuallyDate)) %>%
     select(all_of(H.lily), `How Out`) %>%
     D.showtable(cap) %>% J.carrot
 }
+
+D.bat.platinum <- function(df, cap) {  df %>%
+    filter(Pos==1 & Runs == 0  & Balls <= 1 & `How Out` %in% R.dismissed) %>%
+    arrange(desc(actuallyDate)) %>%
+    select(all_of(H.lily), `How Out`) %>%
+    D.showtable(cap) %>% J.carrot
+}
+
+D.bat.diamond <- function(df, cap) {  df %>% # AKA Royal
+    filter(Runs == 0  & Balls == 0 & `How Out` %in% R.unfaceddismissed) %>%
+    arrange(desc(actuallyDate)) %>%
+    select(all_of(H.lily), `How Out`) %>%
+    D.showtable(cap) %>% J.carrot #TODO fix to strip out inns when no BF recorded
+}
+
+D.bat.titanium <- function(df, cap) {  df %>%
+    filter(Pos %in% c(1,2) & Runs == 0  & Balls == 0 & `How Out` %in% R.unfaceddismissed) %>%
+    arrange(desc(actuallyDate)) %>%
+    select(all_of(H.lily), `How Out`) %>%
+    D.showtable(cap) %>% J.carrot #TODO fix to strip out inns when no BF recorded
+}
+
 
 D.bat.duckcount <- function(df, cap) {  df %>%
     filter(Name != "Unsure", `How Out` %in% R.dismissed, !is.na(Runs)) %>%
@@ -496,9 +526,25 @@ D.bat.mostbryseason <- function(df, cap) {  df %>%
     D.showtable(cap)
 }
 
+D.bat.mostballsseason <- function(df, cap) { df %>%
+    drop_na(Balls) %>% #filter(`Our Team`=='1st XI') %>%
+    summarise(.by=c(batsman_id, Yr, Name), Total = sum(Balls), `Matches` = n()) %>% 
+    rename(Season = Yr) %>%
+    slice_max(Total, n = conf$default_list_length) %>%
+    select(all_of(H.heather)) %>%
+    D.showtable(cap)
+    }
+
 D.bat.bannerman <- function(df, cap, ms = 0.6, min = 10) {  df %>%
     filter(contribpc >= ms &
              Runs >= min) %>% arrange(desc(contribpc)) %>%
+    select(all_of(H.thistle)) %>%
+    D.showtable(cap) %>% J.carrot
+}
+
+D.bat.realbannerman <- function(df, cap) {df %>%
+    filter(contribpc >= 0.6733 &
+             Runs >= 10 & numbats>=11) %>% arrange(desc(contribpc)) %>%
     select(all_of(H.thistle)) %>%
     D.showtable(cap) %>% J.carrot
 }
@@ -735,12 +781,12 @@ W.bowl.msdebut <- function(df, ms = 4) {  df %>%
     filter(!is.na(W)) %>%
     group_by(bowler_id, Name) %>%  slice_min(actuallyDate, n = 1) %>% ungroup() %>%
     filter(W >= ms) %>%
-    arrange(desc(actuallyDate)) %>%
+    arrange(R, desc(actuallyDate)) %>%
     select(all_of(H.cyclamen)) 
 }
 
 D.bowl.msdebut <- function(df, cap, ms = 4) {  df %>%
-    W.bowl.msdebut %>% D.showtable(cap) %>%  J.parkin}
+    W.bowl.msdebut(ms=ms) %>% D.showtable(cap) %>%  J.parkin}
 
 D.bowl.nowkts <- function(df, cap) {  df %>%
     filter(W == 0) %>%
@@ -979,6 +1025,13 @@ D.match.short <- function(df, cap) {  df %>%
     D.showtable(cap) %>% J.lamington
 }
 
+D.match.samenames <- function(df, cap) { df %>%
+    filter(is_circle==TRUE) |>  filter_out(Name %in% R.bad_names) %>% 
+    summarise(.by = c(match_id, Name, `Match Summary`, Date, actuallyDate), count = n()) %>% 
+    filter(count >= 2) %>% arrange(desc(actuallyDate)) %>%
+    select(Name, `Match Summary`, Date) %>%
+    D.showtable(cap)
+    }
 # ==== innings ====
 
 W.inns.quotients <- function(dfU, dfT) {
@@ -1204,6 +1257,12 @@ D.inns.samebowlanaly <- function(df, cap, ms = 3) {  df %>%
     D.showtable(cap) %>% J.madeira
 }
 
+D.inns.2fivefor <- function(df, cap) {df %>%
+    filter(numfivefs ==2) |> arrange(desc(actuallyDate)) %>%
+    select(all_of(H.dahlia)) %>%
+    D.showtable(cap) %>% J.madeira
+    }
+
 D.inns.hightotal4bowl <- function(df, cap) {  df %>%
     filter(`Bowlers used` == 4) %>% arrange(desc(Total)) %>%
     rename(`Bowlers` = `Bowlers used`) %>%
@@ -1218,6 +1277,12 @@ D.inns.hightotalnocent <- function(df, cap, ms = 100) {  df %>%
     select(all_of(H.hyacinth)) %>%
     D.showtable(cap) %>% J.honey
 }
+
+D.inns.winnothirty <- function(df, cap, ms=30){ df %>%
+    filter(topscore<ms, result_club=="W", Type=='League') %>%
+    select(all_of(H.hyacinth)) %>%
+    D.showtable(cap) %>% J.honey
+    }
 
 D.inns.manycentury <- function(df, cap, min = 2) {  df %>%
     filter(numcenturies >= min) %>%
@@ -1236,7 +1301,14 @@ D.inns.manyfifty <- function(df, cap, min = 3) {  df %>%
 D.inns.allbatscontrib <- function(df, cap, score = 10, num = 6) {  df %>%
     filter(botscore >= score  & numbats >= num) %>%
     arrange(desc(actuallyDate)) %>%
-    select(all_of(H.hyacinth)) %>%
+    select(all_of(H.hyacinth), Lowest = botscore) %>%
+    D.showtable(cap) %>% J.honey
+}
+
+D.inns.highestlowest <- function(df, cap, num = 2) {  df %>%
+    filter(numbats >= num) %>%
+    slice_max(botscore, n=conf$default_list_length) %>%
+    select(all_of(H.hyacinth), Lowest = botscore) %>%
     D.showtable(cap) %>% J.honey
 }
 
@@ -1304,7 +1376,7 @@ D.inns.lowfailchase <- function(df, cap) {  df %>%
 }
 
 # Many players of the same name
-R.bad_names <- c("Unsure", "-", "A", "Dob", "T.B.C")
+R.bad_names <- c("Unsure", "-", "A", "Dob", "T.B.C", "T.B.C.")
 D.inns.sharednames <- function(df, cap) {  df %>%
     select(Name,
            match_id,

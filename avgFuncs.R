@@ -8,7 +8,7 @@ makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club,
   }  else  if(mode=='a'){adF <- batdata
   }  else {adF <- batdata %>% drop_na(fielder_id) %>% group_by(fielder_id) }
   
-  adamField <- adF %>% summarise(
+  adamField <- adF %>% summarise(.groups="drop_last",
     Ct = sum(`How Out` == "ct"),
     Std = sum(`How Out` == "st"),
     RO = sum(`How Out` == "run out")) %>%  ungroup()
@@ -19,7 +19,7 @@ makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club,
   }  else  if(mode=='a'){zxc <- zxc
   }  else {zxc <- zxc %>% drop_na(batsman_id) %>% group_by(batsman_id) }
   
-  xcv <- zxc %>%  summarise(
+  xcv <- zxc %>%  summarise(.groups = "drop_last",
     Runs = sum(Runs),
     Inns = sum(!is.na(RunsO)),
     NO = sum((`How Out` == "not out" | `How Out` == "retired not out") & !is.na(`How Out`)),
@@ -71,7 +71,7 @@ makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and clu
   } else {BestBowl  <- foo %>% select(c(bowler_id, Analy))}
   
   xcv <- zxc %>%
-    summarise(
+    summarise(.groups = "drop_last",
       `5wi` = sum(W>=5),
       M = sum(M),
       R = sum(R),
@@ -143,6 +143,10 @@ R.nths <- c("first", "second", "third", "fourth", "fifth", "sixth",
             "seventh", "eighth","ninth", "tenth")
 
 R.unusual_dismissals <- c("handled ball", "hit ball twice", "obstructing the field", "timed out", "hit wicket")
+
+R.unfaceddismissed <- c("handled ball", "hit wicket", "st", 
+                 "obstructing the field", "retired out", "run out",
+                 "timed out") #ways to be out without facing a legal delivery
 
 # a function to round averages
 avRn <- function(x) floor(x*100)/100
