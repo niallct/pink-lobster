@@ -355,7 +355,6 @@ Y.leagues2 <- K.matches %>% select(league_id, league_name, is_circle, Yr) %>%
             ours = as.logical(max(is_circle))) #TODO add currentlyours
 
 # ==== make tables of players from the matches they appear in ====
-
 # make a lookup for players without and with link to club ids
 Y.plrs <- K.matchplayers %>% select(player_id, Name) %>% distinct() %>% drop_na(player_id)
 
@@ -367,6 +366,12 @@ Y.players.club2 <- K.matchplayers %>% select(player_id, Name, playing_club, Yr) 
   summarise( .by =c(player_id, club_id, Name) , RecentYear = max(Yr))
 
 Y.players.current2 <- Y.players2 %>% filter(RecentYear >= conf$last_year)
+
+Y.players.ours2 <- Y.players.club2 %>% filter(club_id==conf$club_of_interest, !is.na(player_id))
+write.csv(Y.players.ours2, file="output/playerslist.csv", row.names = FALSE)
+
+Y.players.ourcurrent2 <- Y.players.ours2 %>% filter(RecentYear >= conf$last_year)
+write.csv(Y.players.ourcurrent2, file="output/players-recent.csv", row.names = FALSE)
 
 # a thing to find variant names, then drop duplicates
 variantnameids <- Y.plrs |> select(-Name) |> add_count(player_id)  |> filter(n>1) |> pull(player_id)
@@ -386,11 +391,6 @@ A.duplicates <- Y.players.club2 %>%
 write.csv(A.duplicates, "output/dupes.csv")
 
 # ---- our players and cap numbers ----
-Y.players.ours2 <- Y.players.club2 %>% filter(club_id==conf$club_of_interest, !is.na(player_id))
-write.csv(Y.players.ours2, file="output/playerslist.csv", row.names = FALSE)
-
-Y.players.ourcurrent2 <- Y.players.ours2 %>% filter(RecentYear >= conf$last_year)
-write.csv(Y.players.ourcurrent2, file="output/players-recent.csv", row.names = FALSE)
 
 Y.capnumbers2 <- K.matchplayers %>%  #F.fielding.us
   filter(!Name %in% c('Unsure', 'T.B.C'), playing_club==conf$club_of_interest) %>%

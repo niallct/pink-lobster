@@ -1376,7 +1376,6 @@ D.inns.lowfailchase <- function(df, cap) {  df %>%
 }
 
 # Many players of the same name
-R.bad_names <- c("Unsure", "-", "A", "Dob", "T.B.C", "T.B.C.")
 D.inns.sharednames <- function(df, cap) {  df %>%
     select(Name,
            match_id,

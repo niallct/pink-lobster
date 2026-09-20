@@ -135,6 +135,8 @@ makeHowOut <- function(ho, bname="Unsure", fname="Unsure" ){
 }
 
 # some reference things
+R.bad_names <- c("Unsure", "-", "A", "Dob", "T.B.C", "T.B.C.")
+
 R.dismissed <- c("b", "ct", "handled ball", "hit roof", "hit wicket", "lbw",
                  "obstructing the field", "retired out", "run out", "st",
                  "timed out") # use this to filter how out into yes/no
