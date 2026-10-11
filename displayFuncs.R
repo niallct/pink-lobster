@@ -173,8 +173,8 @@ D.bat.lowavgmanyruns <- function(df, cap, min = 1000) {  df %>%
     D.showtable(cap)
 }
 
-D.bat.fifties <- function(df, cap) {  df %>% 
-    filter(Runs >= 50) %>%
+D.bat.fifties <- function(df, cap, ms=50) {  df %>% 
+    filter(Runs >= ms) %>%
     arrange(desc(Runs)) %>%
     select(all_of(H.lily)) %>%
     D.showtable(cap) %>% J.carrot
@@ -581,6 +581,7 @@ D.bat.unusualdiss <- function(df, cap) {  df %>%
 D.bat.samedismissal <- function(df, cap) {  df %>%
     group_by(match_id,
              `Inns of match`,
+             `Batting Side`,
              Date,
              `Match Summary`,
              Result,
@@ -595,8 +596,8 @@ D.bat.samedismissal <- function(df, cap) {  df %>%
            actuallyDate) %>%
     count(`How Out`) %>% ungroup() %>%
     arrange(desc(actuallyDate)) %>%
-    select(`Match Summary`, Date, Result, `How Out`, n)  %>%
-    slice_max(n, n = conf$default_list_length, with_ties = F) %>%
+    select(`Batting Side`, Date, Result, `How Out`, n)  %>%
+    slice_max(n, n = conf$default_list_length, with_ties = T) %>%
     D.showtable(cap)
 }
 
@@ -714,8 +715,8 @@ W.bowl.bestavgbytype <- function(df, thistype = "League",
     mutate(Type = thistype, .before = `Name`)
 }
 
-D.bowl.fourfors <- function(df, cap) {  df %>%
-    filter(W >= 4) %>% arrange(desc(W), R) %>%
+D.bowl.fourfors <- function(df, cap, ms=4) {  df %>%
+    filter(W >= ms) %>% arrange(desc(W), R) %>%
     select(all_of(H.cyclamen)) %>%
     D.showtable(cap) %>% J.parkin
 }

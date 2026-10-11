@@ -41,7 +41,7 @@ makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club,
     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
       club_id != conf$club_of_interest ~ FALSE)) %>% 
-    left_join(Y.clubs2) %>% rename(`Club` = club_name)
+    left_join(Y.clubs2 , by=join_by("club_id")) %>% rename(`Club` = club_name)
   }  else if(mode=='a'){xcv <- xcv
   }  else {xcv <- xcv %>%   left_join(adamField, by = c("batsman_id" = "fielder_id"))}
   

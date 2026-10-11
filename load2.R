@@ -139,12 +139,14 @@ K.matches <- K.matches.scores %>%
 
 # ==== lookups for clubs and teams ====
 
-Y.clubs2 <- bind_rows(K.matches %>% select(home_club_id, `Home Club`) %>% 
+Y.clubs2full <- bind_rows(K.matches %>% select(home_club_id, `Home Club`) %>% 
                         rename(club_id = home_club_id, 
                                club_name = `Home Club`), 
                       K.matches %>% select(away_club_id, `Away Club`) %>%
                         rename(club_id = away_club_id, 
                                club_name = `Away Club`)) %>% distinct() %>% drop_na()
+
+Y.clubs2 <- Y.clubs2 |> slice_tail(by=club_id, n=1)
 
 Y.teams2 <-  rbind(K.matches %>% select(home_team_id, home_team_name, home_club_id, `Home Club`) %>% 
                      rename(team_id = home_team_id, 
@@ -378,7 +380,7 @@ variantnameids <- Y.plrs |> select(-Name) |> add_count(player_id)  |> filter(n>1
 A.variantnames <- Y.plrs |> filter(player_id %in% variantnameids)
 A.variantnames %>%  filter(player_id %in% Y.players.ours2$player_id) %>% write_csv(file="output/ourvariantnames.csv")
 rm(variantnameids)
-Y.plrs <- Y.plrs |> slice_max(by=player_id, player_id, n=1, with_ties = F)
+Y.plrs <- Y.plrs |> slice_tail(by=player_id, n=1)
 
 # Identify possible cases of our duplicate people
 A.duplicates <- Y.players.club2 %>%
@@ -555,7 +557,10 @@ K.batting <- K.batting %>%
     contribpc = ifelse(Total > 0 & Total >= Runs, Runs / Total, NA),
     Contrib = ifelse(Total == 0, NA, paste0(format((Runs * 100)/Total , digits = 1, scientific=FALSE),"%")),
     RunsWBF =  ifelse(is.na(Balls), NA, Runs),
-    FullOut = makeHowOut(`How Out`, bowler_name, fielder_name)
+    FullOut = makeHowOut(`How Out`, bowler_name, fielder_name),
+    is_match_keeper =  case_when(batsman_id == homekeeperid  ~ TRUE,
+                                        batsman_id== awaykeeperid ~ TRUE,
+                                        TRUE ~ FALSE) # this is a fiddle, really should stay NA
   )
 
 # ---- bowling ------ 
@@ -887,7 +892,7 @@ save(K.matches, K.inningses, K.matchplayers, K.batting, K.batavg, K.batavg.ty, K
      K.bowling, K.bowlavg, K.bowlavg.ty, K.matchfielders, 
      K.fieldsumm, K.fieldsumm.ty, K.allround, A.matchfeatures, K.dates, file="./data/newcoredata.RData")
 save(F.batting.circle, F.bowling.circle, F.matches.circle, F.inningses.circle, F.batavg.us, F.batavg.us.ty,
-     F.bowlavg.us, F.joinavgs.us, A.resultssumm, A.resultssummXI, file="./data/parsed.RData") # for the quiz, a temp thing probably
+     F.bowlavg.us, F.joinavgs.us, F.batting.circle, A.resultssumm, A.resultssummXI, file="./data/parsed.RData") # for the quiz, a temp thing probably
 save(Y.clubs2, Y.plrs, Y.players.ourcurrent2, Y.players.current2, Y.players2, Y.compos2, file="./data/lookups.RData")
 
 F.matches.circle.ty %>% filter(ground_id %in% c(12581, 51122)) %>%

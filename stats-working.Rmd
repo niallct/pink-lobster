@@ -14,9 +14,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = FALSE,
-  message = FALSE,
-  warning = FALSE
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
 )
 source("displayFuncs.R")
 source("headers-def.R")
