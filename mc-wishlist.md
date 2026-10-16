@@ -1,4 +1,4 @@
-- lowesst aggregate by top six, all of whom out
+- lowest aggregate by top six, all of whom out
 - last wicket for both sides falling on the same score
 = sort new loader: compos, leagues, summary, teams, matches!; bring in good bits from parse-tidy
 - do something with data last updated?
