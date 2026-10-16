@@ -2489,6 +2489,17 @@ F.inningses.circle |> left_join(A.matchfeatures) |> drop_na(nummdns) |>
 
 \newpage
 
+## Day by day
+
+```{r day-by-day}
+F.batting.us |>  mutate(lastname = str_split_i(Name, " ", 2),
+                        `Day` = str_split_i(Name, " ", 1)) |> 
+  filter(lastname=="Day") |> summarise(.by=c(Day, `Day of Week`), 
+                                       TotalRuns = sum(Runs, na.rm = TRUE)) |> 
+    arrange(-TotalRuns) |> kable()
+
+```
+
 # Setup
 
 ## Leagues and competitions

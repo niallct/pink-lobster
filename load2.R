@@ -50,7 +50,7 @@ K.matches.all <- K.matches.all %>% mutate(
   Yr = as.integer(format(actuallyDate, format = "%Y")), 
   Month = month(actuallyDate, label = TRUE),
   `Day of Year` = yday(actuallyDate),
-  `Day of Week` = wday(actuallyDate, label=TRUE)
+  `Day of Week` = wday(actuallyDate, label=TRUE, week_start = 1)
 ) %>% mutate(
   our_team_id = case_when(
     home_team_id %in% names(conf$our_teams_names) ~ home_team_id,
