@@ -1,6 +1,7 @@
-- lowesst aggregate by top six, all of whom out
+- lowest aggregate by top six, all of whom out
 - last wicket for both sides falling on the same score
 = sort new loader: compos, leagues, summary, teams, matches!; bring in good bits from parse-tidy
+- fix the individual report
 - do something with data last updated?
 - take the jimmy analysis place futzing into core
 - same name tool: filter away the same id used twice
