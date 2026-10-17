@@ -29,8 +29,6 @@ for (dir in subdirectories) {
 load_json_file <- function(file) {
   jds <- fromJSON(file)
   if (is.null(jds$match_date)) {return(NULL)}
-  # make a nice subset of interesting headings 
-  #jds <- json_data[H.chickpea]
   return(jds)
 }
 
@@ -146,7 +144,7 @@ Y.clubs2full <- bind_rows(K.matches %>% select(home_club_id, `Home Club`) %>%
                         rename(club_id = away_club_id, 
                                club_name = `Away Club`)) %>% distinct() %>% drop_na()
 
-Y.clubs2 <- Y.clubs2 |> slice_tail(by=club_id, n=1)
+Y.clubs2 <- Y.clubs2full |> slice_tail(by=club_id, n=1)
 
 Y.teams2 <-  rbind(K.matches %>% select(home_team_id, home_team_name, home_club_id, `Home Club`) %>% 
                      rename(team_id = home_team_id, 
