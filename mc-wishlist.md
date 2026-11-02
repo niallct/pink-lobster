@@ -4,7 +4,6 @@
 - fix the individual report
 - do something with data last updated?
 - take the jimmy analysis place futzing into core
-- same name tool: filter away the same id used twice
 - some sort of 'is the balls faced data any good' assessment
 = scorecard links in the multi-milestone/interesting innings lists
 = improve the match result predictor, use recorded result_applied_to
@@ -12,7 +11,6 @@
 - tidy up column selection
 - tidy up column widths
 - add rectangle geom to curator plots
-- fix the name variants, to deal with m-m warnings on the avgs lookups
 - Fewest games played by nominal captain
 - Longest wait for a captain to play in a season 
 - Longest run of losses, not wins, as captain 

@@ -1941,55 +1941,9 @@ rm(zxclr)
 
 ## Scorecard display
 ```{r scorecard, results="asis"}
+makeScorecard(K.inningses, 6940265)
 
-scd <- K.inningses %>% filter(match_id==7122764)
-
-scdh <- slice_head(scd)
-
-cat(paste("### ", scdh$`Home Side`, "vs", scdh$`Away Side`, "\n\n",
-          "At", scdh$Ground, "," , scdh$Date,". \n\n",
-          scdh$Result, "\n\n")) #TODO add toss
-
-makeScorecard <- function(data){
-  head <- paste("#### _",data$`Batting Club`,"_", sep="")
-  
-  makebattSC <- function(x){
-    if(is.na(x["runs"])){""} else{
-      
-      ballsshow <- if(is.na(x["balls"])){""} else {paste(" (", x["balls"], "b) ")}
-      
-      paste("+ ", x["batsman_name"], " \\dotfill ", makeHowOut(x["how_out"], x["bowler_name"], x["fielder_name"]), " ", x["runs"], ballsshow , sep="")}
-    
-  }
-  batting <- str_trim(paste(apply(data$bat,1, makebattSC  ), 
-                            collapse = "\n "), side="right")
-  
-  #TODO hide if 0 
-  #TODO penalties
-  
-  total <- paste(data$Byes,"b ", data$`Leg byes`,"lb ",data$Wides,"w ",data$`No-balls`,"nb. ",
-                 "Total ", data$Total, "/", data$W, " (", data$Ovs, " ovs)", sep="")
-  
-  dnbnames <- paste(data$bat[which(data$bat[4]=="did not bat"),2], collapse = ", ")
-  dnbnames <- str_flatten_comma(data$bat[which(data$bat[4]=="did not bat"),2], last = " and ")
-  
-  if(dnbnames==""){ dnb <- ""} else{ dnb <- paste(dnbnames, "did not bat.")} #TODO sort absent
-  
-  fow <- "fow"
-  
-  makeBowlSC <- function(x){
-    
-    paste(x["bowler_name"], " ", x["overs"], "-", x["maidens"], "-", x["runs"], "-", x["wickets"], sep="")
-  }
-  bowling <- paste(apply(data$bowl,1, makeBowlSC  ), collapse = ", ")
-  
-  cat(paste(head, batting, total, dnb, fow, bowling, "\n", sep="\n\n "))
-  #paste(batting)
-}
-
-apply(scd, 1, makeScorecard)
-rm(scd, scdh)
-
+makeScorecard(K.inningses, 2466973)
 ```
 
 ## Bowling through
@@ -2492,11 +2446,14 @@ F.inningses.circle |> left_join(A.matchfeatures) |> drop_na(nummdns) |>
 ## Day by day
 
 ```{r day-by-day}
+
 F.batting.us |>  mutate(lastname = str_split_i(Name, " ", 2),
                         `Day` = str_split_i(Name, " ", 1)) |> 
   filter(lastname=="Day") |> summarise(.by=c(Day, `Day of Week`), 
                                        TotalRuns = sum(Runs, na.rm = TRUE)) |> 
-    arrange(-TotalRuns) |> kable()
+  arrange(`Day of Week`) |> 
+  pivot_wider(names_from = `Day of Week`, values_from = TotalRuns, values_fill = 0) |> 
+  D.showtable("Total runs")
 
 ```
 

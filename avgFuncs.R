@@ -1,6 +1,7 @@
 # ==== average making functions ====
 
-# the function #TODO tidy this up ' #TODO fix why so many rows K.batting %>% select(batsman_id, batting_club_id) %>%  distinct( ) %>%  drop_na(batsman_id) %>%  nrow()
+#==== the batting average function ====
+#TODO tidy this up ' #TODO fix why so many rows K.batting %>% select(batsman_id, batting_club_id) %>%  distinct( ) %>%  drop_na(batsman_id) %>%  nrow()
 makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club, p player only, a no grouping
   
   # batting avg table also includes fielding:
@@ -56,7 +57,7 @@ makeBatAvgs <- function(batdata, mode='c') { #MODES: c group by player and club,
   return(outputBatAvgs)
 }
 
-# the function #TODO tidy this
+#====  the bowling average function #TODO tidy this ====
 makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and club, *p player only, a no grouping
   
   if(mode=='c'){ zxc <- bowldata %>% drop_na(bowler_id, fielding_club_id) %>% group_by(bowler_id, fielding_club_id)
@@ -103,7 +104,7 @@ makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and clu
 }
 
 
-# over translation functions 
+#==== over translation functions ====
 
 getBallsFromOv <- function(x, bpo=6){ #TODO check input
   o <- as.numeric(str_split_i(x, "\\.", 1))
@@ -122,19 +123,94 @@ getOvsFromDecOvs <- function(x, bpo=6){
   paste(floor(x), round((x %% 1 ) * bpo), sep=".")
 }
 
-# a function to concatenate the how out lines
+#==== a function to concatenate the how out lines ====
 makeHowOut <- function(ho, bname="Unsure", fname="Unsure" ){
   case_when( #TODO implement ct & b
     ho %in% c("b") ~ paste(ho, bname),
     ho %in% c("lbw", "hit roof", "hit wicket") ~ paste(ho, "b", bname),
     ho %in% c("ct", "st") ~ paste(ho, fname, "b", bname),
-    ho == "run out" ~ paste("run out", fname),
+    ho == "run out" ~ paste("run out (", fname, ")", sep=""),
     ho %in% c("not out", "did not bat", "absent", "handled ball", "obstructing the field",
               "retired not out", "retired out", "timed out" ) ~ ho,
     TRUE ~ "" )
 }
 
-# some reference things
+# ==== scorecard function ====
+
+nahide <- function(x, lab){if(is.na(x) | x==0){""} else{paste0(x, lab)} }
+
+makeBatSC <- function(df){
+  if(length(df)>0){
+    df <- df |> rowwise() |> mutate(
+      ballsshow = if(is.na(balls)){""} else {paste0(" (", balls, "b)")},
+      `SC` = if(is.na(runs)){""} else {paste0("+  ", batsman_name, " \\dotfill ", makeHowOut(how_out, bowler_name, fielder_name), " ", 
+                                              runs, ballsshow)})
+    
+    df |> pull(SC) } else {character(0)}
+}
+
+makeDNBSC  <- function(df){
+  if(length(df)>0){
+    df |> filter(how_out == "did not bat") |> 
+      select(batsman_name) |> pull() } else {character(0)}
+} 
+
+makeFOWSC <- function(df){
+  if(length(df)>0){
+    df <- df |> mutate(`SC` = paste0(wickets, "/", runs))
+    df |> pull(SC) } else {character(0)}
+}
+
+makeBowlSC <- function(df){
+  if(length(df)>0){
+    df <- df |> mutate(`SC` = paste0(bowler_name, " ", 
+                                     overs, "-", maidens, "-",runs, "-", wickets))
+    df |> pull(SC) } else {character(0)}
+}
+
+makeScorecard <- function(df, match){
+  #TODO test whether df passed is an innings object
+  matchdata <- df %>% filter(match_id==match)
+  
+  heads <- matchdata |> slice_head() 
+  
+  headertext <- paste0(heads$`Home Side`, " vs ", heads$`Away Side`, "\n\n",
+                       "At ", heads$Ground, ", " , heads$Date,". \n\n",
+                       heads$Result, ".\n\n") #TODO add toss
+  
+  cat(paste("### ", headertext))
+  
+  matchdata |> filter(`Inns of match` == 1) |>  makeInnsScorecard()
+  matchdata |> filter(`Inns of match` == 2) |>  makeInnsScorecard()
+}
+
+makeInnsScorecard <- function(df){
+  head <- paste0("#### _",df$`Batting Club`,"_ \n\n")
+  
+  batting<- df |> pluck("bat", 1) |> makeBatSC() |> paste(collapse = "\n\n")
+  
+  extras <- paste(nahide(df$Byes,"b"),
+                  nahide(df$`Leg byes`,"lb"),
+                  nahide(df$Wides,"w"),
+                  nahide(df$`No-balls`,"nb"),
+                  nahide(df$`Pen(B)`, "pens"),". ")
+  
+  total <- paste0(extras, "Total ", df$Total, "/", df$W, " (", df$Ovs, " ovs).")
+  
+  dnbnames <- df |> pluck("bat", 1) |> makeDNBSC() |> 
+    str_flatten_comma(last = " and ")
+  
+  if(dnbnames==""){ dnb <- ""} else{ dnb <- paste(dnbnames, "did not bat.")} #TODO sort absent
+  
+  fow <- df |> pluck("fow", 1) |> makeFOWSC() |> paste(collapse = " ")
+  
+  bowling <- df |> pluck("bowl", 1) |> makeBowlSC() |>  paste(collapse = ", ")
+  
+  cat(paste(head, batting, total, dnb, fow, bowling, "\n\n", sep="\n\n "))
+  
+}
+
+#==== some reference things ====
 R.bad_names <- c("Unsure", "-", "A", "Dob", "T.B.C", "T.B.C.")
 
 R.dismissed <- c("b", "ct", "handled ball", "hit roof", "hit wicket", "lbw",
