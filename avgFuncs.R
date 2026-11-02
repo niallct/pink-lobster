@@ -93,7 +93,7 @@ makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and clu
     mutate( is_us = case_when(
       club_id == conf$club_of_interest ~ TRUE,
       club_id != conf$club_of_interest ~ FALSE
-    )) %>% left_join(Y.clubs2) %>% rename(`Club` = club_name) }
+    )) %>% left_join(Y.clubs2, by = join_by(club_id)) %>% rename(`Club` = club_name) }
   else {if(mode=='a'){outputbowlAvg <- xcv %>% cbind(BestBowl) %>% rename(Best = Analy)}
     else {outputbowlAvg <- xcv %>%
       left_join(BestBowl, by = join_by(bowler_id)) %>%
