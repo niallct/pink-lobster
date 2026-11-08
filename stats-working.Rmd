@@ -2441,7 +2441,42 @@ F.inningses.circle |> left_join(A.matchfeatures) |> drop_na(nummdns) |>
 
 ```
 
-\newpage
+## Last wicket falling on same score
+Matches in which the last wicket to fall in each innings falls on the same score.
+
+```{r lastfallsame}
+A.samelastfall <- F.fow.circle |> filter(is_no==FALSE, `Inns of match` <= 2) |>  slice_max(Wkt, by=c(match_id, `Inns of match`)) |>
+  select(match_id, `Inns of match`, runs) |>
+  pivot_wider(names_from = `Inns of match`, values_from = runs) |> 
+  filter(`1` == `2`) |> pull(match_id)
+
+F.fow.circle |> filter(match_id %in% A.samelastfall, is_no==FALSE, `Inns of match` <= 2) |> 
+  slice_max(Wkt, by=c(match_id, `Inns of match`)) |>
+  select(Date, `Match Summary`, `Inns of match`, Fall) |> 
+  pivot_wider(names_from = `Inns of match`, values_from = Fall) |> 
+  rename("1st inns, last wkt" = `1`,
+         "2nd inns, last wkt" = `2`) |> D.showtable("Last wicket falling on same score")
+
+
+```
+
+## Lowest aggregate by top six
+
+Lowest aggregate by top six batters, all of whom out
+
+```{r lowtop6agg}
+crit <- 6
+F.batting.us |> filter(Pos <= crit) |> 
+  summarise(.by = c(match_id, `Inns of match`,
+                    Date, `Match Summary`), 
+            RunsTopSix = sum(Runs, na.rm = TRUE),
+            OutTopSix = sum(`How Out` %in% R.dismissed)) |> 
+  filter(OutTopSix == crit, RunsTopSix >0) |> 
+  slice_min(RunsTopSix, n=conf$default_list_length) |> 
+  select(Date, `Match Summary`, RunsTopSix) |> 
+  D.showtable("Lowest aggregate by top six")
+
+```
 
 ## Day by day
 
@@ -2457,6 +2492,7 @@ F.batting.us |>  mutate(lastname = str_split_i(Name, " ", 2),
 
 ```
 
+\newpage
 # Setup
 
 ## Leagues and competitions

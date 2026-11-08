@@ -103,15 +103,14 @@ makeBowlAvgs <- function(bowldata, mode="c") { #MODES: c group by player and clu
   return(outputbowlAvg)
 }
 
-
 #==== over translation functions ====
 
-getBallsFromOv <- function(x, bpo=6){ #TODO check input
+getBallsFromOv <- function(x, bpo=6){ #TODO check input, NA handling
   o <- as.numeric(str_split_i(x, "\\.", 1))
   b <- as.numeric(str_split_i(x, "\\.", 2))
   # if(b >= bpo) {warning("Balls component is greater than or equal to balls per over", immediate. = T)}
   b <- ifelse(is.na(b),0,b)
-  balls = (o * bpo) + b
+  balls = as.integer( (o * bpo) + b)
   return(balls)
 }
 

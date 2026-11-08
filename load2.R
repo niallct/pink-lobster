@@ -11,6 +11,7 @@ conf$last_year <- as.character(as.integer(conf$year_of_interest) - 1)
 A.inferredovers <- read_tsv("./config/compo-to-over.tsv", comment = "#",
                             col_types = list(competition_id="i", inferred_overs="i", infer_balls_per_over="i"))
 A.captains <- read_tsv("./config/captains.tsv", col_type = list(year = "i", team_id = "i", `Nominal Captain` = "c"))
+A.tidygrounds <- read_tsv("./config/tidy-grounds.tsv", col_type = list(ground_id = "i", village_name = "c"))
 source("headers-def.R")
 source("avgFuncs.R")
 
@@ -24,6 +25,16 @@ json_files <- c() # an  empty vector to store the file paths
 for (dir in subdirectories) {
   json_files <- c(json_files, list.files(dir, pattern = "matches.json", full.names = TRUE))
 }
+
+options(warn=1)
+assessDataAge <- function(files, wks=2){
+oldmess <- "Input data more than two weeks old"
+newmess <- "Data current"
+lastmoddate <- file.info(files) |> slice_max(mtime) |> pull(mtime)
+if(lastmoddate + weeks(wks) < today()) warning(oldmess) else message(newmess)
+}
+
+assessDataAge(json_files, 2)
 
 # Function to load and process a JSON file
 load_json_file <- function(file) {
@@ -72,7 +83,7 @@ K.matches.all <- K.matches.all %>% mutate(
     TRUE ~ "") 
   ) %>%
   rename(
-    Ground = ground_name,
+    raw_ground_name = ground_name,
     `Home Club` = home_club_name,
     `Away Club` = away_club_name,
     Result_ = result_description,
@@ -80,6 +91,7 @@ K.matches.all <- K.matches.all %>% mutate(
     Type = competition_type
   ) %>%
   mutate(
+    Ground = raw_ground_name,
    `Home Side` = paste(`Home Club`, home_team_name, sep= " - "),
    `Away Side` = paste(`Away Club`, away_team_name, sep= " - "),
    no_of_players = ifelse(is.na(no_of_players), 11, no_of_players),
@@ -226,7 +238,8 @@ K.matches <- K.matches %>% mutate(
 
 # ==== try to complete the no_of_overs data ====
 
-K.matches <- K.matches %>% left_join(A.inferredovers, by = "competition_id") #TODO fix the many-many?
+K.matches <- K.matches %>% left_join(A.inferredovers, by = "competition_id") %>%
+  mutate(balls_in_over = coalesce(infer_balls_per_over, 6))
 
 K.matches <- K.matches %>% rowwise() %>%
   mutate(guess_ovs = max(ceiling(0.2 * decimal_overs_1) / 0.2, 
@@ -260,13 +273,14 @@ A.our_ground_lookup <- stack(conf$home_ground_names) %>%
 
 K.matches <- K.matches %>%
   left_join(A.our_ground_lookup, by = "ground_id") %>%
-  mutate(Ground = coalesce(ground_nickname, Ground),
+  left_join(A.tidygrounds, by = "ground_id") %>%
+  mutate(Ground = coalesce(ground_nickname, village_name, Ground),
          Place = case_when(
            is.na(ground_id) ~ NA_character_,
            is.na(ground_nickname)     ~ "Other",
            TRUE             ~ ground_nickname
          )) %>%
-  select(-ground_nickname)
+  select(-village_name, -ground_nickname)
 
 # ==== unstack the player data, pluck captains and keepers ====
 #TODO think about a version for just the current season and last
@@ -393,8 +407,8 @@ write.csv(A.duplicates, "output/dupes.csv")
 # ---- our players and cap numbers ----
 
 Y.capnumbers2 <- K.matchplayers %>%  #F.fielding.us
-  filter(!Name %in% c('Unsure', 'T.B.C'), playing_club==conf$club_of_interest) %>%
-  group_by(player_id) %>% slice_min(actuallyDate, with_ties = FALSE) %>% ungroup() %>%
+  filter(!Name %in% R.bad_names, playing_club==conf$club_of_interest) %>%
+  slice_min(by=player_id, actuallyDate, with_ties = FALSE) %>% 
   arrange(actuallyDate) %>%
   select(Name, Date, `Debut Match` = `Match Summary`, `Debut Ground` = Ground) %>%
   tibble::rowid_to_column("Cap Number")
@@ -419,7 +433,7 @@ K.inningses <- K.matches %>% select(-players) %>% unnest(innings) %>%
     Total = runs,
     W = wickets,
     Ovs = overs,
-    inns_balls = balls
+    inns_balls = balls # this seems to be hundred-ball
   ) %>% 
   mutate(
     `Batting Team` = case_when(
@@ -590,12 +604,10 @@ K.bowling <- K.bowling %>%
     )),
     Analy = paste(W, R, sep="-"),
     Avg = ifelse(W == 0, NA, avRn(R / W)),
-    ovs.o = as.numeric(ifelse(is.na(str_split_i(O, "\\.", 1)),0,str_split_i(O, "\\.", 1))),
-    ovs.b = as.numeric(ifelse(is.na(str_split_i(O, "\\.", 2)),0,str_split_i(O, "\\.", 2))),
-    BB = ifelse(is.na(O), NA, (ovs.o * 6 ) + ovs.b + Wd + NB), #TODO tidy this
+    BB = getBallsFromOv(O, balls_in_over) + Wd + NB,
+    Econ = ifelse(getBallsFromOv(O)==0, NA, avRn(R*balls_in_over/getBallsFromOv(O, balls_in_over))),
     SRx = ifelse(is.na(BB), NA, ifelse( BB == 0, NA, avRn(BB / W) ) ),
     SR = ifelse(is.na(SRx), NA, as.numeric(SRx)),
-    Econ = ifelse((ovs.o + ovs.b/6) ==0, NA, as.numeric( avRn(R  / (ovs.o + ovs.b/6)))  ),
     ExtPc = ifelse(is.na(R), NA, avRn(100 * as.numeric( (Wd + NB) / R))),
     MdnPc = ifelse(is.na(O), NA, avRn(100 * as.numeric( M / O )))
   ) %>% select(-SRx)
@@ -877,13 +889,16 @@ F.matches.circle.ty <- filter(K.matches,is_circle==TRUE,  Yr == conf$year_of_int
 F.matches.sphere <- filter(K.matches,is_sphere==TRUE) 
 F.matches.sphere.ty <- filter(K.matches,is_sphere==TRUE, Yr == conf$year_of_interest) 
 
-# ==== find some spurious data ====
+# ==== find some spurious or missing data ====
 A.bad.batbdry <- K.batting %>% filter(Runs < (`6`*6 + `4`*4)) %>% select(Name, Runs, `4`, `6`, Date, `Batting Club`, match_id, is_circle)
 A.bad.batscore <- K.batting %>% filter(Runs >= Total, Total != 0) %>%  select(Name, Runs, Total, Date, `Batting Club`, match_id, is_circle)
 A.bad.pship <- K.fow %>% filter(PartnershipRaw <0 | PartnershipRaw >300) %>%  select(match_id, `Inns of match`, PartnershipRaw, Fall, runs, Total, Wkt, is_no) # miskeyed manual entry
 A.bad.overs <- K.matches |> filter(decimal_overs_1 > no_of_overs | decimal_overs_2 > no_of_overs) |> 
   select(no_of_overs, decimal_overs_1, decimal_overs_2, match_id, is_circle, Date)
 write.csv(A.bad.overs, file="output/badovers.csv")
+# find league grounds not in the tidy grounds config file
+anti_join(K.matches |> filter(is_sphere) |> select(ground_id) ,
+          A.tidygrounds |> select(ground_id)) |> drop_na() |> distinct()
 
 # ==== write out useful tables ==== 
 save(K.matches, K.inningses, K.matchplayers, K.batting, K.batavg, K.batavg.ty, K.fow,
@@ -900,3 +915,4 @@ F.matches.circle.ty %>% filter(ground_id %in% c(12581, 51122)) %>%
   write_csv(file="output/ty-home-matches.csv")
 
 # load("./data/coredata.RData")
+

@@ -1,8 +1,5 @@
-- lowest aggregate by top six, all of whom out
-- last wicket for both sides falling on the same score
 = sort new loader: compos, leagues, summary, teams, matches!; bring in good bits from parse-tidy
 - fix the individual report
-- do something with data last updated?
 - take the jimmy analysis place futzing into core
 - some sort of 'is the balls faced data any good' assessment
 = scorecard links in the multi-milestone/interesting innings lists
@@ -16,13 +13,8 @@
 - Longest run of losses, not wins, as captain 
 - Winning toss Vs winning match, by captain 
 - Captain playing not in their own XI
-- Handle 8-ball overs properly
 = fix cap numbers duplication
-= globally tidy up ground names to deduplicate
-- work out excluding teams from reports but include, so the result_club tool works
-
 - longest run wins but no fifty
--
 
 ## acs123:
                 own team  O M R W                    Opp tot   Ct
