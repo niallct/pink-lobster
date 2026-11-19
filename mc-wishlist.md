@@ -1,20 +1,19 @@
 = sort new loader: compos, leagues, summary, teams, matches!; bring in good bits from parse-tidy
 - fix the individual report
-- take the jimmy analysis place futzing into core
-- some sort of 'is the balls faced data any good' assessment
+- handle hundred ball correctly
 = scorecard links in the multi-milestone/interesting innings lists
 = improve the match result predictor, use recorded result_applied_to
 - sort out filter vs display functions
 - tidy up column selection
 - tidy up column widths
-- add rectangle geom to curator plots
 - Fewest games played by nominal captain
 - Longest wait for a captain to play in a season 
 - Longest run of losses, not wins, as captain 
 - Winning toss Vs winning match, by captain 
 - Captain playing not in their own XI
-= fix cap numbers duplication
+= fix player duplications
 - longest run wins but no fifty
+- sort home matches at strange grounds
 
 ## acs123:
                 own team  O M R W                    Opp tot   Ct

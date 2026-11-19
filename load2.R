@@ -28,10 +28,13 @@ for (dir in subdirectories) {
 
 options(warn=1)
 assessDataAge <- function(files, wks=2){
+  if (quarter(today(), fiscal_start = 4) >= 3){
+    message("Not checking data age in winter")
+  } else{
 oldmess <- "Input data more than two weeks old"
 newmess <- "Data current"
 lastmoddate <- file.info(files) |> slice_max(mtime) |> pull(mtime)
-if(lastmoddate + weeks(wks) < today()) warning(oldmess) else message(newmess)
+if(lastmoddate + weeks(wks) < today()) warning(oldmess) else message(newmess)}
 }
 
 assessDataAge(json_files, 2)
@@ -49,7 +52,7 @@ K.matches.all <- map(json_files, load_json_file) %>% compact() %>%
 
 rm(dir, parent_directory, subdirectories, json_files, load_json_file) # tidy up!
 save(K.matches.all, file="./data/bigK.RData")
-#load("./data/bigK.RData")
+load("./data/bigK.RData")
 
 # ==== make friendlier data ==== 
 # do this bit on the all matches for consistency and good things to filter
@@ -59,8 +62,7 @@ K.matches.all <- K.matches.all %>% mutate(
   Yr = as.integer(format(actuallyDate, format = "%Y")), 
   Month = month(actuallyDate, label = TRUE),
   `Day of Year` = yday(actuallyDate),
-  `Day of Week` = wday(actuallyDate, label=TRUE, week_start = 1)
-) %>% mutate(
+  `Day of Week` = wday(actuallyDate, label=TRUE, week_start = 1),
   our_team_id = case_when(
     home_team_id %in% names(conf$our_teams_names) ~ home_team_id,
     away_team_id %in% names(conf$our_teams_names) ~ away_team_id,
@@ -72,41 +74,35 @@ K.matches.all <- K.matches.all %>% mutate(
   is_league = case_when(
     league_id %in% conf$leagues_of_interest ~ TRUE,
     TRUE ~ FALSE),
-  is_sphere = case_when(
-    is_circle == TRUE ~ TRUE,
-    is_league == TRUE ~ TRUE,
-    TRUE ~ FALSE),
+  is_sphere = is_circle | is_league,
   `Our Team` =  case_when(
     home_team_id %in% names(conf$our_teams_names) ~ home_team_name,
     away_team_id %in% names(conf$our_teams_names) ~ away_team_name,
     is_circle ~ "Other", # other means a team of ours but not one set as interesting
-    TRUE ~ "") 
+    TRUE ~ ""),
+  Ground = ground_name,
+  `Home Side` = paste(home_club_name, home_team_name, sep= " - "),
+  `Away Side` = paste(away_club_name, away_team_name, sep= " - "),
+  no_of_players = replace_values(no_of_players, NA ~ 11),
+  Type = as.factor(competition_type)
   ) %>%
   rename(
     raw_ground_name = ground_name,
     `Home Club` = home_club_name,
     `Away Club` = away_club_name,
-    Result_ = result_description,
+    Result_ = result_description
     #Winner = result_applied_to
-    Type = competition_type
-  ) %>%
-  mutate(
-    Ground = raw_ground_name,
-   `Home Side` = paste(`Home Club`, home_team_name, sep= " - "),
-   `Away Side` = paste(`Away Club`, away_team_name, sep= " - "),
-   no_of_players = ifelse(is.na(no_of_players), 11, no_of_players),
-   Type = as.factor(Type)
-  )
+  ) |> select(-competition_type)
     
 # filter out uninteresting matches
 K.matches <- K.matches.all %>% 
-  filter(game_type=="Standard",
+  filter(game_type=="Standard",#remove junior, indoor, pairs
          !home_team_id %in% conf$excluded_teams, 
          !away_team_id %in% conf$excluded_teams, 
          !league_id %in% conf$excluded_leagues,
          !match_id %in% conf$excluded_matches,
           result %in% c("A", "D", "T", "W"), # removes cancelled, conceded, in progress, replayed
-          Yr >= conf$start_year)
+          Yr >= conf$start_year) %>% select(-game_type)
 
 # ==== unstack the innings data to get match summary out ====
 
@@ -125,7 +121,8 @@ K.matches.scores <- K.inns.scores %>%
   pivot_wider(
     id_cols = c(match_id, inns_this_match), 
     names_from = inns_of_match,
-    values_from = c(runs, wickets, score, fullscore, decimal_overs, team_batting_id, team_batting_name, total_extras),
+    values_from = c(runs, wickets, score, fullscore, decimal_overs,
+                    team_batting_id, team_batting_name, total_extras),
     values_fn = first
   )  %>%
   unite(
@@ -246,10 +243,8 @@ K.matches <- K.matches %>% rowwise() %>%
                          ceiling(0.2 * decimal_overs_2) / 0.2,
                          0,
                          na.rm = TRUE),
-        no_of_overs = case_when(is.na(no_of_overs) & !is.na(inferred_overs) ~ inferred_overs,
-                                is.na(no_of_overs) & !is.na(guess_ovs) ~ guess_ovs,
-                                TRUE ~ no_of_overs), 
-        no_of_overs = replace_values(no_of_overs, 0 ~ NA))
+        no_of_overs = na_if(coalesce(no_of_overs, inferred_overs, guess_ovs),0)
+        ) #TODO need ungroup() here?
 
 #find things where this didn't work: interesting matches with blank no_of_overs
 A.compsnoover <- K.matches %>% drop_na(competition_id) %>%
@@ -258,10 +253,10 @@ A.compsnoover <- K.matches %>% drop_na(competition_id) %>%
   filter_out(competition_id %in% A.inferredovers$competition_id) %>% 
   select(competition_id, league_id, no_of_overs) %>% distinct()
 
-A.suggestovers <- K.matches %>% filter(competition_id %in% A.compsnoover$competition_id) %>% 
+if(nrow(A.compsnoover)>0){A.suggestovers <- K.matches %>% filter(competition_id %in% A.compsnoover$competition_id) %>% 
   group_by(competition_id) %>% mutate(
     suggest_overs = max(decimal_overs_1)) %>% ungroup() %>% 
-  select(competition_id, suggest_overs) %>% distinct()
+  select(competition_id, suggest_overs) %>% distinct()} else {A.suggestovers <- NA}
 
 write_csv(A.suggestovers, file="output/suggestovers.csv")
 
@@ -276,9 +271,11 @@ K.matches <- K.matches %>%
   left_join(A.tidygrounds, by = "ground_id") %>%
   mutate(Ground = coalesce(ground_nickname, village_name, Ground),
          Place = case_when(
-           is.na(ground_id) ~ NA_character_,
-           is.na(ground_nickname)     ~ "Other",
-           TRUE             ~ ground_nickname
+           is.na(ground_id) & is.na(home_club_id) ~ "Other", # or shld be NA?
+           is.na(ground_id) & home_club_id==conf$club_of_interest ~ "Home",
+           is.na(ground_id) & home_club_id!=conf$club_of_interest ~ "Other",
+           !is.na(ground_nickname)     ~ ground_nickname, 
+           TRUE             ~ "Other"
          )) %>%
   select(-village_name, -ground_nickname)
 
@@ -433,7 +430,7 @@ K.inningses <- K.matches %>% select(-players) %>% unnest(innings) %>%
     Total = runs,
     W = wickets,
     Ovs = overs,
-    inns_balls = balls # this seems to be hundred-ball
+    inns_balls = balls # only used in hundred-style
   ) %>% 
   mutate(
     `Batting Team` = case_when(
@@ -572,7 +569,7 @@ K.batting <- K.batting %>%
     FullOut = makeHowOut(`How Out`, bowler_name, fielder_name),
     is_match_keeper =  case_when(batsman_id == homekeeperid  ~ TRUE,
                                         batsman_id== awaykeeperid ~ TRUE,
-                                        TRUE ~ FALSE) # this is a fiddle, really should stay NA
+                                        TRUE ~ FALSE) # this is a fiddle, really should stay NA, TODO fix
   )
 
 # ---- bowling ------ 
@@ -734,12 +731,15 @@ rm(zxc)
 
 # ---- interesting things, count them ----
 
-intf1 <- K.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`) %>%
+intf1 <- K.batting %>% select(match_id, `Inns of match`, Runs, Balls, `How Out`, Ovs, balls_in_over, `No-balls`) %>%
   summarise(.by = c(match_id, `Inns of match`),
             topscore = ifelse(sum(!is.na(Runs))==0, 0, max(Runs, na.rm = TRUE)),
             botscore = ifelse(sum(!is.na(Runs))==0, 0, min(Runs, na.rm = TRUE)),
             numvalidbf = sum( !is.na(Balls) & 
                                 (Balls > 0 |  (Balls == 0 & Runs == 0 & !`How Out` %in%  c("b", "ct", "lbw")) )  ),
+            batsbf = sum(Balls, na.rm = TRUE),
+            estInnsBalls = getBallsFromOv(max(Ovs), max(balls_in_over)),
+            bferror = estInnsBalls + max(`No-balls`) - batsbf, #this misfires on: 8-ball over friendlies, wd/nb not rebowled, hundo
             numbats = sum(!is.na(Runs)),
             numbowled = sum(`How Out`=="b", na.rm=TRUE),
             numcaught = sum(`How Out`=="ct", na.rm=TRUE),
@@ -756,8 +756,8 @@ intf2 <- K.bowling %>% select(match_id, `Inns of match`, O, W, R, M) %>%
             numfivefs = ifelse(sum(!is.na(W))==0, 0, sum(W>=5, na.rm = TRUE)),
             `Wicket-takers` = ifelse(sum(!is.na(W))==0, 0, sum(W>=1, na.rm = TRUE)),
             maxrunsccd = ifelse(sum(!is.na(R))==0, 0, max(R, na.rm = TRUE)),
-            nummdns = sum(M),
-            numovsbwld = sum(O),
+            nummdns = sum(M, na.rm = TRUE),
+            numovsbwld = sum(O, na.rm = TRUE),
             numbadanaly = sum(M==O & R>0),
             numbowlsmdn =  ifelse(sum(!is.na(M))==0, 0, sum(M>=1, na.rm = TRUE)),
             `Bowlers used` = n(),
@@ -896,9 +896,18 @@ A.bad.pship <- K.fow %>% filter(PartnershipRaw <0 | PartnershipRaw >300) %>%  se
 A.bad.overs <- K.matches |> filter(decimal_overs_1 > no_of_overs | decimal_overs_2 > no_of_overs) |> 
   select(no_of_overs, decimal_overs_1, decimal_overs_2, match_id, is_circle, Date)
 write.csv(A.bad.overs, file="output/badovers.csv")
+A.missing.overs <- K.matches |> filter(result!="A" & (decimal_overs_1 ==0 | decimal_overs_2 == 0) )|> 
+  select(no_of_overs, decimal_overs_1, decimal_overs_2, match_id, is_circle, Date)
+A.missingovsbutbowler <- F.inningses.circle %>% left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>%
+  filter(is.na(no_of_overs), !is.na(numovsbwld), numovsbwld > 0) |> 
+  summarise(.by=match_id, maxovsbwld = max(numovsbwld))
 # find league grounds not in the tidy grounds config file
-anti_join(K.matches |> filter(is_sphere) |> select(ground_id) ,
-          A.tidygrounds |> select(ground_id)) |> drop_na() |> distinct()
+A.unnamedgrounds <- anti_join(K.matches |> filter(is_sphere) |> select(ground_id) ,
+          A.tidygrounds |> select(ground_id), by=join_by(ground_id)) |> drop_na() |> distinct()
+# balls faced discordance - this misfires on: 8-ball over friendlies, wd/nb not rebowled, hundo #TODO fix
+A.bad.ballsfacederror <- F.inningses.circle %>% left_join(A.matchfeatures, by=join_by(`match_id`, `Inns of match`)) %>% 
+  filter(batsbf>0, estInnsBalls > 0, abs(bferror)>8)  |> 
+  select(match_id, `Inns of match`, batsbf, estInnsBalls, bferror)
 
 # ==== write out useful tables ==== 
 save(K.matches, K.inningses, K.matchplayers, K.batting, K.batavg, K.batavg.ty, K.fow,
