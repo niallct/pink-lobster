@@ -256,9 +256,10 @@ A.compsnoover <- K.matches %>% drop_na(competition_id) %>%
 if(nrow(A.compsnoover)>0){A.suggestovers <- K.matches %>% filter(competition_id %in% A.compsnoover$competition_id) %>% 
   group_by(competition_id) %>% mutate(
     suggest_overs = max(decimal_overs_1)) %>% ungroup() %>% 
-  select(competition_id, suggest_overs) %>% distinct()} else {A.suggestovers <- NA}
+  select(competition_id, suggest_overs) %>% distinct()
+write_csv(A.suggestovers, file="output/suggestovers.csv")} else {A.suggestovers <- NA}
 
-write_csv(A.suggestovers, file="output/suggestovers.csv")
+
 
 # ==== tidy ground names ====
 # make lookup from the config file
